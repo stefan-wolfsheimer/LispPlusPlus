@@ -29,14 +29,10 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include <catch.hpp>
-#include "lisp_cons_allocator.h"
+#include "lisp_object.h"
+#include "lisp_nil.h"
 
-TEST_CASE("allocated", "[ConsAllocator]")
+TEST_CASE("nil_is_a_nil", "[Object]")
 {
-  {
-    Lisp::ConsAllocator allocator;
-    void * ptr = allocator.alloc();
-    REQUIRE(ptr);
-  }
+  REQUIRE(Lisp::nil.isA<Lisp::Nil>());
 }
-
