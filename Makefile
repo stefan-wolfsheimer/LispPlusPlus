@@ -27,11 +27,11 @@ release/obj/%.o : src/%.cpp
 
 bin/runtests: $(OBJ_TEST)
 	mkdir -p $(@D)
-	$(CPP) $(OBJ_TEST) -o bin/runtests
+	${CPP} ${CPP_TEST_FLAGS} ${OBJ_TEST} -o bin/runtests
 
 test/obj/%.o : src/%.cpp
 	mkdir -p $(@D)
-	$(CPP) ${CPP_TEST_FLAGS} ${TEST_DEPFLAGS} -c $< -o $@
+	${CPP} ${CPP_TEST_FLAGS} ${TEST_DEPFLAGS} -c $< -o $@
 	mv test/obj/$*.td test/obj/$*.d 
 
 .d: ;
