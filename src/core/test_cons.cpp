@@ -28,20 +28,34 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#pragma once
-#include <vector>
-#include "lisp_i_cons_allocator.h"
+#include <catch.hpp>
+#include "lisp_cons.h"
 
-namespace Lisp
+TEST_CASE("nil_is_not_a_cons", "[Cons]")
 {
-  class ConsAllocator : public IConsAllocator
-  {
-  public:
-    ~ConsAllocator();
-    Cons * alloc() override;
+  REQUIRE_FALSE(Lisp::nil.isA<Lisp::Cons>());
+}
 
-  private:
-    std::vector<Cons*> allocated;
-  };
+TEST_CASE("nil_as_cons_is_pullptr", "[Cons]")
+{
+  REQUIRE(Lisp::nil.as<Lisp::Cons>() == nullptr);
+}
+
+TEST_CASE("cons_is_a_cons", "[Cons]")
+{
+  auto obj = Lisp::Cons::make(Lisp::nil, Lisp::nil);
+  REQUIRE(obj.isA<Lisp::Cons>());
+}
+
+TEST_CASE("cons_as_cons_is_cons", "[Cons]")
+{
+  auto obj = Lisp::Cons::make(Lisp::nil, Lisp::nil);
+  REQUIRE(obj.as<Lisp::Cons>());
+}
+
+TEST_CASE("cons_has_refcount_1", "[Cons]")
+{
+  auto obj = Lisp::Cons::make(Lisp::nil, Lisp::nil);
+  REQUIRE(obj.as<Lisp::Cons>()->getRefCount() == 1u);
 }
 

@@ -31,15 +31,37 @@ either expressed or implied, of the FreeBSD Project.
 #include <assert.h>
 #include "lisp_cons.h"
 #include "lisp_i_cons_allocator.h"
+#include "lisp_cons_allocator.h"
 
-void * Lisp::Cons::operator new(std::size_t s,
-                                IConsAllocator & allocator)
+static Lisp::ConsAllocator defaultAllocator;
+static Lisp::IConsAllocator * allocator = &defaultAllocator;
+
+Lisp::Object Lisp::Cons::make(const Object & _car,
+                              const Object & _cdr)
 {
-  assert(s == sizeof(Lisp::Cons));
-  return allocator.alloc();
+  Cons * cons = allocator->alloc();
+  return Lisp::Object(Cons::typeId, cons);
+}
+
+Lisp::IConsAllocator * Lisp::Cons::getAllocator()
+{
+  return allocator;
+}
+
+void Lisp::Cons::setAllocator(Lisp::IConsAllocator * _allocator)
+{
+  allocator = _allocator;
 }
 
 Lisp::Cons::Cons()
 {
+  refCount = 1;
+}
+
+void Lisp::Cons::unset()
+{
+  if(!--refCount)
+  {
+  }
 }
 
