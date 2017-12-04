@@ -31,24 +31,28 @@ either expressed or implied, of the FreeBSD Project.
 #pragma once
 #include <cstdint>
 #include "lisp_object.h"
+#include "lisp_i_cons_factory.h"
 
 namespace Lisp
 {
-  class IConsAllocator;
   class Cons
   {
   public:
-    friend class ConsAllocator;
+    friend class ConsFactory;
     friend class Object;
+    using Color = IConsFactory::Color;
     static const std::size_t typeId;
-    static Object make(const Object & _car,
-                       const Object & _cdr);
-    static IConsAllocator * getAllocator();
-    static void setAllocator(IConsAllocator * _allocator);
     inline std::size_t getRefCount() const;
+    inline Color getColor() const;
+    inline void unsetCar();
+    inline void unsetCdr();
   private:
+    IConsFactory * consFactory;
+    unsigned char colorIndex;
     std::size_t refCount;
-    void unset();
+    Object car;
+    Object cdr;
+    inline void unroot();
     Cons();
   };
 }
@@ -58,8 +62,40 @@ namespace Lisp
  ******************************************************************************/
 std::size_t Lisp::Cons::getRefCount() const
 {
-  return refCount;
+  if(getColor() == Color::Root)
+  {
+    return refCount;
+  }
+  else
+  {
+    return 0u;
+  }
 }
+
+Lisp::Cons::Color Lisp::Cons::getColor() const
+{
+  return consFactory->encodeColor(colorIndex);
+}
+
+void Lisp::Cons::unroot()
+{
+  if(!--refCount)
+  {
+    consFactory->unroot(this);
+  }
+}
+
+void Lisp::Cons::unsetCar()
+{
+  car = Lisp::nil;
+}
+
+void Lisp::Cons::unsetCdr()
+{
+  cdr = Lisp::nil;
+}
+
+
 
 namespace Lisp
 {

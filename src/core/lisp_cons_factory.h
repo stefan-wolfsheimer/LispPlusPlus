@@ -30,18 +30,47 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
 #include <vector>
-#include "lisp_i_cons_allocator.h"
+#include "lisp_i_cons_factory.h"
+
+// @todo move to config.h
+#define CONS_PAGE_SIZE 512
 
 namespace Lisp
 {
-  class ConsAllocator : public IConsAllocator
+  class Object;
+  class ConsFactory : public IConsFactory
   {
   public:
-    ~ConsAllocator();
-    Cons * alloc() override;
-
+    using Color = IConsFactory::Color;
+    ConsFactory(std::size_t _pageSize=CONS_PAGE_SIZE);
+    ~ConsFactory();
+    Cons * make(const Object & car,
+                const Object & cdr) override;
+    void unroot(Cons * cons) override;
+    std::size_t numConses(Color color) const override;
+    Color encodeColor(unsigned char code) const override;
+    unsigned char decodeColor(Color color) const override;
   private:
-    std::vector<Cons*> allocated;
+    inline void initChild(Object & obj, const Object & rhs);
+    Color code2color[5];
+    unsigned int color2code[5];
+
+    std::size_t pageSize;
+    std::vector<Cons*> pages;
+    std::vector<Cons*> freeConses;
+
+    /*******************
+     +---------------+
+     | white conses  |
+     +---------------+ whiteTop
+     | grey conses   |
+     +---------------+ greyTop
+     | black conses  |
+     +---------------+ size()
+     *******************/
+    std::size_t whiteTop;
+    std::size_t greyTop;
+    std::vector<Cons*> conses;
   };
 }
 

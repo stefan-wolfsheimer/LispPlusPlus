@@ -28,20 +28,21 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#include "lisp_cons_allocator.h"
+#include "lisp_vm.h"
+#include "lisp_cons_factory.h"
 #include "lisp_cons.h"
 
-Lisp::ConsAllocator::~ConsAllocator()
+Lisp::Vm::Vm(std::shared_ptr<IConsFactory> _consFactory)
+  : consFactory( _consFactory ?
+                 _consFactory :
+                 std::make_shared<ConsFactory>())
 {
-  for(auto ptr : allocated)
-  {
-    delete ptr;
-  }
 }
 
-Lisp::Cons * Lisp::ConsAllocator::alloc()
+Lisp::Object Lisp::Vm::cons(const Lisp::Object & _car,
+                            const Lisp::Object & _cdr)
 {
-  allocated.push_back(new Cons());
-  return allocated.back();
+  return Lisp::Object(Cons::typeId,
+                      consFactory->make(_car, _cdr));
 }
 

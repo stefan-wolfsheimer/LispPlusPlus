@@ -29,14 +29,40 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include <catch.hpp>
-#include "lisp_cons_allocator.h"
+#include "lisp_cons_factory.h"
+#include "lisp_object.h"
+#include "lisp_cons.h"
+#include "lisp_vm.h"
 
-TEST_CASE("allocated", "[ConsAllocator]")
+TEST_CASE("alloc_cons_nil_nil_is_root_with_ref_count_1", "[ConsAllocator]")
 {
   {
-    Lisp::ConsAllocator allocator;
-    void * ptr = allocator.alloc();
+    Lisp::ConsFactory factory(8);
+    Lisp::Cons * ptr = factory.make(Lisp::nil, Lisp::nil);
     REQUIRE(ptr);
+    REQUIRE(ptr->getColor() == Lisp::Cons::Color::Root);
+    REQUIRE(ptr->getRefCount() == 1u);
+    REQUIRE(factory.numConses(Lisp::Cons::Color::Void)  == 7u);
+    REQUIRE(factory.numConses(Lisp::Cons::Color::White) == 0u);
+    REQUIRE(factory.numConses(Lisp::Cons::Color::Grey)  == 0u);
+    REQUIRE(factory.numConses(Lisp::Cons::Color::Black) == 0u);
+    REQUIRE(factory.numConses(Lisp::Cons::Color::Root)  == 1u);
   }
+}
+
+TEST_CASE("alloc_cons_cons_cons", "[ConsAllocator]")
+{
+  auto factory = std::make_shared<Lisp::ConsFactory>(8);
+  Lisp::Vm vm(factory);
+  Lisp::Cons * ptr = factory->make(vm.cons(Lisp::nil, Lisp::nil),
+                                   vm.cons(Lisp::nil, Lisp::nil));
+  REQUIRE(ptr);
+  REQUIRE(ptr->getColor() == Lisp::Cons::Color::Root);
+  REQUIRE(ptr->getRefCount() == 1u);
+  REQUIRE(factory->numConses(Lisp::Cons::Color::Void)  == 5u);
+  REQUIRE(factory->numConses(Lisp::Cons::Color::White) == 0u);
+  REQUIRE(factory->numConses(Lisp::Cons::Color::Grey)  == 0u);
+  REQUIRE(factory->numConses(Lisp::Cons::Color::Black) == 2u);
+  REQUIRE(factory->numConses(Lisp::Cons::Color::Root)  == 1u);
 }
 

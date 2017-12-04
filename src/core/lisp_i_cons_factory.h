@@ -29,15 +29,27 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
+#include <cstdint>
 
 namespace Lisp
 {
   class Cons;
-  class IConsAllocator
+  class Object;
+  class IConsFactory
   {
   public:
-    virtual ~IConsAllocator() {}
-    virtual Cons * alloc() = 0;
+    enum class Color : unsigned char { Void=0u,
+                                       White=1u,
+                                       Grey=2u,
+                                       Black=3u,
+                                       Root=4u };
+    virtual ~IConsFactory() {}
+    virtual Cons * make(const Object & car,
+                         const Object & cdr) = 0;
+    virtual void unroot(Cons * cons) = 0;
+    virtual std::size_t numConses(Color color) const = 0;
+    virtual Color encodeColor(unsigned char code) const = 0;
+    virtual unsigned char decodeColor(Color color) const = 0;
   };
 }
 

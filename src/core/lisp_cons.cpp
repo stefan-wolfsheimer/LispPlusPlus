@@ -30,38 +30,10 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include <assert.h>
 #include "lisp_cons.h"
-#include "lisp_i_cons_allocator.h"
-#include "lisp_cons_allocator.h"
+#include "lisp_i_cons_factory.h"
+#include "lisp_cons_factory.h"
 
-static Lisp::ConsAllocator defaultAllocator;
-static Lisp::IConsAllocator * allocator = &defaultAllocator;
-
-Lisp::Object Lisp::Cons::make(const Object & _car,
-                              const Object & _cdr)
+Lisp::Cons::Cons() : colorIndex((unsigned char)Color::Void), refCount(0)
 {
-  Cons * cons = allocator->alloc();
-  return Lisp::Object(Cons::typeId, cons);
-}
-
-Lisp::IConsAllocator * Lisp::Cons::getAllocator()
-{
-  return allocator;
-}
-
-void Lisp::Cons::setAllocator(Lisp::IConsAllocator * _allocator)
-{
-  allocator = _allocator;
-}
-
-Lisp::Cons::Cons()
-{
-  refCount = 1;
-}
-
-void Lisp::Cons::unset()
-{
-  if(!--refCount)
-  {
-  }
 }
 

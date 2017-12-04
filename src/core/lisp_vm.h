@@ -28,50 +28,30 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#include <catch.hpp>
-#include "lisp_cons.h"
-#include "lisp_vm.h"
+#pragma once
+#include <memory>
+#include "lisp_i_cons_factory.h"
+#include "lisp_object.h"
 
-TEST_CASE("cons_allocator_color_has_size_1", "[Cons]")
+namespace Lisp
 {
-  REQUIRE(sizeof(Lisp::Cons::Color) == 1u);
+  class Vm
+  {
+  public:
+    Vm(std::shared_ptr<IConsFactory> _consFactory = nullptr);
+    Object cons(const Object & car,
+                const Object & cdr);
+    inline std::shared_ptr<IConsFactory> getConsFactory() const;
+  private:
+    std::shared_ptr<IConsFactory> consFactory;
+  };
 }
 
-TEST_CASE("nil_is_not_a_cons", "[Cons]")
+/******************************************************************************
+ * Implementation
+ ******************************************************************************/
+std::shared_ptr<Lisp::IConsFactory> Lisp::Vm::getConsFactory() const
 {
-  REQUIRE_FALSE(Lisp::nil.isA<Lisp::Cons>());
-}
-
-TEST_CASE("nil_as_cons_is_pullptr", "[Cons]")
-{
-  REQUIRE(Lisp::nil.as<Lisp::Cons>() == nullptr);
-}
-
-TEST_CASE("cons_is_a_cons", "[Cons]")
-{
-  Lisp::Vm vm;
-  auto obj = vm.cons(Lisp::nil, Lisp::nil);
-  REQUIRE(obj.isA<Lisp::Cons>());
-}
-
-TEST_CASE("cons_as_cons_is_cons", "[Cons]")
-{
-  Lisp::Vm vm;
-  auto obj = vm.cons(Lisp::nil, Lisp::nil);
-  REQUIRE(obj.as<Lisp::Cons>());
-}
-
-TEST_CASE("cons_has_refcount_1", "[Cons]")
-{
-  Lisp::Vm vm;
-  auto obj = vm.cons(Lisp::nil, Lisp::nil);
-  REQUIRE(obj.as<Lisp::Cons>()->getRefCount() == 1u);
-}
-
-TEST_CASE("cons_has_color_root", "[Cons]")
-{
-  Lisp::Vm vm;
-  auto obj = vm.cons(Lisp::nil, Lisp::nil);
-  REQUIRE(obj.as<Lisp::Cons>()->getColor() == Lisp::Cons::Color::Root);
+  return consFactory;
 }
 

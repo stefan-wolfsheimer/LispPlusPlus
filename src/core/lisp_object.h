@@ -43,8 +43,8 @@ namespace Lisp
   class Object
   {
   public:
-    friend class Cons;
-
+    friend class Vm;
+    
     template<typename T>
     friend class Lisp::Details::Converter;
     
@@ -60,13 +60,11 @@ namespace Lisp
 
   private:
     Object(std::size_t typeId, Cons * cons);
-
     std::size_t typeId;
-    typedef union
+    union
     {
       Cons * cons;
-    } DataUnion;
-    DataUnion data;
+    } data;
   };
 
   extern Object nil;
