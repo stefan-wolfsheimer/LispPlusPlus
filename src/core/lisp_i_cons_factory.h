@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
 #include <cstdint>
+#include <vector>
 
 namespace Lisp
 {
@@ -47,9 +48,9 @@ namespace Lisp
     virtual Cons * make(const Object & car,
                          const Object & cdr) = 0;
     virtual void unroot(Cons * cons) = 0;
+    virtual void root(Cons * cons) = 0;
     virtual std::size_t numConses(Color color) const = 0;
-    virtual Color encodeColor(unsigned char code) const = 0;
-    virtual unsigned char decodeColor(Color color) const = 0;
+    virtual std::vector<Lisp::Cons*> getConses(Color color) const = 0;
   };
 }
 

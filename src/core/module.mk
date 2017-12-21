@@ -1,4 +1,5 @@
 CORE_SRC=	src/core/lisp_type_id.cpp\
+		src/core/lisp_cell.cpp\
 		src/core/lisp_object.cpp \
 		src/core/lisp_cons_factory.cpp \
 		src/core/lisp_cons.cpp \

@@ -28,20 +28,74 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#include "lisp_vm.h"
-#include "lisp_cons_factory.h"
-#include "lisp_cons.h"
+#pragma once
+#include <cstdint>
 
-Lisp::Vm::Vm(std::shared_ptr<IConsFactory> _consFactory)
-  : consFactory( _consFactory ?
-                 _consFactory :
-                 std::make_shared<ConsFactory>())
+namespace Lisp
 {
+  namespace Details
+  {
+    template<typename T>
+    struct Converter;
+  }
+  class Cons;
+  class Object;
+
+  class Cell
+  {
+  public:
+    template<typename T>
+    friend class Lisp::Details::Converter;
+
+    Cell(const Object & rhs);
+    Cell& operator=(const Object & rhs);
+
+    inline std::size_t getTypeId() const;
+
+    template<typename T>
+    inline bool isA() const;
+
+    template<typename T>
+    inline T * as() const;
+
+  protected:
+    Cell(std::size_t _typeId) : typeId(_typeId) {}
+    std::size_t typeId;
+    union
+    {
+      Cons * cons;
+    } data;
+  };
 }
 
-Lisp::Object Lisp::Vm::cons(const Lisp::Object & _car,
-                            const Lisp::Object & _cdr)
+namespace Lisp
 {
-  return Lisp::Object(consFactory->make(_car, _cdr));
+  namespace Details
+  {
+    template<typename T>
+    struct Converter
+    {
+      static T * as(const Lisp::Cell * obj)
+      {
+        return nullptr;
+      }
+    };
+  }
 }
 
+inline std::size_t Lisp::Cell::getTypeId() const
+{
+  return typeId;
+}
+
+template<typename T>
+inline bool Lisp::Cell::isA() const
+{
+  return typeId == T::typeId;
+}
+
+template<typename T>
+inline T * Lisp::Cell::as() const
+{
+  return Lisp::Details::Converter<T>::as(this);
+}

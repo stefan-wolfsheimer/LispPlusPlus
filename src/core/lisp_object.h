@@ -30,71 +30,24 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
 #include <cstdint>
+#include "lisp_cell.h"
 
 namespace Lisp
 {
-  namespace Details
-  {
-    template<typename T>
-    struct Converter;
-  }
-
-  class Cons;
-  class Object
+  class Object : public Cell
   {
   public:
-    friend class Vm;
-    
-    template<typename T>
-    friend class Lisp::Details::Converter;
-    
     Object(const Object & rhs);
+    Object(const Cell & rhs);
     Object();
     ~Object();
+    Object & operator=(const Object & rhs);
 
-    template<typename T>
-    bool isA() const;
-
-    template<typename T>
-    T * as() const;
-
+    Object(Cons * cons);
   private:
-    Object(std::size_t typeId, Cons * cons);
-    std::size_t typeId;
-    union
-    {
-      Cons * cons;
-    } data;
+    inline void unsetCons();
   };
 
   extern Object nil;
-}
-
-namespace Lisp
-{
-  namespace Details
-  {
-    template<typename T>
-    struct Converter
-    {
-      static T * as(const Lisp::Object * obj)
-      {
-        return nullptr;
-      }
-    };
-  }
-}
-
-
-template<typename T>
-bool Lisp::Object::isA() const
-{
-  return typeId == T::typeId;
-}
-
-template<typename T>
-T * Lisp::Object::as() const
-{
-  return Lisp::Details::Converter<T>::as(this);
 }
 

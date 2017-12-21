@@ -46,13 +46,16 @@ namespace Lisp
     inline Color getColor() const;
     inline void unsetCar();
     inline void unsetCdr();
+    inline Object getCar();
+    inline Object getCdr();
   private:
     IConsFactory * consFactory;
-    unsigned char colorIndex;
+    Color color;
     std::size_t refCount;
-    Object car;
-    Object cdr;
+    Cell car;
+    Cell cdr;
     inline void unroot();
+    inline void root();
     Cons();
   };
 }
@@ -62,7 +65,7 @@ namespace Lisp
  ******************************************************************************/
 std::size_t Lisp::Cons::getRefCount() const
 {
-  if(getColor() == Color::Root)
+  if(color == Color::Root)
   {
     return refCount;
   }
@@ -74,7 +77,7 @@ std::size_t Lisp::Cons::getRefCount() const
 
 Lisp::Cons::Color Lisp::Cons::getColor() const
 {
-  return consFactory->encodeColor(colorIndex);
+  return color;
 }
 
 void Lisp::Cons::unroot()
@@ -82,6 +85,19 @@ void Lisp::Cons::unroot()
   if(!--refCount)
   {
     consFactory->unroot(this);
+  }
+}
+
+void Lisp::Cons::root()
+{
+  if(color == Color::Root)
+  {
+    ++refCount;
+  }
+  else
+  {
+    consFactory->root(this);
+    // Todo move from heap to root
   }
 }
 
@@ -95,7 +111,15 @@ void Lisp::Cons::unsetCdr()
   cdr = Lisp::nil;
 }
 
+Lisp::Object Lisp::Cons::getCar()
+{
+  return Lisp::Object(car);
+}
 
+Lisp::Object Lisp::Cons::getCdr()
+{
+  return Lisp::Object(cdr);
+}
 
 namespace Lisp
 {
@@ -104,7 +128,7 @@ namespace Lisp
     template<>
     struct Converter<Cons>
     {
-      static Cons * as(const Object * obj)
+      static Cons * as(const Cell * obj)
       {
         if(obj->isA<Cons>())
         {

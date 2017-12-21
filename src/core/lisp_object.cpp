@@ -33,24 +33,54 @@ either expressed or implied, of the FreeBSD Project.
 #include "lisp_nil.h"
 #include "lisp_cons.h"
 
-Lisp::Object::Object(const Object & rhs) : typeId(rhs.typeId)
+Lisp::Object::Object(const Object & rhs) : Cell(rhs.typeId)
 {
   if(rhs.isA<Lisp::Cons>())
   {
     data.cons = rhs.data.cons;
+    data.cons->root();
   }
 }
 
-Lisp::Object::Object() : typeId(Nil::typeId)
+Lisp::Object::Object(const Cell & rhs) : Cell(rhs.getTypeId())
+{
+  if(rhs.isA<Lisp::Cons>())
+  {
+    data.cons = rhs.as<Lisp::Cons>();
+    data.cons->root();
+  }
+}
+
+Lisp::Object::Object() : Cell(Nil::typeId)
 {
 }
 
-Lisp::Object::Object(std::size_t _typeId, Cons * cons) : typeId(_typeId)
+Lisp::Object::Object(Cons * cons) : Cell(Lisp::Cons::typeId)
 {
   data.cons = cons;
 }
 
 Lisp::Object::~Object()
+{
+  unsetCons();
+}
+
+
+Lisp::Object & Lisp::Object::operator=(const Object & rhs)
+{
+  unsetCons();
+  typeId = rhs.typeId;
+  if(rhs.isA<Lisp::Cons>())
+  {
+    assert(rhs.data.cons->getColor() == Cons::Color::Root);
+    assert(rhs.data.cons->getRefCount() > 0u);
+    data.cons = rhs.data.cons;
+    data.cons->root();
+  }
+  return *this;
+}
+
+void Lisp::Object::unsetCons()
 {
   if(isA<Cons>())
   {

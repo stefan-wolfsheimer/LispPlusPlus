@@ -38,6 +38,7 @@ either expressed or implied, of the FreeBSD Project.
 namespace Lisp
 {
   class Object;
+  class Cell;
   class ConsFactory : public IConsFactory
   {
   public:
@@ -46,31 +47,23 @@ namespace Lisp
     ~ConsFactory();
     Cons * make(const Object & car,
                 const Object & cdr) override;
+    void root(Cons * cons) override;
     void unroot(Cons * cons) override;
     std::size_t numConses(Color color) const override;
-    Color encodeColor(unsigned char code) const override;
-    unsigned char decodeColor(Color color) const override;
+    std::vector<Cons*> getConses(Color color) const override;
+    void cycleGarbageCollector();
+
   private:
-    inline void initChild(Object & obj, const Object & rhs);
-    Color code2color[5];
-    unsigned int color2code[5];
+    inline std::vector<Cons*> getRootConses() const;
+    inline void removeFromVector(std::vector<Lisp::Cons*> & v,
+                                 Lisp::Cons * cons);
 
     std::size_t pageSize;
     std::vector<Cons*> pages;
     std::vector<Cons*> freeConses;
-
-    /*******************
-     +---------------+
-     | white conses  |
-     +---------------+ whiteTop
-     | grey conses   |
-     +---------------+ greyTop
-     | black conses  |
-     +---------------+ size()
-     *******************/
-    std::size_t whiteTop;
-    std::size_t greyTop;
-    std::vector<Cons*> conses;
+    std::vector<Cons*> blackConses;
+    std::vector<Cons*> whiteConses;
+    std::vector<Cons*> greyConses;
   };
 }
 
