@@ -31,7 +31,7 @@ either expressed or implied, of the FreeBSD Project.
 #pragma once
 #include <cstdint>
 #include "lisp_object.h"
-#include "lisp_i_cons_factory.h"
+#include "lisp_cons_factory.h"
 
 namespace Lisp
 {
@@ -40,7 +40,7 @@ namespace Lisp
   public:
     friend class ConsFactory;
     friend class Object;
-    using Color = IConsFactory::Color;
+    using Color = ConsFactory::Color;
     static const std::size_t typeId;
     inline std::size_t getRefCount() const;
     inline Color getColor() const;
@@ -51,9 +51,10 @@ namespace Lisp
     inline const Cell & getCarCell() const;
     inline const Cell & getCdrCell() const;
   private:
-    IConsFactory * consFactory;
+    ConsFactory * consFactory;
     Color color;
     std::size_t refCount;
+    std::size_t index;
     Cell car;
     Cell cdr;
     inline void unroot();
@@ -67,14 +68,7 @@ namespace Lisp
  ******************************************************************************/
 std::size_t Lisp::Cons::getRefCount() const
 {
-  if(color == Color::Root)
-  {
-    return refCount;
-  }
-  else
-  {
-    return 0u;
-  }
+  return refCount;
 }
 
 Lisp::Cons::Color Lisp::Cons::getColor() const

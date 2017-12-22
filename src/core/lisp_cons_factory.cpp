@@ -51,6 +51,33 @@ Lisp::ConsFactory::~ConsFactory()
   }
 }
 
+void Lisp::ConsFactory::removeFromVector(Lisp::Cons * cons)
+{
+  std::vector<Cons*> & _conses(conses[(unsigned char)cons->color]);
+  assert(_conses.size() > 0);
+  assert(_conses[cons->index] == cons);
+  _conses[cons->index] = _conses.back();
+  _conses.back()->index = cons->index;
+  _conses.pop_back();
+}
+
+void Lisp::ConsFactory::addToVector(Color color, Lisp::Cons * cons)
+{
+  cons->index = conses[(unsigned char)color].size();
+  cons->color = color;
+  conses[(unsigned char)color].push_back(cons);
+}
+
+inline void Lisp::ConsFactory::recycleChild(const Cell & cell)
+{
+  auto cons = cell.as<Cons>();
+  if(cons && cons->getColor() == fromColor)
+  {
+    removeFromVector(cons);
+    addToVector(Color::Grey, cons);
+  }
+}
+
 Lisp::Cons * Lisp::ConsFactory::make(const Object & car,
                                      const Object & cdr)
 {
@@ -74,88 +101,40 @@ Lisp::Cons * Lisp::ConsFactory::make(const Object & car,
   ret->car = car;
   ret->cdr = cdr;
   ret->consFactory = this;
-  ret->color = Cons::Color::Root;
   ret->refCount = 1;
+  addToVector(Cons::Color::Root, ret);
   return ret;
-}
-
-void Lisp::ConsFactory::removeFromVector(Lisp::Cons * cons)
-{
-  std::vector<Cons*> & _conses(conses[(unsigned char)cons->color]);
-  assert(_conses.size() > 0);
-  assert(_conses[cons->refCount] == cons);
-  _conses[cons->refCount] = _conses.back();
-  _conses.back()->refCount = cons->refCount;
-  _conses.pop_back();
-}
-
-void Lisp::ConsFactory::addToVector(Color color, Lisp::Cons * cons)
-{
-  cons->refCount = conses[(unsigned char)color].size();
-  cons->color = color;
-  conses[(unsigned char)color].push_back(cons);
 }
 
 void Lisp::ConsFactory::root(Cons * cons)
 {
   assert(cons->color != Cons::Color::Root);
   assert(cons->color != Cons::Color::Void);
-  assert(cons == &*conses[(unsigned char)cons->color][cons->refCount]);
+  assert(cons == &*conses[(unsigned char)cons->color][cons->index]);
   removeFromVector(cons);
-  cons->color = Cons::Color::Root;
   cons->refCount = 1u;
-  //Todo: check children!!!
+  addToVector(Cons::Color::Root, cons);
+  //Todo: test
+  recycleChild(cons->getCarCell());
+  recycleChild(cons->getCdrCell());
 }
 
 void Lisp::ConsFactory::unroot(Cons * cons)
 {
-  assert(cons->color == Cons::Color::Root);
+  assert(cons->color == Color::Root);
+  assert(cons == &*conses[(unsigned char)Color::Root][cons->index]);
+  removeFromVector(cons);
   addToVector(toColor, cons);
 }
 
 std::size_t Lisp::ConsFactory::numConses(Color color) const
 {
-  if(color == Color::Root)
-  {
-    return
-      pages.size() * pageSize
-      - conses[(unsigned char)Color::White].size()
-      - conses[(unsigned char)Color::Black].size()
-      - conses[(unsigned char)Color::Grey].size()
-      - conses[(unsigned char)Color::Void].size();
-  }
-  else
-  {
-    return conses[(unsigned char)color].size();
-  }
-}
-
-std::vector<Lisp::Cons*> Lisp::ConsFactory::getRootConses() const
-{
-  std::vector<Cons*> ret;
-  for(auto p : pages)
-  {
-    for(std::size_t i = 0; i < pageSize; i++)
-    {
-      if(p[i].getColor() == Cons::Color::Root)
-      {
-        ret.push_back(&p[i]);
-      }
-    }
-  }
-  return ret;
+  return conses[(unsigned char)color].size();
 }
 
 std::vector<Lisp::Cons*> Lisp::ConsFactory::getConses(Color color) const
 {
-  if(color == Color::Root)
-  {
-    return getRootConses();
-  }
-  else
-  {
-    return conses[(unsigned char)color];
-  }
+  return conses[(unsigned char)color];
 }
 
 void Lisp::ConsFactory::cycleGarbageCollector()
@@ -164,16 +143,8 @@ void Lisp::ConsFactory::cycleGarbageCollector()
   std::unordered_set<Cons*> todo;
   std::unordered_set<Cons*> root;
   std::size_t nRoot = 0;
-  for(auto & page : pages)
-  {
-    for(std::size_t i = 0; i < pageSize; i++)
-    {
-      if(page[i].getColor() == Cons::Color::Root)
-      {
-        todo.insert(&page[i]);
-      }
-    }
-  }
+  todo.insert(conses[(unsigned char)Color::Root].begin(),
+              conses[(unsigned char)Color::Root].end());
   while(!todo.empty())
   {
     auto cons = *todo.begin();
@@ -223,16 +194,6 @@ void Lisp::ConsFactory::cycleGarbageCollector()
         }
       }
     }
-  }
-}
-
-inline void Lisp::ConsFactory::recycleChild(const Cell & cell)
-{
-  auto cons = cell.as<Cons>();
-  if(cons && cons->getColor() == fromColor)
-  {
-    removeFromVector(cons);
-    addToVector(Color::Grey, cons);
   }
 }
 

@@ -30,7 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
 #include <memory>
-#include "lisp_i_cons_factory.h"
+#include "lisp_cons_factory.h"
 #include "lisp_object.h"
 
 namespace Lisp
@@ -38,19 +38,19 @@ namespace Lisp
   class Vm
   {
   public:
-    Vm(std::shared_ptr<IConsFactory> _consFactory = nullptr);
+    Vm(std::shared_ptr<ConsFactory> _consFactory = nullptr);
     Object cons(const Object & car,
                 const Object & cdr);
-    inline std::shared_ptr<IConsFactory> getConsFactory() const;
+    inline std::shared_ptr<ConsFactory> getConsFactory() const;
   private:
-    std::shared_ptr<IConsFactory> consFactory;
+    std::shared_ptr<ConsFactory> consFactory;
   };
 }
 
 /******************************************************************************
  * Implementation
  ******************************************************************************/
-std::shared_ptr<Lisp::IConsFactory> Lisp::Vm::getConsFactory() const
+std::shared_ptr<Lisp::ConsFactory> Lisp::Vm::getConsFactory() const
 {
   return consFactory;
 }

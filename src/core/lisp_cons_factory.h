@@ -30,32 +30,35 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
 #include <vector>
-#include "lisp_i_cons_factory.h"
 
-// @todo move to config.h
+ // @todo move to config.h
 #define CONS_PAGE_SIZE 512
 
 namespace Lisp
 {
   class Object;
   class Cell;
-  class ConsFactory : public IConsFactory
+  class Cons;
+  class ConsFactory
   {
   public:
-    using Color = IConsFactory::Color;
+    enum class Color : unsigned char { Void=0u,
+                                       White=1u,
+                                       Grey=2u,
+                                       Black=3u,
+                                       Root=4u,
+                                       Free=5u };
     ConsFactory(std::size_t _pageSize=CONS_PAGE_SIZE);
     ~ConsFactory();
-    Cons * make(const Object & car,
-                const Object & cdr) override;
-    void root(Cons * cons) override;
-    void unroot(Cons * cons) override;
-    std::size_t numConses(Color color) const override;
-    std::vector<Cons*> getConses(Color color) const override;
+    Cons * make(const Object & car, const Object & cdr);
+    void root(Cons * cons);
+    void unroot(Cons * cons);
+    std::size_t numConses(Color color) const;
+    std::vector<Cons*> getConses(Color color) const;
     void cycleGarbageCollector();
     bool stepGargabeCollector();
 
   private:
-    inline std::vector<Cons*> getRootConses() const;
     inline void removeFromVector(Lisp::Cons * cons);
     inline void addToVector(Color color, Lisp::Cons * cons);
     inline void recycleChild(const Cell & cell);
@@ -63,7 +66,7 @@ namespace Lisp
     Color fromColor;
     Color toColor;
     std::vector<Cons*> pages;
-    std::vector<Cons*> conses[5];
+    std::vector<Cons*> conses[6];
   };
 }
 

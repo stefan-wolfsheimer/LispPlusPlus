@@ -30,7 +30,6 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include <assert.h>
 #include "lisp_cons.h"
-#include "lisp_i_cons_factory.h"
 #include "lisp_cons_factory.h"
 
 Lisp::Cons::Cons() :
