@@ -34,7 +34,7 @@ either expressed or implied, of the FreeBSD Project.
 #include "lisp_cons.h"
 
 Lisp::ConsFactory::ConsFactory(std::size_t _pageSize) :
-   pageSize(_pageSize)
+   pageSize(_pageSize), fromColor(Color::White), toColor(Color::Black)
 {
 }
 
@@ -55,20 +55,21 @@ Lisp::Cons * Lisp::ConsFactory::make(const Object & car,
                                      const Object & cdr)
 {
   Cons * ret;
-  if(freeConses.empty())
+  std::vector<Cons*> & _conses(conses[(unsigned char)Color::Void]);
+  if(_conses.empty())
   {
-    freeConses.reserve(pageSize);
+    _conses.reserve(pageSize);
     ret = new Cons[pageSize];
     pages.push_back(ret);
     for(std::size_t i = 1; i < pageSize; i++)
     {
-      freeConses.push_back(&ret[i]);
+      _conses.push_back(&ret[i]);
     }
   }
   else
   {
-    ret = freeConses.back();
-    freeConses.pop_back();
+    ret = _conses.back();
+    _conses.pop_back();
   }
   ret->car = car;
   ret->cdr = cdr;
@@ -78,70 +79,55 @@ Lisp::Cons * Lisp::ConsFactory::make(const Object & car,
   return ret;
 }
 
-void Lisp::ConsFactory::removeFromVector(std::vector<Lisp::Cons*> & v,
-                                         Lisp::Cons * cons)
+void Lisp::ConsFactory::removeFromVector(Lisp::Cons * cons)
 {
-  assert(v.size() > 0);
-  v[cons->refCount] = v.back();
-  v.back()->refCount = cons->refCount;
-  v.pop_back();
+  std::vector<Cons*> & _conses(conses[(unsigned char)cons->color]);
+  assert(_conses.size() > 0);
+  assert(_conses[cons->refCount] == cons);
+  _conses[cons->refCount] = _conses.back();
+  _conses.back()->refCount = cons->refCount;
+  _conses.pop_back();
+}
+
+void Lisp::ConsFactory::addToVector(Color color, Lisp::Cons * cons)
+{
+  cons->refCount = conses[(unsigned char)color].size();
+  cons->color = color;
+  conses[(unsigned char)color].push_back(cons);
 }
 
 void Lisp::ConsFactory::root(Cons * cons)
 {
-  switch(cons->color)
-  {
-  case Cons::Color::Black:
-    assert(cons == &*blackConses[cons->refCount]);
-    removeFromVector(blackConses, cons);
-    break;
-  case Cons::Color::White:
-    assert(cons == &*whiteConses[cons->refCount]);
-    removeFromVector(whiteConses, cons);
-    break;
-  case Cons::Color::Grey:
-    assert(cons == &*greyConses[cons->refCount]);
-    removeFromVector(greyConses, cons);
-    break;
-  case Cons::Color::Root:
-  case Cons::Color::Void:
-    assert(cons->color != Cons::Color::Root);
-    assert(cons->color != Cons::Color::Void);
-    break;
-  }
+  assert(cons->color != Cons::Color::Root);
+  assert(cons->color != Cons::Color::Void);
+  assert(cons == &*conses[(unsigned char)cons->color][cons->refCount]);
+  removeFromVector(cons);
   cons->color = Cons::Color::Root;
   cons->refCount = 1u;
+  //Todo: check children!!!
 }
 
 void Lisp::ConsFactory::unroot(Cons * cons)
 {
   assert(cons->color == Cons::Color::Root);
-  cons->refCount = blackConses.size();
-  cons->color = Cons::Color::Black;
-  blackConses.push_back(cons);
+  addToVector(toColor, cons);
 }
 
 std::size_t Lisp::ConsFactory::numConses(Color color) const
 {
-  switch(color)
+  if(color == Color::Root)
   {
-  case Color::White:
-    return whiteConses.size();
-  case Color::Grey:
-    return greyConses.size();
-  case Color::Black:
-    return blackConses.size();
-  case Color::Root:
     return
       pages.size() * pageSize
-      - whiteConses.size()
-      - blackConses.size()
-      - greyConses.size()
-      - freeConses.size();
-  case Color::Void:
-    return freeConses.size();
+      - conses[(unsigned char)Color::White].size()
+      - conses[(unsigned char)Color::Black].size()
+      - conses[(unsigned char)Color::Grey].size()
+      - conses[(unsigned char)Color::Void].size();
   }
-  return 0u;
+  else
+  {
+    return conses[(unsigned char)color].size();
+  }
 }
 
 std::vector<Lisp::Cons*> Lisp::ConsFactory::getRootConses() const
@@ -162,24 +148,19 @@ std::vector<Lisp::Cons*> Lisp::ConsFactory::getRootConses() const
 
 std::vector<Lisp::Cons*> Lisp::ConsFactory::getConses(Color color) const
 {
-  switch(color)
+  if(color == Color::Root)
   {
-  case Color::White:
-    return whiteConses;
-  case Color::Grey:
-    return greyConses;
-  case Color::Black:
-    return blackConses;
-  case Color::Root:
     return getRootConses();
-  case Color::Void:
-    return freeConses;
   }
-  return std::vector<Cons*>();
+  else
+  {
+    return conses[(unsigned char)color];
+  }
 }
 
 void Lisp::ConsFactory::cycleGarbageCollector()
 {
+  //Todo lock
   std::unordered_set<Cons*> todo;
   std::unordered_set<Cons*> root;
   std::size_t nRoot = 0;
@@ -218,32 +199,57 @@ void Lisp::ConsFactory::cycleGarbageCollector()
   }
   assert(root.size() >= nRoot);
   assert(pages.size() * pageSize > root.size());
-  blackConses.clear();
-  blackConses.reserve(root.size() - nRoot);
-  freeConses.clear();
-  freeConses.reserve(pages.size() * pageSize - root.size());
-  greyConses.clear();
-  whiteConses.clear();
+  fromColor= Color::White;
+  toColor = Color::Black;
+  conses[(unsigned char)toColor].clear();
+  conses[(unsigned char)toColor].reserve(root.size() - nRoot);
+  conses[(unsigned char)Color::Void].clear();
+  conses[(unsigned char)Color::Void].reserve(pages.size() * pageSize - root.size());
+  conses[(unsigned char)Color::Grey].clear();
+  conses[(unsigned char)fromColor].clear();
   for(auto & page : pages)
   {
     for(std::size_t i = 0; i < pageSize; i++)
     {
-      if(page[i].getColor() != Cons::Color::Root)
+      if(page[i].getColor() != Color::Root)
       {
         if(root.find(&page[i]) == root.end())
         {
-          page[i].color = Cons::Color::Void;
-          page[i].refCount = freeConses.size();
-          freeConses.push_back(&page[i]);
+          addToVector(Color::Void, &page[i]);
         }
         else
         {
-          page[i].color = Cons::Color::Black;
-          page[i].refCount = blackConses.size();
-          blackConses.push_back(&page[i]);
+          addToVector(toColor, &page[i]);
         }
       }
     }
   }
+}
+
+inline void Lisp::ConsFactory::recycleChild(const Cell & cell)
+{
+  auto cons = cell.as<Cons>();
+  if(cons && cons->getColor() == fromColor)
+  {
+    removeFromVector(cons);
+    addToVector(Color::Grey, cons);
+  }
+}
+
+bool Lisp::ConsFactory::stepGargabeCollector()
+{
+  //Todo lock
+  if(!conses[(unsigned char)Color::Grey].empty())
+  {
+    auto cons = conses[(unsigned char)Color::Grey].back();
+    conses[(unsigned char)Color::Grey].pop_back();
+    recycleChild(cons->getCarCell());
+    recycleChild(cons->getCdrCell());
+    removeFromVector(cons);
+    addToVector(toColor, cons);
+    return false;
+  }
+  //Todo swap
+  return true;
 }
 

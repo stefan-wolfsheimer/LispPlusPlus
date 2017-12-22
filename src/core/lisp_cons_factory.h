@@ -52,18 +52,18 @@ namespace Lisp
     std::size_t numConses(Color color) const override;
     std::vector<Cons*> getConses(Color color) const override;
     void cycleGarbageCollector();
+    bool stepGargabeCollector();
 
   private:
     inline std::vector<Cons*> getRootConses() const;
-    inline void removeFromVector(std::vector<Lisp::Cons*> & v,
-                                 Lisp::Cons * cons);
-
+    inline void removeFromVector(Lisp::Cons * cons);
+    inline void addToVector(Color color, Lisp::Cons * cons);
+    inline void recycleChild(const Cell & cell);
     std::size_t pageSize;
+    Color fromColor;
+    Color toColor;
     std::vector<Cons*> pages;
-    std::vector<Cons*> freeConses;
-    std::vector<Cons*> blackConses;
-    std::vector<Cons*> whiteConses;
-    std::vector<Cons*> greyConses;
+    std::vector<Cons*> conses[5];
   };
 }
 
