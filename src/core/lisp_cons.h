@@ -46,8 +46,10 @@ namespace Lisp
     inline Color getColor() const;
     inline void unsetCar();
     inline void unsetCdr();
-    inline Object getCar();
-    inline Object getCdr();
+    inline Object getCar() const;
+    inline Object getCdr() const;
+    inline const Cell & getCarCell() const;
+    inline const Cell & getCdrCell() const;
   private:
     IConsFactory * consFactory;
     Color color;
@@ -111,14 +113,24 @@ void Lisp::Cons::unsetCdr()
   cdr = Lisp::nil;
 }
 
-Lisp::Object Lisp::Cons::getCar()
+Lisp::Object Lisp::Cons::getCar() const
 {
   return Lisp::Object(car);
 }
 
-Lisp::Object Lisp::Cons::getCdr()
+Lisp::Object Lisp::Cons::getCdr() const
 {
   return Lisp::Object(cdr);
+}
+
+const Lisp::Cell & Lisp::Cons::getCarCell() const
+{
+  return car;
+}
+
+const Lisp::Cell & Lisp::Cons::getCdrCell() const
+{
+  return cdr;
 }
 
 namespace Lisp

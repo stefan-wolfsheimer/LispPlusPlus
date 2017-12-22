@@ -69,6 +69,33 @@ public:
     return nConses == n && conses.size() == n && colorOfConsesEqual;
   }
 
+  bool checkChildrenOfRootAndBlackConses()
+  {
+    using Cons = Lisp::Cons;
+    using Color = Cons::Color;
+    auto conses = getConses(Color::Black);
+    auto root = getConses(Color::Root);
+    conses.insert(conses.end(), root.begin(), root.end());
+    for(auto cons : conses)
+    {
+      if(cons->getCarCell().isA<Cons>())
+      {
+        if(cons->getCarCell().as<Cons>()->getColor() == Color::White)
+        {
+          return false;
+        }
+      }
+      if(cons->getCdrCell().isA<Cons>())
+      {
+        if(cons->getCarCell().as<Cons>()->getColor() == Color::White)
+        {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
   bool checkConses(std::size_t nRoot = undef,
                    std::size_t nBlack = undef,
                    std::size_t nGrey = undef,
@@ -105,7 +132,10 @@ public:
       checkNumVoidConses = checkNumConses(Color::Void, nVoid);
       CHECK(checkNumVoidConses);
     }
+    bool childrenOfRootAndBlackConses = checkChildrenOfRootAndBlackConses();
+    CHECK(childrenOfRootAndBlackConses);
     return
+      childrenOfRootAndBlackConses &&
       checkNumRootConses &&
       checkNumBlackConses &&
       checkNumGreyConses &&
