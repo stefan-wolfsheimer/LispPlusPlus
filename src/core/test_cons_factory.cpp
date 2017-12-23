@@ -40,7 +40,8 @@ class ConsFactoryFixture : public Lisp::ConsFactory
 public:
   static const std::size_t undef = std::numeric_limits<std::size_t>::max();
 
-  ConsFactoryFixture(std::size_t pageSize=12) : Lisp::ConsFactory(pageSize)
+  ConsFactoryFixture(std::size_t pageSize=12)
+    : Lisp::ConsFactory(pageSize, 0, 0)
   {
   }
   
@@ -69,7 +70,7 @@ public:
     return nConses == n && conses.size() == n && colorOfConsesEqual;
   }
 
-  bool checkChildrenOfRootAndBlackConses()
+  bool checkChildrenOfRootAndToColorConses()
   {
     using Cons = Lisp::Cons;
     using Color = Cons::Color;
@@ -80,14 +81,14 @@ public:
     {
       if(cons->getCarCell().isA<Cons>())
       {
-        if(cons->getCarCell().as<Cons>()->getColor() == Color::White)
+        if(cons->getCarCell().as<Cons>()->getColor() == getFromColor())
         {
           return false;
         }
       }
       if(cons->getCdrCell().isA<Cons>())
       {
-        if(cons->getCarCell().as<Cons>()->getColor() == Color::White)
+        if(cons->getCarCell().as<Cons>()->getColor() == getFromColor())
         {
           return false;
         }
@@ -132,10 +133,10 @@ public:
       checkNumVoidConses = checkNumConses(Color::Void, nVoid);
       CHECK(checkNumVoidConses);
     }
-    bool childrenOfRootAndBlackConses = checkChildrenOfRootAndBlackConses();
-    CHECK(childrenOfRootAndBlackConses);
+    bool childrenOfRootAndToColorConses = checkChildrenOfRootAndToColorConses();
+    CHECK(childrenOfRootAndToColorConses);
     return
-      childrenOfRootAndBlackConses &&
+      childrenOfRootAndToColorConses &&
       checkNumRootConses &&
       checkNumBlackConses &&
       checkNumGreyConses &&

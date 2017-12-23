@@ -47,26 +47,35 @@ namespace Lisp
                                        Grey=2u,
                                        Black=3u,
                                        Root=4u,
-                                       Free=5u };
-    ConsFactory(std::size_t _pageSize=CONS_PAGE_SIZE);
+                                       GreyRoot=5u,
+                                       Free=6u };
+    ConsFactory(std::size_t _pageSize=CONS_PAGE_SIZE,
+                unsigned short _garbageSteps=1,
+                unsigned short _recycleSteps=1);
     ~ConsFactory();
+
+    Color getFromColor() const;
+    Color getToColor() const;
+
     Cons * make(const Object & car, const Object & cdr);
     void root(Cons * cons);
     void unroot(Cons * cons);
     std::size_t numConses(Color color) const;
     std::vector<Cons*> getConses(Color color) const;
     void cycleGarbageCollector();
-    bool stepGargabeCollector();
-
+    void stepGargabeCollector();
+    void stepRecycle();
   private:
     inline void removeFromVector(Lisp::Cons * cons);
     inline void addToVector(Color color, Lisp::Cons * cons);
     inline void recycleChild(const Cell & cell);
+    unsigned short int garbageSteps;
+    unsigned short int recycleSteps;
     std::size_t pageSize;
     Color fromColor;
     Color toColor;
     std::vector<Cons*> pages;
-    std::vector<Cons*> conses[6];
+    std::vector<Cons*> conses[7];
   };
 }
 

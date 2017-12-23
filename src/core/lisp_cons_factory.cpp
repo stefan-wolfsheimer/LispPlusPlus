@@ -33,8 +33,14 @@ either expressed or implied, of the FreeBSD Project.
 #include "lisp_cons_factory.h"
 #include "lisp_cons.h"
 
-Lisp::ConsFactory::ConsFactory(std::size_t _pageSize) :
-   pageSize(_pageSize), fromColor(Color::White), toColor(Color::Black)
+Lisp::ConsFactory::ConsFactory(std::size_t _pageSize,
+                               unsigned short _garbageSteps,
+                               unsigned short _recycleSteps) :
+   garbageSteps(_garbageSteps),
+   recycleSteps(_recycleSteps),
+   pageSize(_pageSize),
+   fromColor(Color::White),
+   toColor(Color::Black)
 {
 }
 
@@ -49,6 +55,16 @@ Lisp::ConsFactory::~ConsFactory()
     }
     delete [] ptr;
   }
+}
+
+Lisp::ConsFactory::Color Lisp::ConsFactory::getFromColor() const
+{
+  return fromColor;
+}
+
+Lisp::ConsFactory::Color Lisp::ConsFactory::getToColor() const
+{
+  return toColor;
 }
 
 void Lisp::ConsFactory::removeFromVector(Lisp::Cons * cons)
@@ -81,6 +97,8 @@ inline void Lisp::ConsFactory::recycleChild(const Cell & cell)
 Lisp::Cons * Lisp::ConsFactory::make(const Object & car,
                                      const Object & cdr)
 {
+  stepGargabeCollector();
+  stepRecycle();
   Cons * ret;
   std::vector<Cons*> & _conses(conses[(unsigned char)Color::Void]);
   if(_conses.empty())
@@ -114,9 +132,8 @@ void Lisp::ConsFactory::root(Cons * cons)
   removeFromVector(cons);
   cons->refCount = 1u;
   addToVector(Cons::Color::Root, cons);
-  //Todo: test
-  recycleChild(cons->getCarCell());
-  recycleChild(cons->getCdrCell());
+  stepGargabeCollector();
+  stepRecycle();
 }
 
 void Lisp::ConsFactory::unroot(Cons * cons)
@@ -125,6 +142,8 @@ void Lisp::ConsFactory::unroot(Cons * cons)
   assert(cons == &*conses[(unsigned char)Color::Root][cons->index]);
   removeFromVector(cons);
   addToVector(toColor, cons);
+  stepGargabeCollector();
+  stepRecycle();
 }
 
 std::size_t Lisp::ConsFactory::numConses(Color color) const
@@ -197,20 +216,32 @@ void Lisp::ConsFactory::cycleGarbageCollector()
   }
 }
 
-bool Lisp::ConsFactory::stepGargabeCollector()
+void Lisp::ConsFactory::stepGargabeCollector()
 {
   //Todo lock
-  if(!conses[(unsigned char)Color::Grey].empty())
+  for(unsigned short i=0; i < garbageSteps; i++)
   {
-    auto cons = conses[(unsigned char)Color::Grey].back();
-    conses[(unsigned char)Color::Grey].pop_back();
-    recycleChild(cons->getCarCell());
-    recycleChild(cons->getCdrCell());
-    removeFromVector(cons);
-    addToVector(toColor, cons);
-    return false;
+    if(conses[(unsigned char)Color::Grey].empty())
+    {
+      //Todo swap
+      return;
+    }
+    else
+    {
+      auto cons = conses[(unsigned char)Color::Grey].back();
+      conses[(unsigned char)Color::Grey].pop_back();
+      recycleChild(cons->getCarCell());
+      recycleChild(cons->getCdrCell());
+      removeFromVector(cons);
+      addToVector(toColor, cons);
+    }
   }
-  //Todo swap
-  return true;
+}
+
+void Lisp::ConsFactory::stepRecycle()
+{
+  for(unsigned short i=0; i < recycleSteps; i++)
+  {
+  }
 }
 
