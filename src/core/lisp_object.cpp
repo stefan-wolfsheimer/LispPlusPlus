@@ -72,7 +72,7 @@ Lisp::Object & Lisp::Object::operator=(const Object & rhs)
   typeId = rhs.typeId;
   if(rhs.isA<Lisp::Cons>())
   {
-    assert(rhs.data.cons->getColor() == Cons::Color::Root);
+    assert(rhs.data.cons->isRoot());
     assert(rhs.data.cons->getRefCount() > 0u);
     data.cons = rhs.data.cons;
     data.cons->root();
@@ -84,7 +84,7 @@ void Lisp::Object::unsetCons()
 {
   if(isA<Cons>())
   {
-    assert(data.cons->getColor() == Cons::Color::Root);
+    assert(data.cons->isRoot());
     assert(data.cons->getRefCount() > 0u);
     data.cons->unroot();
   }

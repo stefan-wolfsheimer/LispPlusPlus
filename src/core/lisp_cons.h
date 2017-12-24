@@ -44,6 +44,7 @@ namespace Lisp
     static const std::size_t typeId;
     inline std::size_t getRefCount() const;
     inline Color getColor() const;
+    inline bool isRoot() const;
     inline void unsetCar();
     inline void unsetCdr();
     inline Object getCar() const;
@@ -76,6 +77,11 @@ Lisp::Cons::Color Lisp::Cons::getColor() const
   return color;
 }
 
+bool Lisp::Cons::isRoot() const
+{
+  return color == Cons::Color::Root || color == Cons::Color::GreyRoot;
+}
+
 void Lisp::Cons::unroot()
 {
   if(!--refCount)
@@ -86,7 +92,7 @@ void Lisp::Cons::unroot()
 
 void Lisp::Cons::root()
 {
-  if(color == Color::Root)
+  if(isRoot())
   {
     ++refCount;
   }

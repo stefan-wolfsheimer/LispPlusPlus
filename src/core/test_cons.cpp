@@ -68,10 +68,13 @@ TEST_CASE("cons_has_refcount_1", "[Cons]")
   REQUIRE(obj.as<Lisp::Cons>()->getRefCount() == 1u);
 }
 
-TEST_CASE("cons_has_color_root", "[Cons]")
+TEST_CASE("cons_is_root", "[Cons]")
 {
+  using Cons = Lisp::Cons;
+  using Color = Cons::Color;
   Lisp::Vm vm;
   auto obj = vm.cons(Lisp::nil, Lisp::nil);
-  REQUIRE(obj.as<Lisp::Cons>()->getColor() == Lisp::Cons::Color::Root);
+  REQUIRE(obj.as<Cons>()->isRoot());
+  REQUIRE(obj.as<Cons>()->getColor() == Color::GreyRoot);
 }
 

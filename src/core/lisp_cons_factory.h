@@ -46,8 +46,8 @@ namespace Lisp
                                        White=1u,
                                        Grey=2u,
                                        Black=3u,
-                                       Root=4u,
-                                       GreyRoot=5u,
+                                       GreyRoot=4u,
+                                       Root=5u,
                                        Free=6u };
     ConsFactory(std::size_t _pageSize=CONS_PAGE_SIZE,
                 unsigned short _garbageSteps=1,
@@ -68,6 +68,7 @@ namespace Lisp
   private:
     inline void removeFromVector(Lisp::Cons * cons);
     inline void addToVector(Color color, Lisp::Cons * cons);
+    inline void moveAllFromVectorToOther(Color colorFrom, Color colorTo);
     inline void recycleChild(const Cell & cell);
     unsigned short int garbageSteps;
     unsigned short int recycleSteps;

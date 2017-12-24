@@ -84,6 +84,18 @@ void Lisp::ConsFactory::addToVector(Color color, Lisp::Cons * cons)
   conses[(unsigned char)color].push_back(cons);
 }
 
+void Lisp::ConsFactory::moveAllFromVectorToOther(Color colorFrom, Color colorTo)
+{
+  std::vector<Cons*> & vfrom(conses[(unsigned char)colorFrom]);
+  std::vector<Cons*> & vto(conses[(unsigned char)colorTo]);
+  for(auto cons : vfrom)
+    {
+    cons->color = colorTo;
+  }
+  vto.insert(vto.end(), vfrom.begin(), vfrom.end());
+  vfrom.clear();
+}
+
 inline void Lisp::ConsFactory::recycleChild(const Cell & cell)
 {
   auto cons = cell.as<Cons>();
@@ -120,26 +132,26 @@ Lisp::Cons * Lisp::ConsFactory::make(const Object & car,
   ret->cdr = cdr;
   ret->consFactory = this;
   ret->refCount = 1;
-  addToVector(Cons::Color::Root, ret);
+  addToVector(Cons::Color::GreyRoot, ret);
   return ret;
 }
 
 void Lisp::ConsFactory::root(Cons * cons)
 {
-  assert(cons->color != Cons::Color::Root);
+  assert(!cons->isRoot());
   assert(cons->color != Cons::Color::Void);
   assert(cons == &*conses[(unsigned char)cons->color][cons->index]);
   removeFromVector(cons);
   cons->refCount = 1u;
-  addToVector(Cons::Color::Root, cons);
+  addToVector(Cons::Color::GreyRoot, cons);
   stepGargabeCollector();
   stepRecycle();
 }
 
 void Lisp::ConsFactory::unroot(Cons * cons)
 {
-  assert(cons->color == Color::Root);
-  assert(cons == &*conses[(unsigned char)Color::Root][cons->index]);
+  assert(cons->isRoot());
+  assert(cons == &*conses[(unsigned char)cons->color][cons->index]);
   removeFromVector(cons);
   addToVector(toColor, cons);
   stepGargabeCollector();
@@ -164,10 +176,12 @@ void Lisp::ConsFactory::cycleGarbageCollector()
   std::size_t nRoot = 0;
   todo.insert(conses[(unsigned char)Color::Root].begin(),
               conses[(unsigned char)Color::Root].end());
+  todo.insert(conses[(unsigned char)Color::GreyRoot].begin(),
+              conses[(unsigned char)Color::GreyRoot].end());
   while(!todo.empty())
   {
     auto cons = *todo.begin();
-    if(cons->getColor() == Cons::Color::Root)
+    if(cons->isRoot())
     {
       nRoot++;
     }
@@ -196,6 +210,7 @@ void Lisp::ConsFactory::cycleGarbageCollector()
   conses[(unsigned char)Color::Void].clear();
   conses[(unsigned char)Color::Void].reserve(pages.size() * pageSize - root.size());
   conses[(unsigned char)Color::Grey].clear();
+  moveAllFromVectorToOther(Color::GreyRoot, Color::Root);
   conses[(unsigned char)fromColor].clear();
   for(auto & page : pages)
   {

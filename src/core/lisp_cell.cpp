@@ -5,7 +5,7 @@
 
 Lisp::Cell& Lisp::Cell::operator=(const Object & rhs)
 {
-  assert(!rhs.isA<Cons>() || rhs.as<Cons>()->getColor() == Cons::Color::Root);
+  assert(!rhs.isA<Cons>() || rhs.as<Cons>()->isRoot());
   typeId = rhs.typeId;
   data = rhs.data;
   return *this;
