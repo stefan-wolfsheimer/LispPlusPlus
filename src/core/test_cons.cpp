@@ -75,6 +75,5 @@ TEST_CASE("cons_is_root", "[Cons]")
   Lisp::Vm vm;
   auto obj = vm.cons(Lisp::nil, Lisp::nil);
   REQUIRE(obj.as<Cons>()->isRoot());
-  REQUIRE(obj.as<Cons>()->getColor() == Color::WhiteRoot);
 }
 

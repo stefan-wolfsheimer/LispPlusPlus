@@ -40,7 +40,9 @@ Lisp::ConsFactory::ConsFactory(std::size_t _pageSize,
    recycleSteps(_recycleSteps),
    pageSize(_pageSize),
    fromColor(Color::White),
-   toColor(Color::Black)
+   toColor(Color::Black),
+   fromRootColor(Color::WhiteRoot),
+   toRootColor(Color::BlackRoot)
 {
 }
 
@@ -69,12 +71,12 @@ Lisp::ConsFactory::Color Lisp::ConsFactory::getToColor() const
 
 Lisp::ConsFactory::Color Lisp::ConsFactory::getFromRootColor() const
 {
-  return fromColor == Color::White ? Color::WhiteRoot : Color::BlackRoot;
+  return fromRootColor;
 }
 
 Lisp::ConsFactory::Color Lisp::ConsFactory::getToRootColor() const
 {
-  return toColor == Color::White ? Color::WhiteRoot : Color::BlackRoot;
+  return toRootColor;
 }
 
 void Lisp::ConsFactory::removeFromVector(Lisp::Cons * cons)
@@ -106,13 +108,21 @@ void Lisp::ConsFactory::moveAllFromVectorToOther(Color colorFrom, Color colorTo)
   vfrom.clear();
 }
 
-inline void Lisp::ConsFactory::recycleChild(const Cell & cell)
+inline void Lisp::ConsFactory::greyChild(const Cell & cell)
 {
   auto cons = cell.as<Cons>();
-  if(cons && cons->getColor() == fromColor)
+  if(cons)
   {
-    removeFromVector(cons);
-    addToVector(Color::Grey, cons);
+    if(cons->getColor() == fromColor)
+    {
+      removeFromVector(cons);
+      addToVector(Color::Grey, cons);
+    }
+    else if(cons->getColor() == fromRootColor)
+    {
+      removeFromVector(cons);
+      addToVector(Color::GreyRoot, cons);
+    }
   }
 }
 
@@ -177,12 +187,36 @@ void Lisp::ConsFactory::unroot(Cons * cons)
 
 std::size_t Lisp::ConsFactory::numConses(Color color) const
 {
-  return conses[(unsigned char)color].size();
+  if(color == Color::Free)
+  {
+    std::size_t n = 0;
+    for(auto & v : freeConses)
+    {
+      n+= v.size();
+    }
+    return n;
+  }
+  else
+  {
+    return conses[(unsigned char)color].size();
+  }
 }
 
 std::vector<Lisp::Cons*> Lisp::ConsFactory::getConses(Color color) const
 {
-  return conses[(unsigned char)color];
+  if(color == Color::Free)
+  {
+    std::vector<Lisp::Cons*> ret;
+    for(auto & v : freeConses)
+    {
+      ret.insert(ret.end(), v.begin(), v.end());
+    }
+    return ret;
+  }
+  else
+  {
+    return conses[(unsigned char)color];
+  }
 }
 
 void Lisp::ConsFactory::cycleGarbageCollector()
@@ -220,14 +254,16 @@ void Lisp::ConsFactory::cycleGarbageCollector()
   }
   assert(root.size() >= nRoot);
   assert(pages.size() * pageSize > root.size());
-  fromColor= Color::White;
+  fromColor = Color::White;
   toColor = Color::Black;
+  fromRootColor = Color::WhiteRoot;
+  toRootColor = Color::BlackRoot;
   conses[(unsigned char)toColor].clear();
   conses[(unsigned char)toColor].reserve(root.size() - nRoot);
   conses[(unsigned char)Color::Void].clear();
   conses[(unsigned char)Color::Void].reserve(pages.size() * pageSize - root.size());
   conses[(unsigned char)Color::Grey].clear();
-  moveAllFromVectorToOther(Color::BlackRoot, Color::WhiteRoot);
+  moveAllFromVectorToOther(toRootColor, fromRootColor);
   conses[(unsigned char)fromColor].clear();
   for(auto & page : pages)
   {
@@ -253,19 +289,55 @@ void Lisp::ConsFactory::stepGargabeCollector()
   //Todo lock
   for(unsigned short i=0; i < garbageSteps; i++)
   {
-    if(conses[(unsigned char)Color::Grey].empty())
+    if(!conses[(unsigned char)(fromRootColor)].empty())
     {
-      //Todo swap
-      return;
+      // Todo: check edge case: cons == car or cons == cdr !
+      auto cons = conses[(unsigned char)fromRootColor].back();
+      conses[(unsigned char)fromRootColor].pop_back();
+      addToVector(toRootColor, cons);
+      greyChild(cons->getCarCell());
+      greyChild(cons->getCdrCell());
+    }
+    else if(!conses[(unsigned char)Color::GreyRoot].empty())
+    {
+      // Todo: check edge case: cons == car or cons == cdr !
+      auto cons = conses[(unsigned char)Color::GreyRoot].back();
+      conses[(unsigned char)Color::GreyRoot].pop_back();
+      addToVector(toRootColor, cons);
+      greyChild(cons->getCarCell());
+      greyChild(cons->getCdrCell());
+    }
+    else if(!conses[(unsigned char)Color::Grey].empty())
+    {
+      // Todo: check edge case: cons == car or cons == cdr !
+      auto cons = conses[(unsigned char)Color::Grey].back();
+      conses[(unsigned char)Color::Grey].pop_back();
+      addToVector(toColor, cons);
+      greyChild(cons->getCarCell());
+      greyChild(cons->getCdrCell());
     }
     else
     {
-      auto cons = conses[(unsigned char)Color::Grey].back();
-      conses[(unsigned char)Color::Grey].pop_back();
-      recycleChild(cons->getCarCell());
-      recycleChild(cons->getCdrCell());
-      removeFromVector(cons);
-      addToVector(toColor, cons);
+      // Todo test swap
+      assert(conses[(unsigned char)Color::Grey].empty());
+      assert(conses[(unsigned char)Color::GreyRoot].empty());
+      assert(conses[(unsigned char)fromRootColor].empty());
+      freeConses.push_back(std::vector<Cons*>());
+      conses[(unsigned char)fromColor].swap(freeConses.back());
+      if(toColor == Color::White)
+      {
+        toColor = Color::Black;
+        toRootColor = Color::BlackRoot;
+        fromColor = Color::White;
+        fromRootColor = Color::WhiteRoot;
+      }
+      else
+      {
+        toColor = Color::White;
+        toRootColor = Color::WhiteRoot;
+        fromColor = Color::Black;
+        fromRootColor = Color::BlackRoot;
+      }
     }
   }
 }
