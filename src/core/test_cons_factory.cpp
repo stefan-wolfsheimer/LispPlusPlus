@@ -38,7 +38,8 @@ either expressed or implied, of the FreeBSD Project.
 class ConsFactoryFixture : public Lisp::ConsFactory
 {
 public:
-  static const std::size_t undef = std::numeric_limits<std::size_t>::max();
+  const std::size_t undef = std::numeric_limits<std::size_t>::max();
+  const std::size_t error = std::numeric_limits<std::size_t>::max() - 1;
 
   ConsFactoryFixture(std::size_t pageSize=12)
     : Lisp::ConsFactory(pageSize, 0, 0)
@@ -58,24 +59,24 @@ public:
     return true;
   }
 
-  bool checkNumConses(Lisp::Cons::Color color, std::size_t n)
+  std::size_t checkNumConses(Lisp::Cons::Color color)
   {
     bool ret = true;
     auto nConses = numConses(color);
     auto conses = getConses(color);
     auto colorOfConsesEqual = checkColorOfConses(color, conses);
-    CHECK(nConses == n);
-    CHECK(conses.size() == n);
+    CHECK(nConses == conses.size());
     CHECK(colorOfConsesEqual);
-    return nConses == n && conses.size() == n && colorOfConsesEqual;
+    return (nConses == conses.size() && colorOfConsesEqual) ? nConses : error;
   }
 
   bool checkChildrenOfRootAndToColorConses()
   {
     using Cons = Lisp::Cons;
     using Color = Cons::Color;
+    /* Todo use toColor instead of hard coded colors */
     auto conses = getConses(Color::Black);
-    auto root = getConses(Color::Root);
+    auto root = getConses(Color::BlackRoot);
     conses.insert(conses.end(), root.begin(), root.end());
     for(auto cons : conses)
     {
@@ -97,84 +98,53 @@ public:
     return true;
   }
 
-  bool checkConses(std::size_t nRoot = undef,
-                   std::size_t nGreyRoot = undef,
-                   std::size_t nBlack = undef,
-                   std::size_t nGrey = undef,
-                   std::size_t nWhite = undef,
-                   std::size_t nVoid = undef)
+  std::vector<std::size_t> checkConses(bool checkWhiteRoot = true,
+                                       bool checkBlackRoot = true,
+                                       bool checkBlack = true,
+                                       bool checkGrey = true,
+                                       bool checkWhite = true,
+                                       bool checkVoid = true)
   {
-    bool checkNumRootConses = true;
-    bool checkNumGreyRootConses = true;
-    bool checkNumBlackConses = true;
-    bool checkNumGreyConses = true;
-    bool checkNumWhiteConses = true;
-    bool checkNumVoidConses = true;
-    if(nRoot != undef)
-    {
-      checkNumRootConses = checkNumConses(Color::Root, nRoot);
-      CHECK(checkNumRootConses);
-    }
-    if(nGreyRoot != undef)
-    {
-      checkNumGreyRootConses = checkNumConses(Color::GreyRoot, nGreyRoot);
-      CHECK(checkNumGreyRootConses);
-    }
-    if(nBlack != undef)
-    {
-      checkNumBlackConses = checkNumConses(Color::Black, nBlack);
-      CHECK(checkNumBlackConses);
-    }
-    if(nGrey != undef)
-    {
-      checkNumGreyConses = checkNumConses(Color::Grey, nGrey);
-      CHECK(checkNumGreyConses);
-    }
-    if(nWhite != undef)
-    {
-      checkNumWhiteConses = checkNumConses(Color::White, nWhite);
-      CHECK(checkNumWhiteConses);
-    }
-    if(nVoid != undef)
-    {
-      checkNumVoidConses = checkNumConses(Color::Void, nVoid);
-      CHECK(checkNumVoidConses);
-    }
+    std::vector<std::size_t> ret({
+        checkWhiteRoot ? numConses(Color::WhiteRoot) : undef,
+        checkBlackRoot ? numConses(Color::BlackRoot) : undef,
+        checkBlack ? numConses(Color::Black) : undef,
+        checkGrey ? numConses(Color::Grey) : undef,
+        checkWhite ? numConses(Color::White) : undef,
+        checkVoid ? numConses(Color::Void) : undef});
     bool childrenOfRootAndToColorConses = checkChildrenOfRootAndToColorConses();
     CHECK(childrenOfRootAndToColorConses);
-    return
-      childrenOfRootAndToColorConses &&
-      checkNumRootConses &&
-      checkNumGreyRootConses &&
-      checkNumBlackConses &&
-      checkNumGreyConses &&
-      checkNumWhiteConses &&
-      checkNumVoidConses;
+    if(!childrenOfRootAndToColorConses)
+    {
+      ret.push_back(undef);
+    }
+    return ret;
   }
 };
 
 TEST_CASE("empty_cons_factory", "[ConsFactory]")
 {
+  using V = std::vector<std::size_t>;
   ConsFactoryFixture factory(12);
-  REQUIRE(factory.checkConses(0, 0, 0, 0, 0, 0));
+  REQUIRE(factory.checkConses() == V({ 0, 0, 0, 0, 0, 0}));
 }
 
 TEST_CASE("alloc_cons_nil_nil_is_root_with_ref_count_1", "[ConsFactory]")
 {
+  using V = std::vector<std::size_t>;
   using Cons = Lisp::Cons;
-  using Color = Cons::Color;
   ConsFactoryFixture factory(8);
-  Lisp::Cons * ptr = factory.make(Lisp::nil, Lisp::nil);
+  Cons * ptr = factory.make(Lisp::nil, Lisp::nil);
   REQUIRE(ptr);
-  REQUIRE(ptr->getColor() == Color::GreyRoot);
+  REQUIRE(ptr->getColor() == factory.getFromRootColor());
   REQUIRE(ptr->getRefCount() == 1u);
-  REQUIRE(factory.checkConses(0, 1, 0, 0, 0, 7));
+  REQUIRE(factory.checkConses() == V({1, 0, 0, 0, 0, 7}));
 }
 
 TEST_CASE("alloc_cons_cons_cons_has_two_black_conses", "[ConsFactory]")
 {
+  using V = std::vector<std::size_t>;
   using Cons = Lisp::Cons;
-  using Color = Cons::Color;
   using Object = Lisp::Object;
   ConsFactoryFixture factory(8);
   Cons * cons = factory.make(Object(factory.make(Lisp::nil,
@@ -182,13 +152,14 @@ TEST_CASE("alloc_cons_cons_cons_has_two_black_conses", "[ConsFactory]")
                              Object(factory.make(Lisp::nil,
                                                  Lisp::nil)));
   REQUIRE(cons);
-  REQUIRE(cons->getColor() == Color::GreyRoot);
+  REQUIRE(cons->getColor() == factory.getFromRootColor());
   REQUIRE(cons->getRefCount() == 1u);
-  REQUIRE(factory.checkConses(0, 1, 2, 0, 0, 5));
+  REQUIRE(factory.checkConses() == V({1, 0, 2, 0, 0, 5}));
 }
 
 TEST_CASE("alloc_cons_cons_cons_get_car_cdr", "[ConsFactory]")
 {
+  using V = std::vector<std::size_t>;
   using Cons = Lisp::Cons;
   using Object = Lisp::Object;
   ConsFactoryFixture factory(8);
@@ -201,13 +172,14 @@ TEST_CASE("alloc_cons_cons_cons_get_car_cdr", "[ConsFactory]")
     auto cdr = cons->getCdr();
     REQUIRE(car.as<Cons>()->getRefCount() == 1u);
     REQUIRE(cdr.as<Cons>()->getRefCount() == 1u);
-    REQUIRE(factory.checkConses(0, 3, 0, 0, 0, 5));
+    REQUIRE(factory.checkConses() == V({3, 0, 0, 0, 0, 5}));
   }
-  REQUIRE(factory.checkConses(0, 1, 2, 0, 0, 5));
+  REQUIRE(factory.checkConses() == V({1, 0, 2, 0, 0, 5}));
 }
 
 TEST_CASE("recycle_all_unreachable_conses", "[ConsFactory]")
 {
+  using V = std::vector<std::size_t>;
   using Object = Lisp::Object;
   ConsFactoryFixture factory(8);
   Object cons1(factory.make(Object(factory.make(Lisp::nil,
@@ -219,15 +191,16 @@ TEST_CASE("recycle_all_unreachable_conses", "[ConsFactory]")
                                                   Lisp::nil)),
                               Object(factory.make(Lisp::nil,
                                                   Lisp::nil))));
-    REQUIRE(factory.checkConses(0, 2, 4, 0, 0, 2));
+    REQUIRE(factory.checkConses() == V({2, 0, 4, 0, 0, 2}));
   }
-  REQUIRE(factory.checkConses(0, 1, 5, 0, 0, 2));
+  REQUIRE(factory.checkConses() == V({1, 0, 5, 0, 0, 2}));
   factory.cycleGarbageCollector();
-  REQUIRE(factory.checkConses(1, 0, 2, 0, 0, 5));
+  REQUIRE(factory.checkConses() == V({1, 0, 2, 0, 0, 5}));
 }
 
 TEST_CASE("object_copy_constructor_cons", "[ConsFactory]")
 {
+  using V = std::vector<std::size_t>;
   using Cons = Lisp::Cons;
   using Object = Lisp::Object;
   ConsFactoryFixture factory(8);
@@ -241,11 +214,12 @@ TEST_CASE("object_copy_constructor_cons", "[ConsFactory]")
   REQUIRE(cons2.isA<Cons>());
   REQUIRE(cons2.as<Cons>() == cons1.as<Cons>());
   REQUIRE(cons2.as<Cons>()->getRefCount() == 2u);
-  REQUIRE(factory.checkConses(0, 1, 2, 0, 0, 5));
+  REQUIRE(factory.checkConses() == V({1, 0, 2, 0, 0, 5}));
 }
 
 TEST_CASE("object_assignment_operator_cons_set_nil", "[ConsFactory]")
 {
+  using V = std::vector<std::size_t>;
   using Cons = Lisp::Cons;
   using Object = Lisp::Object;
   using Nil = Lisp::Nil;
@@ -256,22 +230,23 @@ TEST_CASE("object_assignment_operator_cons_set_nil", "[ConsFactory]")
                                                 Lisp::nil))));
   Object cons2(cons1);
   REQUIRE(cons1.as<Cons>()->getRefCount() == 2u);
-  REQUIRE(factory.checkConses(0, 1, 2, 0, 0, 5));
+  REQUIRE(factory.checkConses() == V({1, 0, 2, 0, 0, 5}));
   cons2 = Lisp::nil;
   REQUIRE(cons1.as<Cons>()->getRefCount() == 1u);
-  REQUIRE(factory.checkConses(0, 1, 2, 0, 0, 5));
+  REQUIRE(factory.checkConses() == V({1, 0, 2, 0, 0, 5}));
   cons1 = Lisp::nil;
   REQUIRE(cons1.isA<Nil>());
-  REQUIRE(factory.checkConses(0, 0, 3, 0, 0, 5));
+  REQUIRE(factory.checkConses() == V({0, 0, 3, 0, 0, 5}));
 }
 
 TEST_CASE("object_assignment_operator_nil_set_cons", "[ConsFactory]")
 {
+  using V = std::vector<std::size_t>;
   using Cons = Lisp::Cons;
   using Object = Lisp::Object;
   ConsFactoryFixture factory(8);
   Object cons1 = Lisp::nil;
-  REQUIRE(factory.checkConses(0, 0, 0, 0, 0, 0));
+  REQUIRE(factory.checkConses() == V({0, 0, 0, 0, 0, 0}));
   Object cons2(factory.make(Object(factory.make(Lisp::nil,
                                                 Lisp::nil)),
                             Object(factory.make(Lisp::nil,
@@ -279,15 +254,16 @@ TEST_CASE("object_assignment_operator_nil_set_cons", "[ConsFactory]")
   REQUIRE(cons2.as<Cons>()->getRefCount() == 1u);
   cons1 = cons2;
   REQUIRE(cons2.as<Cons>()->getRefCount() == 2u);
-  REQUIRE(factory.checkConses(0, 1, 2, 0, 0, 5));
+  REQUIRE(factory.checkConses() == V({1, 0, 2, 0, 0, 5}));
 }
 
 TEST_CASE("object_assignment_operator_cons_set_cons", "[ConsFactory]")
 {
+  using V = std::vector<std::size_t>;
   using Cons = Lisp::Cons;
   using Object = Lisp::Object;
   ConsFactoryFixture factory(8);
-  REQUIRE(factory.checkConses(0, 0, 0, 0, 0, 0));
+  REQUIRE(factory.checkConses() == V({0, 0, 0, 0, 0, 0}));
   Object cons1(factory.make(Object(factory.make(Lisp::nil,
                                                 Lisp::nil)),
                             Object(factory.make(Lisp::nil,
@@ -297,13 +273,13 @@ TEST_CASE("object_assignment_operator_cons_set_cons", "[ConsFactory]")
                                                 Lisp::nil)),
                             Object(factory.make(Lisp::nil,
                                                 Lisp::nil))));
-  REQUIRE(factory.checkConses(0, 2, 4, 0, 0, 2));
+  REQUIRE(factory.checkConses() == V({2, 0, 4, 0, 0, 2}));
   REQUIRE(cons1.as<Cons>()->getRefCount() == 1u);
   REQUIRE(cons2.as<Cons>()->getRefCount() == 1u);
   cons1 = cons2;
   REQUIRE(cons1.isA<Cons>());
   REQUIRE(cons1.as<Cons>() == cons2.as<Cons>());
   REQUIRE(cons1.as<Cons>()->getRefCount() == 2u);
-  REQUIRE(factory.checkConses(0, 1, 5, 0, 0, 2));
+  REQUIRE(factory.checkConses() == V({1, 0, 5, 0, 0, 2}));
 }
 

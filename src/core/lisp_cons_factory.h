@@ -46,8 +46,8 @@ namespace Lisp
                                        White=1u,
                                        Grey=2u,
                                        Black=3u,
-                                       GreyRoot=4u,
-                                       Root=5u,
+                                       WhiteRoot=4u,
+                                       BlackRoot=5u,
                                        Free=6u };
     ConsFactory(std::size_t _pageSize=CONS_PAGE_SIZE,
                 unsigned short _garbageSteps=1,
@@ -56,6 +56,8 @@ namespace Lisp
 
     Color getFromColor() const;
     Color getToColor() const;
+    Color getFromRootColor() const;
+    Color getToRootColor() const;
 
     Cons * make(const Object & car, const Object & cdr);
     void root(Cons * cons);

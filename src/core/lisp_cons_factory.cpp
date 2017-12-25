@@ -67,6 +67,16 @@ Lisp::ConsFactory::Color Lisp::ConsFactory::getToColor() const
   return toColor;
 }
 
+Lisp::ConsFactory::Color Lisp::ConsFactory::getFromRootColor() const
+{
+  return fromColor == Color::White ? Color::WhiteRoot : Color::BlackRoot;
+}
+
+Lisp::ConsFactory::Color Lisp::ConsFactory::getToRootColor() const
+{
+  return toColor == Color::White ? Color::WhiteRoot : Color::BlackRoot;
+}
+
 void Lisp::ConsFactory::removeFromVector(Lisp::Cons * cons)
 {
   std::vector<Cons*> & _conses(conses[(unsigned char)cons->color]);
@@ -89,7 +99,7 @@ void Lisp::ConsFactory::moveAllFromVectorToOther(Color colorFrom, Color colorTo)
   std::vector<Cons*> & vfrom(conses[(unsigned char)colorFrom]);
   std::vector<Cons*> & vto(conses[(unsigned char)colorTo]);
   for(auto cons : vfrom)
-    {
+  {
     cons->color = colorTo;
   }
   vto.insert(vto.end(), vfrom.begin(), vfrom.end());
@@ -132,7 +142,11 @@ Lisp::Cons * Lisp::ConsFactory::make(const Object & car,
   ret->cdr = cdr;
   ret->consFactory = this;
   ret->refCount = 1;
-  addToVector(Cons::Color::GreyRoot, ret);
+  
+  addToVector((toColor == Cons::Color::Black ?
+               Cons::Color::WhiteRoot :
+               Cons::Color::BlackRoot),
+              ret);
   return ret;
 }
 
@@ -143,7 +157,10 @@ void Lisp::ConsFactory::root(Cons * cons)
   assert(cons == &*conses[(unsigned char)cons->color][cons->index]);
   removeFromVector(cons);
   cons->refCount = 1u;
-  addToVector(Cons::Color::GreyRoot, cons);
+  addToVector((toColor == Cons::Color::Black ?
+               Cons::Color::WhiteRoot :
+               Cons::Color::BlackRoot),
+              cons);
   stepGargabeCollector();
   stepRecycle();
 }
@@ -174,10 +191,10 @@ void Lisp::ConsFactory::cycleGarbageCollector()
   std::unordered_set<Cons*> todo;
   std::unordered_set<Cons*> root;
   std::size_t nRoot = 0;
-  todo.insert(conses[(unsigned char)Color::Root].begin(),
-              conses[(unsigned char)Color::Root].end());
-  todo.insert(conses[(unsigned char)Color::GreyRoot].begin(),
-              conses[(unsigned char)Color::GreyRoot].end());
+  todo.insert(conses[(unsigned char)Color::BlackRoot].begin(),
+              conses[(unsigned char)Color::BlackRoot].end());
+  todo.insert(conses[(unsigned char)Color::WhiteRoot].begin(),
+              conses[(unsigned char)Color::WhiteRoot].end());
   while(!todo.empty())
   {
     auto cons = *todo.begin();
@@ -210,13 +227,13 @@ void Lisp::ConsFactory::cycleGarbageCollector()
   conses[(unsigned char)Color::Void].clear();
   conses[(unsigned char)Color::Void].reserve(pages.size() * pageSize - root.size());
   conses[(unsigned char)Color::Grey].clear();
-  moveAllFromVectorToOther(Color::GreyRoot, Color::Root);
+  moveAllFromVectorToOther(Color::BlackRoot, Color::WhiteRoot);
   conses[(unsigned char)fromColor].clear();
   for(auto & page : pages)
   {
     for(std::size_t i = 0; i < pageSize; i++)
     {
-      if(page[i].getColor() != Color::Root)
+      if(page[i].getColor() != Color::WhiteRoot)
       {
         if(root.find(&page[i]) == root.end())
         {

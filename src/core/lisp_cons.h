@@ -79,7 +79,7 @@ Lisp::Cons::Color Lisp::Cons::getColor() const
 
 bool Lisp::Cons::isRoot() const
 {
-  return color == Cons::Color::Root || color == Cons::Color::GreyRoot;
+  return color == Cons::Color::WhiteRoot || color == Cons::Color::BlackRoot;
 }
 
 void Lisp::Cons::unroot()
