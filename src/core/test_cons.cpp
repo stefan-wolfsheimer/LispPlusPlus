@@ -71,7 +71,6 @@ TEST_CASE("cons_has_refcount_1", "[Cons]")
 TEST_CASE("cons_is_root", "[Cons]")
 {
   using Cons = Lisp::Cons;
-  using Color = Cons::Color;
   Lisp::Vm vm;
   auto obj = vm.cons(Lisp::nil, Lisp::nil);
   REQUIRE(obj.as<Cons>()->isRoot());
