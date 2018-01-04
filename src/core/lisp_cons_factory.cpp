@@ -32,7 +32,6 @@ either expressed or implied, of the FreeBSD Project.
 #include <unordered_set>
 #include "lisp_cons_factory.h"
 #include "lisp_cons.h"
-
 Lisp::ConsFactory::ConsFactory(std::size_t _pageSize,
                                unsigned short _garbageSteps,
                                unsigned short _recycleSteps) :
@@ -219,23 +218,34 @@ std::vector<Lisp::Cons*> Lisp::ConsFactory::getConses(Color color) const
   }
 }
 
-void Lisp::ConsFactory::cycleGarbageCollector()
+std::vector<Lisp::Cons*> Lisp::ConsFactory::getConses(Color begin,
+                                                      Color end) const
 {
-  //Todo lock
+  std::vector<Lisp::Cons*> ret;
+  for(unsigned int curr = (unsigned int)begin;
+      curr < (unsigned int) end;
+      ++curr)
+  {
+    auto tmp = getConses((Color)curr);
+    ret.insert(ret.end(), tmp.begin(), tmp.end());
+  }
+  return ret;
+}
+
+std::unordered_set<Lisp::Cons*>
+Lisp::ConsFactory::getReachableConsesAsSet() const
+{
   std::unordered_set<Cons*> todo;
   std::unordered_set<Cons*> root;
-  std::size_t nRoot = 0;
   todo.insert(conses[(unsigned char)Color::BlackRoot].begin(),
               conses[(unsigned char)Color::BlackRoot].end());
+  todo.insert(conses[(unsigned char)Color::GreyRoot].begin(),
+              conses[(unsigned char)Color::GreyRoot].end());
   todo.insert(conses[(unsigned char)Color::WhiteRoot].begin(),
               conses[(unsigned char)Color::WhiteRoot].end());
   while(!todo.empty())
   {
     auto cons = *todo.begin();
-    if(cons->isRoot())
-    {
-      nRoot++;
-    }
     todo.erase(cons);
     root.insert(cons);
     if(cons->car.isA<Cons>())
@@ -245,11 +255,60 @@ void Lisp::ConsFactory::cycleGarbageCollector()
       {
         todo.insert(car);
       }
+    }
+    if(cons->cdr.isA<Cons>())
+    {
       auto cdr = cons->cdr.as<Cons>();
       if(todo.find(cdr) == todo.end() && root.find(cdr) == root.end())
       {
         todo.insert(cdr);
       }
+    }
+  }
+  return root;
+}
+
+std::vector<Lisp::Cons*> Lisp::ConsFactory::getReachableConses() const
+{
+  //Todo lock
+  std::unordered_set<Cons*> root = getReachableConsesAsSet();
+  std::vector<Cons*> ret(root.begin(), root.end());
+  return ret;
+}
+
+Lisp::ConsFactory::ConsGraph Lisp::ConsFactory::getConsGraph() const
+{
+  //Todo lock
+  std::unordered_set<Cons*> root = getReachableConsesAsSet();
+  ConsGraph ret;
+  for(auto cons : root)
+  {
+    ret[cons] = ConsSet();
+  }
+  for(auto cons : root)
+  {
+    if(cons->getCarCell().isA<Lisp::Cons>())
+    {
+      ret[cons->getCarCell().as<Lisp::Cons>()].insert(cons);
+    }
+    if(cons->getCdrCell().isA<Lisp::Cons>())
+    {
+      ret[cons->getCdrCell().as<Lisp::Cons>()].insert(cons);
+    }
+  }
+  return ret;
+}
+
+void Lisp::ConsFactory::cycleGarbageCollector()
+{
+  //Todo lock
+  std::unordered_set<Cons*> root = getReachableConsesAsSet();
+  std::size_t nRoot = 0;
+  for(auto cons : root)
+  {
+    if(cons->isRoot())
+    {
+      nRoot++;
     }
   }
   assert(root.size() >= nRoot);

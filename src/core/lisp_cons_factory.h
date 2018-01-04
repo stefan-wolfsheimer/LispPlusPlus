@@ -30,7 +30,8 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
 #include <vector>
-
+#include <unordered_set>
+#include <unordered_map>
  // @todo move to config.h
 #define CONS_PAGE_SIZE 512
 
@@ -50,6 +51,9 @@ namespace Lisp
                                        GreyRoot=5u,
                                        BlackRoot=6u,
                                        Free=7u };
+    typedef std::unordered_set<const Lisp::Cons*> ConsSet;
+    typedef std::unordered_map<const Lisp::Cons*, ConsSet> ConsGraph;
+
     ConsFactory(std::size_t _pageSize=CONS_PAGE_SIZE,
                 unsigned short _garbageSteps=1,
                 unsigned short _recycleSteps=1);
@@ -65,6 +69,9 @@ namespace Lisp
     void unroot(Cons * cons);
     std::size_t numConses(Color color) const;
     std::vector<Cons*> getConses(Color color) const;
+    std::vector<Cons*> getConses(Color begin, Color end) const;
+    std::vector<Cons*> getReachableConses() const;
+    ConsGraph getConsGraph() const;
     void cycleGarbageCollector();
     void stepGargabeCollector();
     void stepRecycle();
@@ -73,6 +80,7 @@ namespace Lisp
     inline void addToVector(Color color, Lisp::Cons * cons);
     inline void moveAllFromVectorToOther(Color colorFrom, Color colorTo);
     inline void greyChild(const Cell & cell);
+    std::unordered_set<Cons*> getReachableConsesAsSet() const;
     unsigned short int garbageSteps;
     unsigned short int recycleSteps;
     std::size_t pageSize;
