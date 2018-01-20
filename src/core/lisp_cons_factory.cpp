@@ -32,6 +32,9 @@ either expressed or implied, of the FreeBSD Project.
 #include <unordered_set>
 #include "lisp_cons_factory.h"
 #include "lisp_cons.h"
+
+using Cons = Lisp::Cons;
+
 Lisp::ConsFactory::ConsFactory(std::size_t _pageSize,
                                unsigned short _garbageSteps,
                                unsigned short _recycleSteps) :
@@ -78,7 +81,7 @@ Lisp::ConsFactory::Color Lisp::ConsFactory::getToRootColor() const
   return toRootColor;
 }
 
-void Lisp::ConsFactory::removeFromVector(Lisp::Cons * cons)
+void Lisp::ConsFactory::removeFromVector(Cons * cons)
 {
   std::vector<Cons*> & _conses(conses[(unsigned char)cons->color]);
   assert(_conses.size() > 0);
@@ -88,7 +91,7 @@ void Lisp::ConsFactory::removeFromVector(Lisp::Cons * cons)
   _conses.pop_back();
 }
 
-void Lisp::ConsFactory::addToVector(Color color, Lisp::Cons * cons)
+void Lisp::ConsFactory::addToVector(Color color, Cons * cons)
 {
   cons->index = conses[(unsigned char)color].size();
   cons->color = color;
@@ -201,11 +204,11 @@ std::size_t Lisp::ConsFactory::numConses(Color color) const
   }
 }
 
-std::vector<Lisp::Cons*> Lisp::ConsFactory::getConses(Color color) const
+std::vector<Cons*> Lisp::ConsFactory::getConses(Color color) const
 {
   if(color == Color::Free)
   {
-    std::vector<Lisp::Cons*> ret;
+    std::vector<Cons*> ret;
     for(auto & v : freeConses)
     {
       ret.insert(ret.end(), v.begin(), v.end());
@@ -218,10 +221,10 @@ std::vector<Lisp::Cons*> Lisp::ConsFactory::getConses(Color color) const
   }
 }
 
-std::vector<Lisp::Cons*> Lisp::ConsFactory::getConses(Color begin,
-                                                      Color end) const
+std::vector<Cons*> Lisp::ConsFactory::getConses(Color begin,
+                                                Color end) const
 {
-  std::vector<Lisp::Cons*> ret;
+  std::vector<Cons*> ret;
   for(unsigned int curr = (unsigned int)begin;
       curr < (unsigned int) end;
       ++curr)
@@ -232,8 +235,12 @@ std::vector<Lisp::Cons*> Lisp::ConsFactory::getConses(Color begin,
   return ret;
 }
 
-std::unordered_set<Lisp::Cons*>
-Lisp::ConsFactory::getReachableConsesAsSet() const
+std::vector<Cons*> Lisp::ConsFactory::getRootConses() const
+{
+  return getConses(Lisp::Cons::Color::WhiteRoot, Lisp::Cons::Color::Free);
+}
+
+std::unordered_set<Cons*> Lisp::ConsFactory::getReachableConsesAsSet() const
 {
   std::unordered_set<Cons*> todo;
   std::unordered_set<Cons*> root;
@@ -268,34 +275,11 @@ Lisp::ConsFactory::getReachableConsesAsSet() const
   return root;
 }
 
-std::vector<Lisp::Cons*> Lisp::ConsFactory::getReachableConses() const
+std::vector<Cons*> Lisp::ConsFactory::getReachableConses() const
 {
   //Todo lock
   std::unordered_set<Cons*> root = getReachableConsesAsSet();
   std::vector<Cons*> ret(root.begin(), root.end());
-  return ret;
-}
-
-Lisp::ConsFactory::ConsGraph Lisp::ConsFactory::getConsGraph() const
-{
-  //Todo lock
-  std::unordered_set<Cons*> root = getReachableConsesAsSet();
-  ConsGraph ret;
-  for(auto cons : root)
-  {
-    ret[cons] = ConsSet();
-  }
-  for(auto cons : root)
-  {
-    if(cons->getCarCell().isA<Lisp::Cons>())
-    {
-      ret[cons->getCarCell().as<Lisp::Cons>()].insert(cons);
-    }
-    if(cons->getCdrCell().isA<Lisp::Cons>())
-    {
-      ret[cons->getCdrCell().as<Lisp::Cons>()].insert(cons);
-    }
-  }
   return ret;
 }
 

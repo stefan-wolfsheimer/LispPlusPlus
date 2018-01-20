@@ -29,27 +29,33 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include <limits>
-#include <unordered_set>
 #include <catch.hpp>
 #include "lisp_cons_factory.h"
+#include "lisp_cons_graph.h"
+#include "lisp_cons_graph_node.h"
+#include "lisp_cons_graph_edge.h"
 #include "lisp_object.h"
 #include "lisp_cons.h"
 #include "lisp_nil.h"
 
-#include <iostream>
-class ConsFactoryFixture : public Lisp::ConsFactory
+using Cons = Lisp::Cons;
+using ConsFactory = Lisp::ConsFactory;
+using Color = Cons::Color;
+using Object = Lisp::Object;
+using Nil = Lisp::Nil;
+using ConsGraph = Lisp::ConsGraph;
+
+class ConsFactoryFixture : public ConsFactory
 {
 public:
-  const std::size_t undef = std::numeric_limits<std::size_t>::max();
-  const std::size_t error = std::numeric_limits<std::size_t>::max() - 1;
+  static const std::size_t undef; //= std::numeric_limits<std::size_t>::max();
+  static const std::size_t error; //= std::numeric_limits<std::size_t>::max() - 1;
 
-  ConsFactoryFixture(std::size_t pageSize=12)
-    : Lisp::ConsFactory(pageSize, 0, 0)
+  ConsFactoryFixture(std::size_t pageSize=12) : ConsFactory(pageSize, 0, 0)
   {
   }
   
-  bool checkColorOfConses(Lisp::Cons::Color color,
-                          const std::vector<Lisp::Cons*> conses)
+  bool checkColorOfConses(Color color, const std::vector<Cons*> conses)
   {
     for(auto cons : conses)
     {
@@ -61,7 +67,7 @@ public:
     return true;
   }
 
-  std::size_t checkNumConses(Lisp::Cons::Color color)
+  std::size_t checkNumConses(Color color)
   {
     auto nConses = numConses(color);
     auto conses = getConses(color);
@@ -77,10 +83,8 @@ public:
 
   bool checkChildrenOfRootAndToColorConses() const
   {
-    using Cons = Lisp::Cons;
     auto conses = getConses(getToColor());
     auto root = getConses(getToRootColor());
-    conses.insert(conses.end(), root.begin(), root.end());
     for(auto cons : conses)
     {
       if(cons->getCarCell().isA<Cons>())
@@ -133,68 +137,83 @@ public:
   bool checkParents(const Lisp::Cons * cons,
                     const std::vector<const Lisp::Cons*> & parents)
   {
-    auto graph = getConsGraph();
-    auto itr = graph.find(cons);
-    if(itr == graph.end())
+    ConsGraph graph(*this);
+    auto node = graph.findNode(cons);
+    if(node)
     {
-      return false;
+      return node->getConsParents() ==
+         std::unordered_set<const Cons*>(parents.begin(),
+                                         parents.end());
     }
     else
     {
-      ConsSet consSet(parents.begin(), parents.end());
-      return itr->second == consSet;
+      return false;
     }
   }
 
-  bool checkParents(const Lisp::Cons * cons,
-                    const Lisp::Cons * p1)
+  bool checkParents(const Cons * cons, const Cons * p1)
   {
-    return checkParents(cons, std::vector<const Lisp::Cons*>({p1}));
+    return checkParents(cons, std::vector<const Cons*>({p1}));
   }
 
-  bool checkParents(const Lisp::Cons * cons,
-                    const Lisp::Cons * p1,
-                    const Lisp::Cons * p2)
+  bool checkParents(const Cons * cons, const Cons * p1, const Cons * p2)
   {
-    return checkParents(cons, std::vector<const Lisp::Cons*>({p1, p2}));
+    return checkParents(cons, std::vector<const Cons*>({p1, p2}));
   }
 
-  bool checkParents(const Lisp::Cons * cons,
-                    const Lisp::Cons * p1,
-                    const Lisp::Cons * p2,
-                    const Lisp::Cons * p3)
+  bool checkParents(const Cons * cons,
+                    const Cons * p1,
+                    const Cons * p2,
+                    const Cons * p3)
   {
-    return checkParents(cons, std::vector<const Lisp::Cons*>({p1, p2, p3}));
+    return checkParents(cons, std::vector<const Cons*>({p1, p2, p3}));
   }
 
-  bool checkParents(const Lisp::Cons * cons,
-                    const Lisp::Cons * p1,
-                    const Lisp::Cons * p2,
-                    const Lisp::Cons * p3,
-                    const Lisp::Cons * p4)
+  bool checkParents(const Cons * cons,
+                    const Cons * p1,
+                    const Cons * p2,
+                    const Cons * p3,
+                    const Cons * p4)
   {
-    return checkParents(cons, std::vector<const Lisp::Cons*>({p1, p2, p3, p4}));
+    return checkParents(cons, std::vector<const Cons*>({p1, p2, p3, p4}));
+  }
+
+  std::size_t getWeight(const Cons * parent, const Cons * child) const
+  {
+    ConsGraph graph(*this);
+    auto edge = graph.findEdge(parent, child);
+    if(edge)
+    {
+      return edge->getWeight();
+    }
+    else
+    {
+      return undef;
+    }
   }
 };
 
-std::unordered_set<Lisp::Cons*> setOfConses(const std::vector<Lisp::Cons*> & conses)
+const std::size_t ConsFactoryFixture::undef = std::numeric_limits<std::size_t>::max();
+const std::size_t ConsFactoryFixture::error = std::numeric_limits<std::size_t>::max() - 1;
+
+
+std::unordered_set<Cons*> setOfConses(const std::vector<Cons*> & conses)
 {
-  std::unordered_set<Lisp::Cons*> ret(conses.begin(), conses.end());
-  return ret;
+  return std::unordered_set<Cons*>(conses.begin(), conses.end());
 }
 
-std::unordered_set<Lisp::Cons*> setOfConses(Lisp::Cons * c1 = nullptr,
-                                            Lisp::Cons * c2 = nullptr,
-                                            Lisp::Cons * c3 = nullptr,
-                                            Lisp::Cons * c4 = nullptr,
-                                            Lisp::Cons * c5 = nullptr,
-                                            Lisp::Cons * c6 = nullptr,
-                                            Lisp::Cons * c7 = nullptr,
-                                            Lisp::Cons * c8 = nullptr,
-                                            Lisp::Cons * c9 = nullptr,
-                                            Lisp::Cons * c10 = nullptr)
+std::unordered_set<Cons*> setOfConses(Cons * c1 = nullptr,
+                                      Cons * c2 = nullptr,
+                                      Cons * c3 = nullptr,
+                                      Cons * c4 = nullptr,
+                                      Cons * c5 = nullptr,
+                                      Cons * c6 = nullptr,
+                                      Cons * c7 = nullptr,
+                                      Cons * c8 = nullptr,
+                                      Cons * c9 = nullptr,
+                                      Cons * c10 = nullptr)
 {
-  std::unordered_set<Lisp::Cons*> ret;
+  std::unordered_set<Cons*> ret;
   if(c1) ret.insert(c1);
   if(c2) ret.insert(c2);
   if(c3) ret.insert(c3);
@@ -213,26 +232,30 @@ TEST_CASE("empty_cons_factory", "[ConsFactory]")
   using V = std::vector<std::size_t>;
   ConsFactoryFixture factory(12);
   REQUIRE(factory.checkConses() == V({ 0, 0, 0, 0, 0, 0, 0, 0}));
+  REQUIRE(factory.getWeight(nullptr, nullptr) == ConsFactoryFixture::undef);
 }
 
 TEST_CASE("alloc_cons_nil_nil_is_root_with_ref_count_1", "[ConsFactory]")
 {
   using V = std::vector<std::size_t>;
-  using Cons = Lisp::Cons;
   ConsFactoryFixture factory(8);
   Cons * ptr = factory.make(Lisp::nil, Lisp::nil);
   REQUIRE(ptr);
   REQUIRE(ptr->getColor() == factory.getFromRootColor());
   REQUIRE(ptr->getRefCount() == 1u);
   REQUIRE(factory.checkConses() == V({1, 0, 0, 0, 0, 0, 7, 0}));
+  REQUIRE(factory.getWeight(nullptr, ptr) == 1u);
 }
 
 TEST_CASE("alloc_cons_cons_cons_has_two_black_conses", "[ConsFactory]")
 {
   using V = std::vector<std::size_t>;
-  using Cons = Lisp::Cons;
-  using Object = Lisp::Object;
   ConsFactoryFixture factory(8);
+  /*          
+              o
+             / \
+            o   o 
+  */
   Cons * cons = factory.make(Object(factory.make(Lisp::nil,
                                                  Lisp::nil)),
                              Object(factory.make(Lisp::nil,
@@ -243,13 +266,14 @@ TEST_CASE("alloc_cons_cons_cons_has_two_black_conses", "[ConsFactory]")
   REQUIRE(cons->getColor() == factory.getFromRootColor());
   REQUIRE(cons->getRefCount() == 1u);
   REQUIRE(factory.checkConses() == V({1, 0, 0, 2, 0, 0, 5, 0}));
+  REQUIRE(factory.getWeight(cons, cons) == ConsFactoryFixture::undef);
+  REQUIRE(factory.getWeight(cons, cons->getCarCell().as<Lisp::Cons>()) == 1u);
+  REQUIRE(factory.getWeight(cons, cons->getCdrCell().as<Lisp::Cons>()) == 1u);
 }
 
 TEST_CASE("alloc_cons_cons_cons_get_car_cdr", "[ConsFactory]")
 {
   using V = std::vector<std::size_t>;
-  using Cons = Lisp::Cons;
-  using Object = Lisp::Object;
   ConsFactoryFixture factory(8);
   Cons * cons = factory.make(Object(factory.make(Lisp::nil,
                                                  Lisp::nil)),
@@ -268,8 +292,6 @@ TEST_CASE("alloc_cons_cons_cons_get_car_cdr", "[ConsFactory]")
 TEST_CASE("get_all_reachable_conses", "[ConsFactory]")
 {
   using V = std::vector<std::size_t>;
-  using Object = Lisp::Object;
-  using Cons = Lisp::Cons;
   ConsFactoryFixture factory(8);
   Object cons3;
   Object cons1(factory.make(Object(factory.make(Lisp::nil,
@@ -304,6 +326,31 @@ TEST_CASE("get_all_reachable_conses", "[ConsFactory]")
                         cons2.as<Cons>()->getCarCell().as<Cons>(),
                         cons2.as<Cons>()->getCdrCell().as<Cons>(),
                         cons3.as<Cons>()));
+    /*
+         o        o    o
+        / \      / \  / \
+       o   o    o   o  
+    */
+    auto c1 = cons1.as<Cons>();
+    auto c2 = cons2.as<Cons>();
+    auto c3 = cons3.as<Cons>();
+    auto undef = ConsFactoryFixture::undef;
+    REQUIRE(c3->getCarCell().as<Cons>() == c2->getCarCell().as<Cons>());
+    REQUIRE(factory.checkParents(c3->getCarCell().as<Cons>(),
+                                 c3,
+                                 c2));
+    REQUIRE(factory.checkParents(c2->getCarCell().as<Cons>(),
+                                 c2,
+                                 c3));
+
+    REQUIRE(factory.getWeight(c1, c1->getCarCell().as<Cons>()) == 1u);
+    REQUIRE(factory.getWeight(c1, c1->getCdrCell().as<Cons>()) == 1u);
+    REQUIRE(factory.getWeight(c2, c2->getCarCell().as<Cons>()) == 0u);
+    REQUIRE(factory.getWeight(c2, c2->getCdrCell().as<Cons>()) == 1u);
+    REQUIRE(factory.getWeight(c3, c3->getCarCell().as<Cons>()) == 0u);
+    REQUIRE(factory.getWeight(c3, c3->getCdrCell().as<Cons>()) == undef);
+    
+
   }
   REQUIRE(factory.checkConses() == V({2, 0, 0, 5, 0, 0, 1, 0}));
   REQUIRE(setOfConses(factory.getReachableConses()) ==
@@ -318,9 +365,6 @@ TEST_CASE("recycle_all_unreachable_conses", "[ConsFactory]")
 {
   // Todo check reachable
   using V = std::vector<std::size_t>;
-  using Object = Lisp::Object;
-  using Cons = Lisp::Cons;
-  using Color = Cons::Color;
   ConsFactoryFixture factory(8);
   Object cons3;
   Object cons1(factory.make(Object(factory.make(Lisp::nil,
@@ -358,8 +402,6 @@ TEST_CASE("recycle_all_unreachable_conses", "[ConsFactory]")
 TEST_CASE("object_copy_constructor_cons", "[ConsFactory]")
 {
   using V = std::vector<std::size_t>;
-  using Cons = Lisp::Cons;
-  using Object = Lisp::Object;
   ConsFactoryFixture factory(8);
   Object cons1(factory.make(Object(factory.make(Lisp::nil,
                                                 Lisp::nil)),
@@ -377,9 +419,6 @@ TEST_CASE("object_copy_constructor_cons", "[ConsFactory]")
 TEST_CASE("object_assignment_operator_cons_set_nil", "[ConsFactory]")
 {
   using V = std::vector<std::size_t>;
-  using Cons = Lisp::Cons;
-  using Object = Lisp::Object;
-  using Nil = Lisp::Nil;
   ConsFactoryFixture factory(8);
   Object cons1(factory.make(Object(factory.make(Lisp::nil,
                                                 Lisp::nil)),
@@ -399,8 +438,6 @@ TEST_CASE("object_assignment_operator_cons_set_nil", "[ConsFactory]")
 TEST_CASE("object_assignment_operator_nil_set_cons", "[ConsFactory]")
 {
   using V = std::vector<std::size_t>;
-  using Cons = Lisp::Cons;
-  using Object = Lisp::Object;
   ConsFactoryFixture factory(8);
   Object cons1 = Lisp::nil;
   REQUIRE(factory.checkConses() == V({0, 0, 0, 0, 0, 0, 0, 0}));
@@ -417,8 +454,6 @@ TEST_CASE("object_assignment_operator_nil_set_cons", "[ConsFactory]")
 TEST_CASE("object_assignment_operator_cons_set_cons", "[ConsFactory]")
 {
   using V = std::vector<std::size_t>;
-  using Cons = Lisp::Cons;
-  using Object = Lisp::Object;
   ConsFactoryFixture factory(8);
   REQUIRE(factory.checkConses() == V({0, 0, 0, 0, 0, 0, 0, 0}));
   Object cons1(factory.make(Object(factory.make(Lisp::nil,

@@ -2,6 +2,9 @@ CORE_SRC=	src/core/lisp_type_id.cpp\
 		src/core/lisp_cell.cpp\
 		src/core/lisp_object.cpp \
 		src/core/lisp_cons_factory.cpp \
+		src/core/lisp_cons_graph.cpp \
+		src/core/lisp_cons_graph_node.cpp \
+		src/core/lisp_cons_graph_edge.cpp \
 		src/core/lisp_cons.cpp \
 		src/core/lisp_vm.cpp
 
