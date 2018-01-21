@@ -13,5 +13,6 @@ SRC_TEST+=$(CORE_SRC)
 
 SRC_TEST+=	src/core/test_object.cpp\
 		src/core/test_cons_factory.cpp\
+		src/core/test_cons_graph.cpp\
 		src/core/test_cons.cpp
 

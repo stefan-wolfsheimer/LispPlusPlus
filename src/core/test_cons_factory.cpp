@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2017, Stefan Wolfsheimer
+Copyright (c) 2018, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -29,8 +29,180 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include <limits>
+#include <vector>
 #include <catch.hpp>
+
 #include "lisp_cons_factory.h"
+#include "lisp_cons.h"
+#include "lisp_object.h"
+
+// helper types
+using ConsFactory = Lisp::ConsFactory;
+using SharedConsFactory = std::shared_ptr<ConsFactory>;
+using Cons = Lisp::Cons;
+using Color = ConsFactory::Color;
+using Object = Lisp::Object;
+
+// helper constants
+static const std::size_t undef = std::numeric_limits<std::size_t>::max();
+static const std::size_t error = std::numeric_limits<std::size_t>::max() - 1;
+
+// helper functions
+static SharedConsFactory makeFactory(std::size_t pageSize=12);
+static std::size_t getNumConses(SharedConsFactory factory, Color color);
+static std::size_t getNumConses(SharedConsFactory factory);
+static bool checkColorOfConses(SharedConsFactory factory, Color color, const std::vector<Cons*> conses);
+
+
+static SharedConsFactory makeFactory(std::size_t pageSize)
+{
+  return std::make_shared<ConsFactory>(pageSize, 0, 0);
+}
+
+
+static bool checkColorOfConses(SharedConsFactory factory, Color color, const std::vector<Cons*> conses)
+{
+  for(auto cons : conses)
+  {
+    if(cons->getColor() != color)
+    {
+      return false;
+    }
+  }
+  if(color == factory->getToColor())
+  {
+    for(auto cons : conses)
+    {
+      if(cons->getCarCell().isA<Cons>())
+      {
+        if(cons->getCarCell().as<Cons>()->getColor() == factory->getFromColor())
+        {
+          return false;
+        }
+      }
+      if(cons->getCdrCell().isA<Cons>())
+      {
+        if(cons->getCarCell().as<Cons>()->getColor() == factory->getFromColor())
+        {
+          return false;
+        }
+      }
+    }
+  }
+  return true;
+}
+
+static std::size_t getNumConses(SharedConsFactory factory)
+{
+  std::vector<Color> v({Color::Void,
+                        Color::White,
+                        Color::Grey,
+                        Color::Black,
+                        Color::WhiteRoot,
+                        Color::GreyRoot,
+                        Color::BlackRoot,
+                        Color::Free});
+  std::size_t ret = 0;
+  for(auto color : v)
+  {
+    auto n = getNumConses(factory, color);
+    if(n == error || n == undef)
+    {
+      return n;
+    }
+    ret += n;
+  }
+  return ret;
+}
+
+static std::size_t getNumConses(SharedConsFactory factory, Color color)
+{
+  auto nConses = factory->numConses(color);
+  auto conses = factory->getConses(color);
+  bool colorOfConsesEqual = true;
+  if(color != Color::Free)
+  {
+    colorOfConsesEqual = checkColorOfConses(factory, color, conses);
+    CHECK(colorOfConsesEqual);
+  }
+  CHECK(nConses == conses.size());
+  return (nConses == conses.size() && colorOfConsesEqual) ? nConses : error;
+}
+
+SCENARIO("cons allocation", "[ConsFactory]")
+{
+  GIVEN("A cons factory")
+  {
+    auto factory = makeFactory(8);
+    WHEN("there is no cons allocated")
+    {
+      THEN("there is no cons for any color")
+      {
+        REQUIRE(getNumConses(factory, Color::Void) == 0u);
+        REQUIRE(getNumConses(factory, Color::White) == 0u);
+        REQUIRE(getNumConses(factory, Color::Grey) == 0u);
+        REQUIRE(getNumConses(factory, Color::Black) == 0u);
+        REQUIRE(getNumConses(factory, Color::WhiteRoot) == 0u);
+        REQUIRE(getNumConses(factory, Color::GreyRoot) == 0u);
+        REQUIRE(getNumConses(factory, Color::BlackRoot) == 0u);
+        REQUIRE(getNumConses(factory, Color::Free) == 0u);
+      }
+    }
+    
+    WHEN("one cons with no children is allocated")
+    {
+      Cons * pcons = factory->make(Lisp::nil, Lisp::nil);
+      THEN("the new cons is in root set and has from-color")
+      {
+        REQUIRE(pcons);
+        REQUIRE(pcons->getColor() == factory->getFromRootColor());
+      }
+      THEN("the new cons has ref-count 1")
+      {
+        REQUIRE(pcons->getRefCount() == 1u);
+      }
+      THEN("there is 1 root with from-color and 7 void conses")
+      {
+        REQUIRE(getNumConses(factory) == 8u);
+        REQUIRE(getNumConses(factory, factory->getFromRootColor()) == 1u);
+        REQUIRE(getNumConses(factory, Color::Void) == 7u);
+      }
+    }
+
+    WHEN("There as a cons with 2 children")
+    {
+      /*          
+              o
+             / \
+            o   o 
+      */
+      Cons * pcons = factory->make(Object(factory->make(Lisp::nil,
+                                                        Lisp::nil)),
+                                   Object(factory->make(Lisp::nil,
+                                                        Lisp::nil)));
+      THEN("The new cons is root and has from-root color")
+      {
+        REQUIRE(pcons->getColor() == factory->getFromRootColor());
+      }
+      THEN("the new cons has ref-count 1")
+      {
+        REQUIRE(pcons->getRefCount() == 1u);
+      }
+      THEN("there is 1 root with from-color, 2 with from-color and 5 void conses")
+      {
+        REQUIRE(getNumConses(factory) == 8u);
+        REQUIRE(getNumConses(factory, factory->getFromRootColor()) == 1u);
+        REQUIRE(getNumConses(factory, factory->getToColor()) == 2u);
+        REQUIRE(getNumConses(factory, Color::Void) == 5u);
+      }
+    }
+  }
+}
+
+///////////////////
+using V = std::vector<std::size_t>;
+using CV = std::vector<Color>;
+
 #include "lisp_cons_graph.h"
 #include "lisp_cons_graph_node.h"
 #include "lisp_cons_graph_edge.h"
@@ -38,12 +210,12 @@ either expressed or implied, of the FreeBSD Project.
 #include "lisp_cons.h"
 #include "lisp_nil.h"
 
-using Cons = Lisp::Cons;
-using ConsFactory = Lisp::ConsFactory;
-using Color = Cons::Color;
 using Object = Lisp::Object;
 using Nil = Lisp::Nil;
 using ConsGraph = Lisp::ConsGraph;
+
+
+
 
 class ConsFactoryFixture : public ConsFactory
 {
@@ -229,7 +401,7 @@ std::unordered_set<Cons*> setOfConses(Cons * c1 = nullptr,
 
 TEST_CASE("empty_cons_factory", "[ConsFactory]")
 {
-  using V = std::vector<std::size_t>;
+  // [x] done
   ConsFactoryFixture factory(12);
   REQUIRE(factory.checkConses() == V({ 0, 0, 0, 0, 0, 0, 0, 0}));
   REQUIRE(factory.getWeight(nullptr, nullptr) == ConsFactoryFixture::undef);
@@ -237,6 +409,7 @@ TEST_CASE("empty_cons_factory", "[ConsFactory]")
 
 TEST_CASE("alloc_cons_nil_nil_is_root_with_ref_count_1", "[ConsFactory]")
 {
+  // [x] done
   using V = std::vector<std::size_t>;
   ConsFactoryFixture factory(8);
   Cons * ptr = factory.make(Lisp::nil, Lisp::nil);
