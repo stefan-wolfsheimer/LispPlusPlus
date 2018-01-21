@@ -80,7 +80,6 @@ SCENARIO("no cons allocated", "[ConsFactory]")
     {
       THEN("there is no cons for any color")
       {
-        REQUIRE(checkConses(factory, 0u, {Color::Void==0u}));
         REQUIRE(getNumConses(factory, Color::Void) == 0u);
         REQUIRE(getNumConses(factory, Color::White) == 0u);
         REQUIRE(getNumConses(factory, Color::Grey) == 0u);
@@ -305,11 +304,8 @@ SCENARIO("copy cons object with object copy constructor", "[ConsFactory]")
       }
       THEN("there is one root cons and 2 leafs")
       {
-        REQUIRE(getNumConses(factory) == 8u);
-        REQUIRE(getNumConses(factory, factory->getFromRootColor()) == 1u);
         //@todo: check this:
-        REQUIRE(getNumConses(factory, factory->getToColor()) == 2u);
-        REQUIRE(getNumConses(factory, Color::Void) == 5u);
+        REQUIRE(checkConses(factory, 8u, { factory->getFromRootColor()==1u, factory->getToColor() == 2u, Color::Void == 5u}));
       }
       WHEN("copy is unset")
       {
