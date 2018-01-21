@@ -367,17 +367,14 @@ SCENARIO("copy cons object with object assignement operator", "[ConsFactory]")
       {
         //@todo: check this:
         REQUIRE(checkConses(factory, 8u, { factory->getFromRootColor()==1u, factory->getToColor() == 5u, Color::Void == 2u}));
-        WHEN("cycle garbage collector")
+      }
+      WHEN("cycle garbage collector")
+      {
+        factory->cycleGarbageCollector();
+        THEN("there is no root and 3 leaf conses")
         {
-          factory->cycleGarbageCollector();
-          THEN("there is no root and 3 leaf conses")
-          {
-            REQUIRE(getNumConses(factory) == 8u);
-            REQUIRE(getNumConses(factory, factory->getFromRootColor()) == 1u);
-            //@todo: check this:
-            REQUIRE(getNumConses(factory, factory->getToColor()) == 2u);
-            REQUIRE(getNumConses(factory, Color::Void) == 5u);
-          }
+          //@todo: check this:
+          REQUIRE(checkConses(factory, 8u, { factory->getFromRootColor()==1u, factory->getToColor() == 2u, Color::Void == 5u}));
         }
       }
     }
