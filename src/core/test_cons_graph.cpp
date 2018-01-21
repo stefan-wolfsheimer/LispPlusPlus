@@ -75,7 +75,7 @@ SCENARIO("cons graph consitency", "[ConsGraph]")
 
     WHEN("There as a cons with 2 children")
     {
-            /*          
+      /*
               o
              / \
             o   o 
@@ -96,8 +96,7 @@ SCENARIO("cons graph consitency", "[ConsGraph]")
       }
       THEN("the edge weight from root to cons is 2")
       {
-        //@todo:
-        //REQUIRE(getWeight(graph, nullptr, pcons) == 3u);
+        REQUIRE(getWeight(graph, nullptr, pcons) == 3u);
       }
       THEN("the edge weight from cons to children is 1")
       {

@@ -74,7 +74,7 @@ std::size_t Lisp::ConsGraphEdge::getWeight() const
     {
       for(const ConsGraphNode* parent : child->parents)
       {
-        if(child != this->child || parent != this->parent)
+        if(childSet.find(parent) == childSet.end() && (child != this->child || parent != this->parent))
         {
           parentSet.insert(parent);
         }
