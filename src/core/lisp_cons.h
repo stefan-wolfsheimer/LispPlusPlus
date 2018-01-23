@@ -45,12 +45,14 @@ namespace Lisp
     inline std::size_t getRefCount() const;
     inline Color getColor() const;
     inline bool isRoot() const;
-    inline void unsetCar();
-    inline void unsetCdr();
     inline Object getCar() const;
     inline Object getCdr() const;
     inline const Cell & getCarCell() const;
     inline const Cell & getCdrCell() const;
+    inline void unsetCar();
+    inline void unsetCdr();
+    inline void setCar(const Object & rhs);
+    inline void setCdr(const Object & rhs);
   private:
     ConsFactory * consFactory;
     Color color;
@@ -106,16 +108,6 @@ void Lisp::Cons::root()
   }
 }
 
-void Lisp::Cons::unsetCar()
-{
-  car = Lisp::nil;
-}
-
-void Lisp::Cons::unsetCdr()
-{
-  cdr = Lisp::nil;
-}
-
 Lisp::Object Lisp::Cons::getCar() const
 {
   return Lisp::Object(car);
@@ -134,6 +126,46 @@ const Lisp::Cell & Lisp::Cons::getCarCell() const
 const Lisp::Cell & Lisp::Cons::getCdrCell() const
 {
   return cdr;
+}
+
+void Lisp::Cons::unsetCar()
+{
+  car = Lisp::nil;
+}
+
+void Lisp::Cons::unsetCdr()
+{
+  cdr = Lisp::nil;
+}
+
+void Lisp::Cons::setCar(const Object & rhs)
+{
+  if(rhs.isA<Cons>())
+  {
+    car = Lisp::nil;
+    car.data.cons = rhs.as<Cons>();
+    consFactory->greyChild(this);
+  }
+  else
+  {
+    // set non-cons
+    car = rhs;
+  }
+}
+
+void Lisp::Cons::setCdr(const Object & rhs)
+{
+  if(rhs.isA<Cons>())
+  {
+    cdr = Lisp::nil;
+    cdr.data.cons = rhs.as<Cons>();
+    consFactory->greyChild(this);
+  }
+  else
+  {
+    // set non-cons
+    car = rhs;
+  }
 }
 
 namespace Lisp

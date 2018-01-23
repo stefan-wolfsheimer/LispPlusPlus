@@ -76,43 +76,64 @@ SCENARIO("no cons allocated", "[ConsFactory]")
   GIVEN("An empty cons factory")
   {
     auto factory = makeFactory(8);
-    WHEN("there is no cons allocated")
+    THEN("there is no cons for any color")
     {
-      THEN("there is no cons for any color")
-      {
-        REQUIRE(getNumConses(factory, Color::Void) == 0u);
-        REQUIRE(getNumConses(factory, Color::White) == 0u);
-        REQUIRE(getNumConses(factory, Color::Grey) == 0u);
-        REQUIRE(getNumConses(factory, Color::Black) == 0u);
-        REQUIRE(getNumConses(factory, Color::WhiteRoot) == 0u);
-        REQUIRE(getNumConses(factory, Color::GreyRoot) == 0u);
-        REQUIRE(getNumConses(factory, Color::BlackRoot) == 0u);
-        REQUIRE(getNumConses(factory, Color::Free) == 0u);
-      }
+      REQUIRE(getNumConses(factory, Color::Void) == 0u);
+      REQUIRE(getNumConses(factory, Color::White) == 0u);
+      REQUIRE(getNumConses(factory, Color::Grey) == 0u);
+      REQUIRE(getNumConses(factory, Color::Black) == 0u);
+      REQUIRE(getNumConses(factory, Color::WhiteRoot) == 0u);
+      REQUIRE(getNumConses(factory, Color::GreyRoot) == 0u);
+      REQUIRE(getNumConses(factory, Color::BlackRoot) == 0u);
+      REQUIRE(getNumConses(factory, Color::Free) == 0u);
+    }
+    THEN("the from color is white")
+    {
+      REQUIRE(factory->getFromColor() == Color::White);
+      REQUIRE(factory->getFromRootColor() == Color::WhiteRoot);
     }
   }
 }
 
 SCENARIO("a cons without children", "[ConsFactory]")
 {
-  GIVEN("A cons factory")
+  GIVEN("A root cons")
   {
     auto factory = makeFactory(8);
-    WHEN("there is a cons without children is allocated")
+    auto obj = std::make_shared<Object>(factory->make(Lisp::nil, Lisp::nil));
+    Cons * cons = obj->as<Cons>();
+    THEN("it is in root set and has from-color and ref count 1")
     {
-      Cons * pcons = factory->make(Lisp::nil, Lisp::nil);
-      THEN("the new cons is in root set and has from-color")
+      REQUIRE(cons);
+      REQUIRE(cons->isRoot());
+      REQUIRE(cons->getColor() == factory->getFromRootColor());
+      REQUIRE(cons->getRefCount() == 1u);
+    }
+    THEN("it is reachable")
+    {
+      REQUIRE(getReachableConses(factory) == setOfConses(cons));
+    }
+    THEN("there is 1 root cons with from-color and 7 void conses")
+    {
+      REQUIRE(checkConses(factory, 8u, { factory->getFromRootColor() == 1u,
+                                         Color::Void == 7u}));
+    }
+    WHEN("the cons is unrooted")
+    {
+      obj.reset();
+      THEN("it is a leaf cons with from-color, ref-count 0")
       {
-        REQUIRE(pcons);
-        REQUIRE(pcons->getColor() == factory->getFromRootColor());
+        REQUIRE_FALSE(cons->isRoot());
+        REQUIRE(cons->getColor() == factory->getFromColor());
       }
-      THEN("the new cons has ref-count 1")
+      THEN("there is 1 leaf conses with from-color and 7 void conses")
       {
-        REQUIRE(pcons->getRefCount() == 1u);
+        REQUIRE(checkConses(factory, 8u, { factory->getFromColor() == 1u,
+                                           Color::Void == 7u}));
       }
-      THEN("there is 1 root with from-color and 7 void conses")
+      THEN("there is no reachable cons")
       {
-        REQUIRE(checkConses(factory, 8u, { factory->getFromRootColor()==1u, Color::Void == 7u}));
+        REQUIRE(getReachableConses(factory) == setOfConses());
       }
     }
   }
@@ -138,10 +159,10 @@ SCENARIO("a cons with 2 children", "[ConsFactory]")
       {
         REQUIRE(pcons->getColor() == factory->getFromRootColor());
       }
-      THEN("Children of new cons has to-color")
+      THEN("Children of new cons has from-color")
       {
-        REQUIRE(pcons->getCarCell().as<Cons>()->getColor() == factory->getToColor());
-        REQUIRE(pcons->getCdrCell().as<Cons>()->getColor() == factory->getToColor());
+        REQUIRE(pcons->getCarCell().as<Cons>()->getColor() == factory->getFromColor());
+        REQUIRE(pcons->getCdrCell().as<Cons>()->getColor() == factory->getFromColor());
       }
       THEN("the new cons has ref-count 1")
       {
@@ -149,7 +170,7 @@ SCENARIO("a cons with 2 children", "[ConsFactory]")
       }
       THEN("there is 1 root with from-color, 2 with from-color and 5 void conses")
       {
-        REQUIRE(checkConses(factory, 8u, { factory->getFromRootColor()==1u, factory->getToColor() == 2u, Color::Void == 5u}));
+        REQUIRE(checkConses(factory, 8u, { factory->getFromRootColor()==1u, factory->getFromColor() == 2u, Color::Void == 5u}));
       }
       THEN("reachable conses are the cons and its children")
       {
@@ -174,7 +195,7 @@ SCENARIO("a cons with 2 children", "[ConsFactory]")
         }
         THEN("finally there is cons with root-from-clor and 2 conses with to-color")
         {
-          REQUIRE(checkConses(factory, 8u, { factory->getFromRootColor()==1u, factory->getToColor() == 2u, Color::Void == 5u}));
+          REQUIRE(checkConses(factory, 8u, { factory->getFromRootColor()==1u, factory->getFromColor() == 2u, Color::Void == 5u}));
         }
       }
     }
@@ -202,16 +223,16 @@ SCENARIO("3 conses with 4 children", "[ConsFactory]")
                                                       Lisp::nil)),
                                  Object(factory->make(Lisp::nil,
                                                       Lisp::nil))));
-      THEN("there are 2 conses with from-root-color and 4 conses with to-color")
+      THEN("there are 2 conses with from-root-color and 4 conses with from-color")
       {
-        REQUIRE(checkConses(factory, 8u, { factory->getFromRootColor()==2u, factory->getToColor() == 4u, Color::Void == 2u}));
+        REQUIRE(checkConses(factory, 8u, { factory->getFromRootColor()==2u, factory->getFromColor() == 4u, Color::Void == 2u}));
       }
       WHEN("there are 3 conses with 4 children")
       {
         cons3 = Object(factory->make(cons2.as<Cons>()->getCar(), Lisp::nil));
-        THEN("there are 3 conses with from-root-color and 4 conses with to-color")
+        THEN("there are 3 conses with from-root-color and 4 conses with from-color")
         {
-          REQUIRE(checkConses(factory, 8u, { factory->getFromRootColor()==3u, factory->getToColor() == 4u, Color::Void == 1u}));
+          REQUIRE(checkConses(factory, 8u, { factory->getFromRootColor()==3u, factory->getFromColor() == 4u, Color::Void == 1u}));
         }
         THEN("all children of cons1, cons2 and cons3 are reachable")
         {
@@ -243,7 +264,7 @@ SCENARIO("3 conses with 4 children", "[ConsFactory]")
       }
       THEN("there are 2 root conses and 3 leafes")
       {
-        REQUIRE(checkConses(factory, 8u, { factory->getFromRootColor()==2u, factory->getToColor() == 5u, Color::Void == 1u}));
+        REQUIRE(checkConses(factory, 8u, { factory->getFromRootColor()==2u, factory->getFromColor() == 5u, Color::Void == 1u}));
         REQUIRE(getReachableConses(factory) == setOfConses(cons1.as<Cons>(),
                                                            cons1.as<Cons>()->getCarCell().as<Cons>(),
                                                            cons1.as<Cons>()->getCdrCell().as<Cons>(),
@@ -255,9 +276,8 @@ SCENARIO("3 conses with 4 children", "[ConsFactory]")
         REQUIRE(factory->getFromColor() == Color::White);
         factory->cycleGarbageCollector();
         REQUIRE(factory->getFromColor() == Color::White);
-        THEN("there are 2 from-root-color and 3 from-color conses")
+        THEN("there are 2 from-root-color and 3 to-color conses")
         {
-          //@todo: check this:
           REQUIRE(checkConses(factory, 8u, { factory->getFromRootColor()==2u, factory->getToColor() == 3u, Color::Void == 3u}));
         }
         THEN("there are x reachable conses")
@@ -304,8 +324,7 @@ SCENARIO("copy cons object with object copy constructor", "[ConsFactory]")
       }
       THEN("there is one root cons and 2 leafs")
       {
-        //@todo: check this:
-        REQUIRE(checkConses(factory, 8u, { factory->getFromRootColor()==1u, factory->getToColor() == 2u, Color::Void == 5u}));
+        REQUIRE(checkConses(factory, 8u, { factory->getFromRootColor()==1u, factory->getFromColor() == 2u, Color::Void == 5u}));
       }
       WHEN("copy is unset")
       {
@@ -316,8 +335,7 @@ SCENARIO("copy cons object with object copy constructor", "[ConsFactory]")
         }
         THEN("there is one root cons and 2 leafs")
         {
-          //@todo: check this:
-          REQUIRE(checkConses(factory, 8u, { factory->getFromRootColor()==1u, factory->getToColor() == 2u, Color::Void == 5u}));
+          REQUIRE(checkConses(factory, 8u, { factory->getFromRootColor()==1u, factory->getFromColor() == 2u, Color::Void == 5u}));
         }
         WHEN("both conses are unset")
         {
@@ -325,8 +343,7 @@ SCENARIO("copy cons object with object copy constructor", "[ConsFactory]")
           REQUIRE(cons1.isA<Nil>());
           THEN("there is no root and 3 leaf conses")
           {
-            //@todo: check this:
-            REQUIRE(checkConses(factory, 8u, { factory->getFromRootColor()==0u, factory->getToColor() == 3u, Color::Void == 5u}));
+            REQUIRE(checkConses(factory, 8u, { factory->getFromRootColor()==0u, factory->getFromColor() == 3u, Color::Void == 5u}));
           }
           WHEN("cycle garbage location")
           {
@@ -365,15 +382,13 @@ SCENARIO("copy cons object with object assignement operator", "[ConsFactory]")
       }
       THEN("there is 1 root cons and 5 leaf")
       {
-        //@todo: check this:
-        REQUIRE(checkConses(factory, 8u, { factory->getFromRootColor()==1u, factory->getToColor() == 5u, Color::Void == 2u}));
+        REQUIRE(checkConses(factory, 8u, { factory->getFromRootColor()==1u, factory->getFromColor() == 5u, Color::Void == 2u}));
       }
       WHEN("cycle garbage collector")
       {
         factory->cycleGarbageCollector();
         THEN("there is no root and 3 leaf conses")
         {
-          //@todo: check this:
           REQUIRE(checkConses(factory, 8u, { factory->getFromRootColor()==1u, factory->getToColor() == 2u, Color::Void == 5u}));
         }
       }

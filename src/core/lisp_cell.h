@@ -46,6 +46,7 @@ namespace Lisp
   public:
     template<typename T>
     friend class Lisp::Details::Converter;
+    friend class Lisp::Cons;
 
     Cell(const Object & rhs);
     Cell& operator=(const Object & rhs);

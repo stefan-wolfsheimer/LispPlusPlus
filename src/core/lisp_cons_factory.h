@@ -64,8 +64,27 @@ namespace Lisp
     Color getToRootColor() const;
 
     Cons * make(const Object & car, const Object & cdr);
+
+    /**
+     * Move cons to root set and set the color to getFromRootColor()
+     * A step if the garbage collector is executed.
+     */
     void root(Cons * cons);
     void unroot(Cons * cons);
+
+    /**
+     * Performs a garbage collector step on cons
+     *
+     * If color is getFromColor() then change color to getToColor()
+     * If color is getFromRootColor() then change color to getToRootColor()
+     * If color is Color::Grey then  change color to getToColor()
+     * If color is Color::GreyRoot then change color to getToRootColor()
+     * All children having getFromColor() or getFromRootColor()) are changed
+     * to Color::GreyRoot or Color::Grey.
+     */
+    void gcStep(Cons * cons);
+    void greyChild(Cons * cons);
+
     std::size_t numConses(Color color) const;
     std::vector<Cons*> getConses(Color color) const;
     std::vector<Cons*> getConses(Color begin, Color end) const;
@@ -77,10 +96,11 @@ namespace Lisp
     void stepRecycle();
 
   private:
-    inline void removeFromVector(Lisp::Cons * cons);
+    inline void removeFromVector(Cons * cons);
     inline void addToVector(Color color, Lisp::Cons * cons);
     inline void moveAllFromVectorToOther(Color colorFrom, Color colorTo);
-    inline void greyChild(const Cell & cell);
+    inline void greyChildInternal(Cons * cons);
+    inline void greyChildInternal(const Cell & cell);
     unsigned short int garbageSteps;
     unsigned short int recycleSteps;
     std::size_t pageSize;
