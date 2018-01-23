@@ -2,6 +2,4 @@
 *.o
 *.a
 *~
-test/obj
-bin
 

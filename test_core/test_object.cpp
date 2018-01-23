@@ -29,8 +29,8 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include <catch.hpp>
-#include "lisp_object.h"
-#include "lisp_nil.h"
+#include "core/lisp_object.h"
+#include "core/lisp_nil.h"
 
 TEST_CASE("nil_is_a_nil", "[Object]")
 {

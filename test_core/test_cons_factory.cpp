@@ -33,10 +33,10 @@ either expressed or implied, of the FreeBSD Project.
 #include <unordered_set>
 #include <catch.hpp>
 
-#include "lisp_cons_factory.h"
-#include "lisp_cons.h"
-#include "lisp_object.h"
-#include "lisp_nil.h"
+#include "core/lisp_cons_factory.h"
+#include "core/lisp_cons.h"
+#include "core/lisp_object.h"
+#include "core/lisp_nil.h"
 
 // helper types
 using ConsFactory = Lisp::ConsFactory;

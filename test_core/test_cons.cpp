@@ -29,8 +29,8 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include <catch.hpp>
-#include "lisp_cons.h"
-#include "lisp_vm.h"
+#include "core/lisp_cons.h"
+#include "core/lisp_vm.h"
 
 TEST_CASE("cons_allocator_color_has_size_1", "[Cons]")
 {

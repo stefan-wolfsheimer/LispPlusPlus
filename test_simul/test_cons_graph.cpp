@@ -31,11 +31,11 @@ either expressed or implied, of the FreeBSD Project.
 #include <catch.hpp>
 #include <vector>
 #include <unordered_set>
-#include "lisp_cons_factory.h"
-#include "lisp_cons.h"
-#include "lisp_cons_graph.h"
-#include "lisp_cons_graph_node.h"
-#include "lisp_cons_graph_edge.h"
+#include "core/lisp_cons_factory.h"
+#include "core/lisp_cons.h"
+#include "simul/lisp_cons_graph.h"
+#include "simul/lisp_cons_graph_node.h"
+#include "simul/lisp_cons_graph_edge.h"
 
 // helper types
 using ConsFactory = Lisp::ConsFactory;

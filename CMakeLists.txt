@@ -14,23 +14,22 @@ endif()
 SET(CMAKE_CXX_FLAGS_RELEASE "-O2")
 SET(CMAKE_CXX_FLAGS_DEBUG  "-O0 -g")
 
-IF(CMAKE_BUILD_TYPE MATCHES DEBUG)
+include_directories (${PROJECT_SOURCE_DIR})
+
+IF(CMAKE_BUILD_TYPE MATCHES Debug)
     message("debug mode")
     add_library(Catch INTERFACE)
     target_include_directories(Catch INTERFACE test)
 
     add_executable(runtest
       test/runtests.cpp
-      core/test_object.cpp
-      core/test_cons_factory.cpp
-      core/test_cons_graph.cpp
-      core/test_cons.cpp
+      test_core/test_object.cpp
+      test_core/test_cons_factory.cpp
+      test_core/test_cons.cpp
+      test_simul/test_cons_graph.cpp
       )
-    target_link_libraries(runtest Catch Core)
+    target_link_libraries(runtest Catch Core Simul)
 ENDIF(CMAKE_BUILD_TYPE MATCHES DEBUG)
 
-    
-
-
-
-add_subdirectory (core) 
+add_subdirectory (core)
+add_subdirectory (simul)
