@@ -46,7 +46,8 @@ using SharedEdge = std::shared_ptr<ConsGraphEdge>;
 
 ConsGraph::ConsGraph(const Lisp::ConsFactory & factory)
 {
-  std::unordered_set<Cons*> reachable = factory.getReachableConsesAsSet();
+  std::unordered_set<const Cons*> reachable = factory.getReachableConsesAsSet();
+  nodes[nullptr] = std::make_shared<ConsGraphNode>(nullptr);
   for(auto cons : reachable)
   {
     nodes[cons] = std::make_shared<ConsGraphNode>(cons);
@@ -64,7 +65,7 @@ ConsGraph::ConsGraph(const Lisp::ConsFactory & factory)
   }
   for(auto cons : factory.getRootConses())
   {
-    addEdge(nullptr, nodes[cons].get());
+    addEdge(nodes[nullptr].get(), nodes[cons].get());
   }
 }
 
@@ -81,6 +82,12 @@ void ConsGraph::addEdge(ConsGraphNode * parent, ConsGraphNode * child)
                               std::make_shared<ConsGraphEdge>(parent, child)));
 }
 
+SharedNode ConsGraph::getRootNode() const
+{
+  auto itr = nodes.find(nullptr);
+  return itr->second;
+}
+
 SharedNode ConsGraph::findNode(const Cons * cons) const
 {
   auto itr = nodes.find(cons);
@@ -95,7 +102,7 @@ SharedNode ConsGraph::findNode(const Cons * cons) const
 }
 
 SharedEdge ConsGraph::findEdge(const Cons * parent,
-                                     const Cons * child) const
+                               const Cons * child) const
 {
   auto itr = edges.find(ConsPair(parent, child));
   if(itr != edges.end())

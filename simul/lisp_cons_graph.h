@@ -47,6 +47,7 @@ namespace Lisp
   {
   public:
     ConsGraph(const ConsFactory & factor);
+    std::shared_ptr<ConsGraphNode> getRootNode() const;
     std::shared_ptr<ConsGraphNode> findNode(const Cons *) const;
     std::shared_ptr<ConsGraphEdge> findEdge(const Cons * parent,
                                             const Cons * child) const;

@@ -26,7 +26,6 @@ IF(CMAKE_BUILD_TYPE MATCHES Debug)
       test_core/test_object.cpp
       test_core/test_cons_factory.cpp
       test_core/test_cons.cpp
-      test_simul/test_cons_graph.cpp
       )
     target_link_libraries(runtest Catch Core Simul)
 ENDIF(CMAKE_BUILD_TYPE MATCHES DEBUG)

@@ -86,11 +86,11 @@ namespace Lisp
     void greyChild(Cons * cons);
 
     std::size_t numConses(Color color) const;
-    std::vector<Cons*> getConses(Color color) const;
-    std::vector<Cons*> getConses(Color begin, Color end) const;
-    std::vector<Cons*> getRootConses() const;
-    std::vector<Cons*> getReachableConses() const;
-    std::unordered_set<Cons*> getReachableConsesAsSet() const;
+    std::vector<const Cons*> getConses(Color color) const;
+    std::vector<const Cons*> getConses(Color begin, Color end) const;
+    std::vector<const Cons*> getRootConses() const;
+    std::vector<const Cons*> getReachableConses() const;
+    std::unordered_set<const Cons*> getReachableConsesAsSet() const;
     void cycleGarbageCollector();
     void stepGargabeCollector();
     void stepRecycle();
@@ -101,6 +101,8 @@ namespace Lisp
     inline void moveAllFromVectorToOther(Color colorFrom, Color colorTo);
     inline void greyChildInternal(Cons * cons);
     inline void greyChildInternal(const Cell & cell);
+    template<typename T>
+    inline std::unordered_set<T*> getReachableConsesAsSetIntneral() const;
     unsigned short int garbageSteps;
     unsigned short int recycleSteps;
     std::size_t pageSize;

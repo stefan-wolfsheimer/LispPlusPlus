@@ -45,7 +45,10 @@ std::unordered_set<const Cons*> Lisp::ConsGraphNode::getConsParents() const
   std::unordered_set<const Cons*> ret;
   for(auto n : parents)
   {
-    ret.insert(n->cons);
+    if(n->cons)
+    {
+      ret.insert(n->cons);
+    }
   }
   return ret;
 }
@@ -55,7 +58,10 @@ std::unordered_set<const Cons*> Lisp::ConsGraphNode::getConsChildren() const
   std::unordered_set<const Cons*> ret;
   for(auto n : children)
   {
-    ret.insert(n->cons);
+    if(n->cons)
+    {
+      ret.insert(n->cons);
+    }
   }
   return ret;
 }

@@ -140,9 +140,10 @@ void Lisp::Cons::unsetCdr()
 
 void Lisp::Cons::setCar(const Object & rhs)
 {
-  if(rhs.isA<Cons>())
+  if(rhs.isA<const Cons>())
   {
     car = Lisp::nil;
+    car.typeId = rhs.typeId;
     car.data.cons = rhs.as<Cons>();
     consFactory->greyChild(this);
   }
@@ -155,9 +156,10 @@ void Lisp::Cons::setCar(const Object & rhs)
 
 void Lisp::Cons::setCdr(const Object & rhs)
 {
-  if(rhs.isA<Cons>())
+  if(rhs.isA<const Cons>())
   {
     cdr = Lisp::nil;
+    cdr.typeId = rhs.typeId;
     cdr.data.cons = rhs.as<Cons>();
     consFactory->greyChild(this);
   }
@@ -187,6 +189,23 @@ namespace Lisp
         }
       }
     };
+
+    template<>
+    struct Converter<const Cons>
+    {
+      static const Cons * as(const Cell * obj)
+      {
+        if(obj->isA<const Cons>())
+        {
+          return obj->data.cons;
+        }
+        else
+        {
+          return nullptr;
+        }
+      }
+    };
+
   }
 }
 
