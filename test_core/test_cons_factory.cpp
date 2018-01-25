@@ -312,85 +312,133 @@ SCENARIO("a cons with 2 children", "[ConsFactory]")
 
 SCENARIO("3 conses with 4 children", "[ConsFactory]")
 {
-  /*
-         o        o    o
-        / \      / \  / \
-       o   o    o   o
-  */
-  GIVEN("A cons factory")
+  GIVEN("2 conses")
   {
+    /*
+           o        o 
+          / \      / \
+         o   o    o   o
+      */
+
     auto factory = makeFactory(8);
     Object cons1(factory->make(Object(factory->make(Lisp::nil,
                                                     Lisp::nil)),
                                Object(factory->make(Lisp::nil,
                                                     Lisp::nil))));
+    Object cons2(factory->make(Object(factory->make(Lisp::nil,
+                                                    Lisp::nil)),
+                               Object(factory->make(Lisp::nil,
+                                                    Lisp::nil))));
+    ConsGraph graph(*factory);
+    THEN("there are 2 conses with from-root-color and 4 conses with from-color")
+    {
+      REQUIRE(checkConses(factory, 8u, { factory->getFromRootColor()==2u,
+                                         factory->getFromColor() == 4u,
+                                         Color::Void == 2u}));
+    }
+    THEN("there are 6 reachable conses")
+    {
+      REQUIRE(factory->getReachableConsesAsSet() == setOfConses(cons1.as<Cons>(),
+                                                                cons1.as<Cons>()->getCarCell().as<Cons>(),
+                                                                cons1.as<Cons>()->getCdrCell().as<Cons>(),
+                                                                cons2.as<Cons>(),
+                                                                cons2.as<Cons>()->getCarCell().as<Cons>(),
+                                                                cons2.as<Cons>()->getCdrCell().as<Cons>()));
+    }
+    THEN("weights to root conses are 3")
+    {
+      REQUIRE(getWeight(graph, nullptr, cons1.as<Cons>()) == 3u);
+      REQUIRE(getWeight(graph, nullptr, cons2.as<Cons>()) == 3u);
+    }
+    THEN("weights to leaf conses are 1")
+    {
+      REQUIRE(getWeight(graph, cons1.as<Cons>(), cons1.as<Cons>()->getCarCell().as<Cons>()) == 1u);
+      REQUIRE(getWeight(graph, cons1.as<Cons>(), cons1.as<Cons>()->getCdrCell().as<Cons>()) == 1u);
+      REQUIRE(getWeight(graph, cons2.as<Cons>(), cons2.as<Cons>()->getCarCell().as<Cons>()) == 1u);
+      REQUIRE(getWeight(graph, cons2.as<Cons>(), cons2.as<Cons>()->getCdrCell().as<Cons>()) == 1u);
+    }
     WHEN("there are 2 conses with 4 children")
     {
-      Object cons3;
-      Object cons2(factory->make(Object(factory->make(Lisp::nil,
-                                                      Lisp::nil)),
-                                 Object(factory->make(Lisp::nil,
-                                                      Lisp::nil))));
+      /*
+           o        o    o
+          / \      / \  / \
+         o   o    o   o
+      */
+
+      Object cons3(factory->make(cons2.as<Cons>()->getCar(), Lisp::nil));
+      ConsGraph graph(*factory);
       THEN("there are 2 conses with from-root-color and 4 conses with from-color")
       {
-        REQUIRE(checkConses(factory, 8u, { factory->getFromRootColor()==2u, factory->getFromColor() == 4u, Color::Void == 2u}));
+        REQUIRE(checkConses(factory, 8u, { factory->getFromRootColor()==3u,
+                                           factory->getFromColor() == 4u,
+                                           Color::Void == 1u}));
       }
-      WHEN("there are 3 conses with 4 children")
+      THEN("all children of cons1, cons2 and cons3 are reachable")
       {
-        cons3 = Object(factory->make(cons2.as<Cons>()->getCar(), Lisp::nil));
-        THEN("there are 3 conses with from-root-color and 4 conses with from-color")
-        {
-          REQUIRE(checkConses(factory, 8u, { factory->getFromRootColor()==3u, factory->getFromColor() == 4u, Color::Void == 1u}));
-        }
-        THEN("all children of cons1, cons2 and cons3 are reachable")
-        {
-          REQUIRE(factory->getReachableConsesAsSet() == setOfConses(cons1.as<Cons>(),
-                                                             cons1.as<Cons>()->getCarCell().as<Cons>(),
-                                                             cons1.as<Cons>()->getCdrCell().as<Cons>(),
-                                                             cons2.as<Cons>(),
-                                                             cons2.as<Cons>()->getCarCell().as<Cons>(),
-                                                             cons2.as<Cons>()->getCdrCell().as<Cons>(),
-                                                             cons3.as<Cons>(),
-                                                             cons3.as<Cons>()->getCarCell().as<Cons>()));
-        }
-      }
-    }
-    WHEN("there are 2 conses with 3 children")
-    {
-      /*
-         o            o
-        / \          / \
-       o   o        o
-      */
-      Object cons3;
-      {
-        Object cons2(factory->make(Object(factory->make(Lisp::nil,
-                                                        Lisp::nil)),
-                                   Object(factory->make(Lisp::nil,
-                                                        Lisp::nil))));
-        cons3 = Object(factory->make(cons2.as<Cons>()->getCar(), Lisp::nil));
-      }
-      THEN("there are 2 root conses and 3 leafes")
-      {
-        REQUIRE(checkConses(factory, 8u, { factory->getFromRootColor()==2u, factory->getFromColor() == 5u, Color::Void == 1u}));
         REQUIRE(factory->getReachableConsesAsSet() == setOfConses(cons1.as<Cons>(),
-                                                           cons1.as<Cons>()->getCarCell().as<Cons>(),
-                                                           cons1.as<Cons>()->getCdrCell().as<Cons>(),
-                                                           cons3.as<Cons>(),
-                                                           cons3.as<Cons>()->getCarCell().as<Cons>()));
+                                                                  cons1.as<Cons>()->getCarCell().as<Cons>(),
+                                                                  cons1.as<Cons>()->getCdrCell().as<Cons>(),
+                                                                  cons2.as<Cons>(),
+                                                                  cons2.as<Cons>()->getCarCell().as<Cons>(),
+                                                                  cons2.as<Cons>()->getCdrCell().as<Cons>(),
+                                                                  cons3.as<Cons>(),
+                                                                  cons3.as<Cons>()->getCarCell().as<Cons>()));
       }
-      WHEN("cycle garbage collector")
+      THEN("weight to cons1 are 3,2,1")
       {
-        REQUIRE(factory->getFromColor() == Color::White);
-        factory->cycleGarbageCollector();
-        REQUIRE(factory->getFromColor() == Color::White);
-        THEN("there are 2 from-root-color and 3 to-color conses")
+        REQUIRE(getWeight(graph, nullptr, cons1.as<Cons>()) == 3u);
+        REQUIRE(getWeight(graph, nullptr, cons2.as<Cons>()) == 2u);
+        REQUIRE(getWeight(graph, nullptr, cons3.as<Cons>()) == 1u);
+      }
+      THEN("weights to leaf conses are 1 or 0")
+      {
+        REQUIRE(getWeight(graph, cons1.as<Cons>(), cons1.as<Cons>()->getCarCell().as<Cons>()) == 1u);
+        REQUIRE(getWeight(graph, cons1.as<Cons>(), cons1.as<Cons>()->getCdrCell().as<Cons>()) == 1u);
+        REQUIRE(getWeight(graph, cons2.as<Cons>(), cons2.as<Cons>()->getCdrCell().as<Cons>()) == 1u);
+        REQUIRE(getWeight(graph, cons2.as<Cons>(), cons2.as<Cons>()->getCarCell().as<Cons>()) == 0u);
+        REQUIRE(getWeight(graph, cons3.as<Cons>(), cons3.as<Cons>()->getCarCell().as<Cons>()) == 0u);
+      }
+      WHEN("cons2 is unset")
+      {
+        /*
+                o            o
+               / \          / \
+              o   o        o
+        */
+        cons2 = Lisp::nil;
+        ConsGraph graph(*factory);
+        THEN("there are 2 root conses and 3 leafes")
         {
-          REQUIRE(checkConses(factory, 8u, { factory->getFromRootColor()==2u, factory->getToColor() == 3u, Color::Void == 3u}));
+          REQUIRE(checkConses(factory, 8u, { factory->getFromRootColor()==2u,
+                                             factory->getFromColor() == 5u,
+                                             Color::Void == 1u}));
+          REQUIRE(factory->getReachableConsesAsSet() == setOfConses(cons1.as<Cons>(),
+                                                                    cons1.as<Cons>()->getCarCell().as<Cons>(),
+                                                                    cons1.as<Cons>()->getCdrCell().as<Cons>(),
+                                                                    cons3.as<Cons>(),
+                                                                    cons3.as<Cons>()->getCarCell().as<Cons>()));
         }
-        THEN("there are x reachable conses")
+        THEN("weights to root conses are 3 and 2")
         {
-          REQUIRE(factory->getReachableConsesAsSet() == setOfConses(factory->getConses(Color::White, Color::Free)));
+          REQUIRE(getWeight(graph, nullptr, cons1.as<Cons>()) == 3u);
+          REQUIRE(getWeight(graph, nullptr, cons3.as<Cons>()) == 2u);
+        }
+        THEN("weights to leaf conses are 1")
+        {
+          REQUIRE(getWeight(graph, cons1.as<Cons>(), cons1.as<Cons>()->getCarCell().as<Cons>()) == 1u);
+          REQUIRE(getWeight(graph, cons1.as<Cons>(), cons1.as<Cons>()->getCdrCell().as<Cons>()) == 1u);
+          REQUIRE(getWeight(graph, cons3.as<Cons>(), cons3.as<Cons>()->getCarCell().as<Cons>()) == 1u);
+        }
+        WHEN("cycle garbage collector")
+        {
+          REQUIRE(factory->getFromColor() == Color::White);
+          factory->cycleGarbageCollector();
+          THEN("there are 2 from-root-color and 3 to-color conses")
+          {
+            REQUIRE(checkConses(factory, 8u, { factory->getFromRootColor()==2u,
+                                               factory->getToColor() == 3u,
+                                               Color::Void == 3u}));
+          }
         }
       }
     }
@@ -497,7 +545,7 @@ SCENARIO("copy cons object with object assignement operator", "[ConsFactory]")
         factory->cycleGarbageCollector();
         THEN("there is no root and 3 leaf conses")
         {
-          //REQUIRE(checkConses(factory, 8u, { factory->getFromRootColor()==1u, factory->getToColor() == 2u, Color::Void == 5u}));
+          REQUIRE(checkConses(factory, 8u, { factory->getFromRootColor()==1u, factory->getToColor() == 2u, Color::Void == 5u}));
         }
       }
     }
