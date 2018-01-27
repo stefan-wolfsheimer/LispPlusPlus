@@ -214,6 +214,15 @@ std::size_t Lisp::ConsFactory::numConses(Color color) const
   }
 }
 
+std::size_t Lisp::ConsFactory::numRootConses() const
+{
+  return
+    conses[(unsigned char)Color::WhiteRoot].size() +
+    conses[(unsigned char)Color::GreyRoot].size() +
+    conses[(unsigned char)Color::BlackRoot].size();
+}
+
+
 std::vector<const Cons*> Lisp::ConsFactory::getConses(Color color) const
 {
   std::vector<const Cons*> ret;
@@ -290,15 +299,20 @@ Lisp::ConsFactory::getReachableConsesAsSetIntneral() const
 }
 
 
-std::unordered_set<const Cons*> Lisp::ConsFactory::getReachableConsesAsSet() const
+std::unordered_set<const Cons*> Lisp::ConsFactory::getReachableConsesAsConstSet() const
 {
   return getReachableConsesAsSetIntneral<const Cons>();
+}
+
+std::unordered_set<Cons*> Lisp::ConsFactory::getReachableConsesAsSet() const
+{
+  return getReachableConsesAsSetIntneral<Cons>();
 }
 
 std::vector<const Cons*> Lisp::ConsFactory::getReachableConses() const
 {
   //Todo lock
-  std::unordered_set<const Cons*> root = getReachableConsesAsSet();
+  std::unordered_set<const Cons*> root = getReachableConsesAsConstSet();
   std::vector<const Cons*> ret(root.begin(), root.end());
   return ret;
 }

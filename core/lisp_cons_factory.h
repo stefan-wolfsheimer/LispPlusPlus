@@ -86,11 +86,13 @@ namespace Lisp
     void greyChild(Cons * cons);
 
     std::size_t numConses(Color color) const;
+    std::size_t numRootConses() const;
     std::vector<const Cons*> getConses(Color color) const;
     std::vector<const Cons*> getConses(Color begin, Color end) const;
     std::vector<const Cons*> getRootConses() const;
     std::vector<const Cons*> getReachableConses() const;
-    std::unordered_set<const Cons*> getReachableConsesAsSet() const;
+    std::unordered_set<const Cons*> getReachableConsesAsConstSet() const;
+    std::unordered_set<Cons*> getReachableConsesAsSet() const;
     void cycleGarbageCollector();
     void stepGargabeCollector();
     void stepRecycle();

@@ -146,7 +146,7 @@ SCENARIO("one cons without children", "[ConsFactory]")
     }
     THEN("it is reachable")
     {
-      REQUIRE(factory->getReachableConsesAsSet() == setOfConses(cons));
+      REQUIRE(factory->getReachableConsesAsConstSet() == setOfConses(cons));
     }
     THEN("there is 1 root cons with from-color and 7 void conses")
     {
@@ -177,7 +177,7 @@ SCENARIO("one cons without children", "[ConsFactory]")
       }
       THEN("there is no reachable cons")
       {
-        REQUIRE(factory->getReachableConsesAsSet() == setOfConses());
+        REQUIRE(factory->getReachableConsesAsConstSet() == setOfConses());
       }
     }
   }
@@ -251,9 +251,9 @@ SCENARIO("a cons with 2 children", "[ConsFactory]")
     }
     THEN("the cons and its children are reachable")
     {
-      REQUIRE(factory->getReachableConsesAsSet() == setOfConses(cons,
-                                                                cons->getCarCell().as<Cons>(),
-                                                                cons->getCdrCell().as<Cons>()));
+      REQUIRE(factory->getReachableConsesAsConstSet() == setOfConses(cons,
+                                                                     cons->getCarCell().as<Cons>(),
+                                                                     cons->getCdrCell().as<Cons>()));
     }
     THEN("there is 1 root cons with from-color and 7 void conses")
     {
@@ -338,12 +338,12 @@ SCENARIO("3 conses with 4 children", "[ConsFactory]")
     }
     THEN("there are 6 reachable conses")
     {
-      REQUIRE(factory->getReachableConsesAsSet() == setOfConses(cons1.as<Cons>(),
-                                                                cons1.as<Cons>()->getCarCell().as<Cons>(),
-                                                                cons1.as<Cons>()->getCdrCell().as<Cons>(),
-                                                                cons2.as<Cons>(),
-                                                                cons2.as<Cons>()->getCarCell().as<Cons>(),
-                                                                cons2.as<Cons>()->getCdrCell().as<Cons>()));
+      REQUIRE(factory->getReachableConsesAsConstSet() == setOfConses(cons1.as<Cons>(),
+                                                                     cons1.as<Cons>()->getCarCell().as<Cons>(),
+                                                                     cons1.as<Cons>()->getCdrCell().as<Cons>(),
+                                                                     cons2.as<Cons>(),
+                                                                     cons2.as<Cons>()->getCarCell().as<Cons>(),
+                                                                     cons2.as<Cons>()->getCdrCell().as<Cons>()));
     }
     THEN("weights to root conses are 3")
     {
@@ -375,14 +375,14 @@ SCENARIO("3 conses with 4 children", "[ConsFactory]")
       }
       THEN("all children of cons1, cons2 and cons3 are reachable")
       {
-        REQUIRE(factory->getReachableConsesAsSet() == setOfConses(cons1.as<Cons>(),
-                                                                  cons1.as<Cons>()->getCarCell().as<Cons>(),
-                                                                  cons1.as<Cons>()->getCdrCell().as<Cons>(),
-                                                                  cons2.as<Cons>(),
-                                                                  cons2.as<Cons>()->getCarCell().as<Cons>(),
-                                                                  cons2.as<Cons>()->getCdrCell().as<Cons>(),
-                                                                  cons3.as<Cons>(),
-                                                                  cons3.as<Cons>()->getCarCell().as<Cons>()));
+        REQUIRE(factory->getReachableConsesAsConstSet() == setOfConses(cons1.as<Cons>(),
+                                                                       cons1.as<Cons>()->getCarCell().as<Cons>(),
+                                                                       cons1.as<Cons>()->getCdrCell().as<Cons>(),
+                                                                       cons2.as<Cons>(),
+                                                                       cons2.as<Cons>()->getCarCell().as<Cons>(),
+                                                                       cons2.as<Cons>()->getCdrCell().as<Cons>(),
+                                                                       cons3.as<Cons>(),
+                                                                       cons3.as<Cons>()->getCarCell().as<Cons>()));
       }
       THEN("weight to cons1 are 3,2,1")
       {
@@ -412,11 +412,11 @@ SCENARIO("3 conses with 4 children", "[ConsFactory]")
           REQUIRE(checkConses(factory, 8u, { factory->getFromRootColor()==2u,
                                              factory->getFromColor() == 5u,
                                              Color::Void == 1u}));
-          REQUIRE(factory->getReachableConsesAsSet() == setOfConses(cons1.as<Cons>(),
-                                                                    cons1.as<Cons>()->getCarCell().as<Cons>(),
-                                                                    cons1.as<Cons>()->getCdrCell().as<Cons>(),
-                                                                    cons3.as<Cons>(),
-                                                                    cons3.as<Cons>()->getCarCell().as<Cons>()));
+          REQUIRE(factory->getReachableConsesAsConstSet() == setOfConses(cons1.as<Cons>(),
+                                                                         cons1.as<Cons>()->getCarCell().as<Cons>(),
+                                                                         cons1.as<Cons>()->getCdrCell().as<Cons>(),
+                                                                         cons3.as<Cons>(),
+                                                                         cons3.as<Cons>()->getCarCell().as<Cons>()));
         }
         THEN("weights to root conses are 3 and 2")
         {

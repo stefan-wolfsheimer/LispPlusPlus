@@ -46,7 +46,7 @@ using SharedEdge = std::shared_ptr<ConsGraphEdge>;
 
 ConsGraph::ConsGraph(const Lisp::ConsFactory & factory)
 {
-  std::unordered_set<const Cons*> reachable = factory.getReachableConsesAsSet();
+  std::unordered_set<const Cons*> reachable = factory.getReachableConsesAsConstSet();
   nodes[nullptr] = std::make_shared<ConsGraphNode>(nullptr);
   for(auto cons : reachable)
   {
