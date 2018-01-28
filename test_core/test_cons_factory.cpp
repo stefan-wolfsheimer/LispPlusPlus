@@ -61,35 +61,35 @@ static std::size_t getNumConses(SharedConsFactory factory);
 static std::pair<Color, std::size_t> operator==(Color, std::size_t);
 static bool checkConses(SharedConsFactory factory, const std::vector<std::pair<Color, std::size_t> > & conses);
 static bool checkConses(SharedConsFactory factory, std::size_t total, const std::vector<std::pair<Color, std::size_t> > & conses);
-static std::unordered_set<const Cons*> setOfConses(const std::vector<const Cons*> & conses);
-static std::unordered_set<const Cons*> setOfConses(const Cons * c1 = nullptr,
-                                                   const Cons * c2 = nullptr,
-                                                   const Cons * c3 = nullptr,
-                                                   const Cons * c4 = nullptr,
-                                                   const Cons * c5 = nullptr,
-                                                   const Cons * c6 = nullptr,
-                                                   const Cons * c7 = nullptr,
-                                                   const Cons * c8 = nullptr,
-                                                   const Cons * c9 = nullptr,
-                                                   const Cons * c10 = nullptr);
+static std::unordered_set<Cons*> setOfConses(const std::vector<Cons*> & conses);
+static std::unordered_set<Cons*> setOfConses(Cons * c1 = nullptr,
+                                             Cons * c2 = nullptr,
+                                             Cons * c3 = nullptr,
+                                             Cons * c4 = nullptr,
+                                             Cons * c5 = nullptr,
+                                             Cons * c6 = nullptr,
+                                             Cons * c7 = nullptr,
+                                             Cons * c8 = nullptr,
+                                             Cons * c9 = nullptr,
+                                             Cons * c10 = nullptr);
 static std::size_t getWeight(const ConsGraph & graph,
                              const Cons * parent,
                              const Cons * child);
 static bool consHasParents(const ConsGraph & graph,
-                           const Cons * cons,
-                           const std::vector<const Cons*> & parents);
+                           Cons * cons,
+                           const std::vector<Cons*> & parents);
 static bool consHasParents(const ConsGraph & graph,
-                           const Cons * cons,
-                           const Cons * c1 = nullptr,
-                           const Cons * c2 = nullptr,
-                           const Cons * c3 = nullptr,
-                           const Cons * c4 = nullptr,
-                           const Cons * p5 = nullptr,
-                           const Cons * p6 = nullptr,
-                           const Cons * p7 = nullptr,
-                           const Cons * p8 = nullptr,
-                           const Cons * p9 = nullptr,
-                           const Cons * p10 = nullptr);
+                           Cons * cons,
+                           Cons * c1 = nullptr,
+                           Cons * c2 = nullptr,
+                           Cons * c3 = nullptr,
+                           Cons * c4 = nullptr,
+                           Cons * p5 = nullptr,
+                           Cons * p6 = nullptr,
+                           Cons * p7 = nullptr,
+                           Cons * p8 = nullptr,
+                           Cons * p9 = nullptr,
+                           Cons * p10 = nullptr);
 
 SCENARIO("no cons allocated", "[ConsFactory]")
 {
@@ -144,7 +144,7 @@ SCENARIO("one cons without children", "[ConsFactory]")
     }
     THEN("it is reachable")
     {
-      REQUIRE(factory->getReachableConsesAsConstSet() == setOfConses(cons));
+      REQUIRE(factory->getReachableConsesAsSet() == setOfConses(cons));
     }
     THEN("there is 1 root cons with from-color and 7 void conses")
     {
@@ -175,7 +175,7 @@ SCENARIO("one cons without children", "[ConsFactory]")
       }
       THEN("there is no reachable cons")
       {
-        REQUIRE(factory->getReachableConsesAsConstSet() == setOfConses());
+        REQUIRE(factory->getReachableConsesAsSet() == setOfConses());
       }
     }
   }
@@ -249,9 +249,9 @@ SCENARIO("a cons with 2 children", "[ConsFactory]")
     }
     THEN("the cons and its children are reachable")
     {
-      REQUIRE(factory->getReachableConsesAsConstSet() == setOfConses(cons,
-                                                                     cons->getCarCell().as<Cons>(),
-                                                                     cons->getCdrCell().as<Cons>()));
+      REQUIRE(factory->getReachableConsesAsSet() == setOfConses(cons,
+                                                                cons->getCarCell().as<Cons>(),
+                                                                cons->getCdrCell().as<Cons>()));
     }
     THEN("there is 1 root cons with from-color and 7 void conses")
     {
@@ -336,12 +336,12 @@ SCENARIO("3 conses with 4 children", "[ConsFactory]")
     }
     THEN("there are 6 reachable conses")
     {
-      REQUIRE(factory->getReachableConsesAsConstSet() == setOfConses(cons1.as<Cons>(),
-                                                                     cons1.as<Cons>()->getCarCell().as<Cons>(),
-                                                                     cons1.as<Cons>()->getCdrCell().as<Cons>(),
-                                                                     cons2.as<Cons>(),
-                                                                     cons2.as<Cons>()->getCarCell().as<Cons>(),
-                                                                     cons2.as<Cons>()->getCdrCell().as<Cons>()));
+      REQUIRE(factory->getReachableConsesAsSet() == setOfConses(cons1.as<Cons>(),
+                                                                cons1.as<Cons>()->getCarCell().as<Cons>(),
+                                                                cons1.as<Cons>()->getCdrCell().as<Cons>(),
+                                                                cons2.as<Cons>(),
+                                                                cons2.as<Cons>()->getCarCell().as<Cons>(),
+                                                                cons2.as<Cons>()->getCdrCell().as<Cons>()));
     }
     THEN("weights to root conses are 3")
     {
@@ -373,14 +373,14 @@ SCENARIO("3 conses with 4 children", "[ConsFactory]")
       }
       THEN("all children of cons1, cons2 and cons3 are reachable")
       {
-        REQUIRE(factory->getReachableConsesAsConstSet() == setOfConses(cons1.as<Cons>(),
-                                                                       cons1.as<Cons>()->getCarCell().as<Cons>(),
-                                                                       cons1.as<Cons>()->getCdrCell().as<Cons>(),
-                                                                       cons2.as<Cons>(),
-                                                                       cons2.as<Cons>()->getCarCell().as<Cons>(),
-                                                                       cons2.as<Cons>()->getCdrCell().as<Cons>(),
-                                                                       cons3.as<Cons>(),
-                                                                       cons3.as<Cons>()->getCarCell().as<Cons>()));
+        REQUIRE(factory->getReachableConsesAsSet() == setOfConses(cons1.as<Cons>(),
+                                                                  cons1.as<Cons>()->getCarCell().as<Cons>(),
+                                                                  cons1.as<Cons>()->getCdrCell().as<Cons>(),
+                                                                  cons2.as<Cons>(),
+                                                                  cons2.as<Cons>()->getCarCell().as<Cons>(),
+                                                                  cons2.as<Cons>()->getCdrCell().as<Cons>(),
+                                                                  cons3.as<Cons>(),
+                                                                  cons3.as<Cons>()->getCarCell().as<Cons>()));
       }
       THEN("weight to cons1 are 3,2,1")
       {
@@ -410,11 +410,11 @@ SCENARIO("3 conses with 4 children", "[ConsFactory]")
           REQUIRE(checkConses(factory, 8u, { factory->getFromRootColor()==2u,
                                              factory->getFromColor() == 5u,
                                              Color::Void == 1u}));
-          REQUIRE(factory->getReachableConsesAsConstSet() == setOfConses(cons1.as<Cons>(),
-                                                                         cons1.as<Cons>()->getCarCell().as<Cons>(),
-                                                                         cons1.as<Cons>()->getCdrCell().as<Cons>(),
-                                                                         cons3.as<Cons>(),
-                                                                         cons3.as<Cons>()->getCarCell().as<Cons>()));
+          REQUIRE(factory->getReachableConsesAsSet() == setOfConses(cons1.as<Cons>(),
+                                                                    cons1.as<Cons>()->getCarCell().as<Cons>(),
+                                                                    cons1.as<Cons>()->getCdrCell().as<Cons>(),
+                                                                    cons3.as<Cons>(),
+                                                                    cons3.as<Cons>()->getCarCell().as<Cons>()));
         }
         THEN("weights to root conses are 3 and 2")
         {
@@ -623,23 +623,23 @@ bool checkConses(SharedConsFactory factory, const std::vector<std::pair<Color, s
   return true;
 }
 
-std::unordered_set<const Cons*> setOfConses(const std::vector<const Cons*> & conses)
+std::unordered_set<Cons*> setOfConses(const std::vector<Cons*> & conses)
 {
-  return std::unordered_set<const Cons*>(conses.begin(), conses.end());
+  return std::unordered_set<Cons*>(conses.begin(), conses.end());
 }
 
-std::unordered_set<const Cons*> setOfConses(const Cons * c1,
-                                            const Cons * c2,
-                                            const Cons * c3,
-                                            const Cons * c4,
-                                            const Cons * c5,
-                                            const Cons * c6,
-                                            const Cons * c7,
-                                            const Cons * c8,
-                                            const Cons * c9,
-                                            const Cons * c10)
+std::unordered_set<Cons*> setOfConses(Cons * c1,
+                                      Cons * c2,
+                                      Cons * c3,
+                                      Cons * c4,
+                                      Cons * c5,
+                                      Cons * c6,
+                                      Cons * c7,
+                                      Cons * c8,
+                                      Cons * c9,
+                                      Cons * c10)
 {
-  std::unordered_set<const Cons*> ret;
+  std::unordered_set<Cons*> ret;
   if(c1) ret.insert(c1);
   if(c2) ret.insert(c2);
   if(c3) ret.insert(c3);
@@ -667,13 +667,13 @@ static std::size_t getWeight(const ConsGraph & graph, const Cons * parent, const
 }
 
 static bool consHasParents(const ConsGraph & graph,
-                           const Cons * cons,
-                           const std::vector<const Cons*> & parents)
+                           Cons * cons,
+                           const std::vector<Cons*> & parents)
 {
   auto node = graph.findNode(cons);
   if(node)
   {
-    return node->getConsParents() == setOfConses(parents);
+    return node->getParents() == setOfConses(parents);
   }
   else
   {
@@ -682,23 +682,23 @@ static bool consHasParents(const ConsGraph & graph,
 }
 
 static bool consHasParents(const ConsGraph & graph,
-                           const Cons * cons,
-                           const Cons * c1,
-                           const Cons * c2,
-                           const Cons * c3,
-                           const Cons * c4,
-                           const Cons * c5,
-                           const Cons * c6,
-                           const Cons * c7,
-                           const Cons * c8,
-                           const Cons * c9,
-                           const Cons * c10)
+                           Cons * cons,
+                           Cons * c1,
+                           Cons * c2,
+                           Cons * c3,
+                           Cons * c4,
+                           Cons * c5,
+                           Cons * c6,
+                           Cons * c7,
+                           Cons * c8,
+                           Cons * c9,
+                           Cons * c10)
 {
   auto node = graph.findNode(cons);
   if(node)
   {
-    return node->getConsParents() == setOfConses(c1, c2, c3, c4, c5,
-                                                 c6, c7, c8, c9, c10);
+    return node->getParents() == setOfConses(c1, c2, c3, c4, c5,
+                                             c6, c7, c8, c9, c10);
   }
   else
   {

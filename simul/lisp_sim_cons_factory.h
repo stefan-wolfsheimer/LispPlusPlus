@@ -32,11 +32,13 @@ either expressed or implied, of the FreeBSD Project.
 #include <cstddef>
 #include <memory>
 #include <list>
+#include <vector>
 
 namespace Lisp
 {
   class ConsFactory;
   class Object;
+  class Cons;
 
   class SimConsFactory
   {
@@ -45,14 +47,31 @@ namespace Lisp
     void run();
   private:
     using SharedObject = std::shared_ptr<Object>;
+
     std::size_t target_num_root_conses = 10;
     std::size_t target_num_conses = 100;
     double target_edge_fraction = 0.5;
+    // min_edges = n_root_conses + n_conses = 3
+    // max_edges = n_root_conses + 2 * (n_root_conses + n_conses ) = 7
+    // edge_fraction = (edges - min_edges) / (max_edges - min_edges)
+    //               = (edges - n_root_conses - n_conses) / (2 * n_root_conses + n_conses)
+    // edges = f * (2 * n_root_conses + n_conses) + n_root_conses + n_conses
+    /*
+             |
+             o
+            / \
+           o   o
+
+     */
     std::size_t num_steps = 100;
     std::shared_ptr<ConsFactory> factory;
+    static const unsigned short carIndex;
+    static const unsigned short cdrIndex;
 
+    std::vector<std::pair<Cons*, unsigned short> > getFreeEdges();
     void stepRootConses(std::list<SharedObject> & rootConses);
     void stepConses(std::list<SharedObject> & rootConses);
+    void stepEdge();
     bool selectAddCons(std::size_t numberOfConses);
     bool selectRemoveCons(std::size_t numberOfConses);
   };

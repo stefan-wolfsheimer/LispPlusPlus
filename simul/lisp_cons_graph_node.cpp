@@ -31,18 +31,18 @@ either expressed or implied, of the FreeBSD Project.
 #include "lisp_cons_graph_node.h"
 using Cons = Lisp::Cons;
 
-Lisp::ConsGraphNode::ConsGraphNode(const Cons * _cons) : cons(_cons)
+Lisp::ConsGraphNode::ConsGraphNode(Cons * _cons) : cons(_cons)
 {
 }
 
-const Lisp::Cons * Lisp::ConsGraphNode::getCons() const
+Lisp::Cons * Lisp::ConsGraphNode::getCons() const
 {
   return cons;
 }
 
-std::unordered_set<const Cons*> Lisp::ConsGraphNode::getConsParents() const
+std::unordered_set<Cons*> Lisp::ConsGraphNode::getParents() const
 {
-  std::unordered_set<const Cons*> ret;
+  std::unordered_set<Cons*> ret;
   for(auto n : parents)
   {
     if(n->cons)
@@ -53,9 +53,9 @@ std::unordered_set<const Cons*> Lisp::ConsGraphNode::getConsParents() const
   return ret;
 }
 
-std::unordered_set<const Cons*> Lisp::ConsGraphNode::getConsChildren() const
+std::unordered_set<Cons*> Lisp::ConsGraphNode::getChildren() const
 {
-  std::unordered_set<const Cons*> ret;
+  std::unordered_set<Cons*> ret;
   for(auto n : children)
   {
     if(n->cons)

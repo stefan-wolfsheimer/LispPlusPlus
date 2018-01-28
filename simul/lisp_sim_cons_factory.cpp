@@ -36,10 +36,16 @@ either expressed or implied, of the FreeBSD Project.
 #include <core/lisp_object.h>
 #include <core/lisp_nil.h>
 #include <core/lisp_cons.h>
-
 #include "lisp_cons_graph.h"
+#include "lisp_cons_graph_node.h"
+
 using ConsFactory = Lisp::ConsFactory;
 using Color = ConsFactory::Color;
+using ConsGraph = Lisp::ConsGraph;
+
+const unsigned short Lisp::SimConsFactory::carIndex = 1;
+const unsigned short Lisp::SimConsFactory::cdrIndex = 2;
+
 
 Lisp::SimConsFactory::SimConsFactory()
   : factory(std::make_shared<ConsFactory>(100))
@@ -49,16 +55,27 @@ Lisp::SimConsFactory::SimConsFactory()
 void Lisp::SimConsFactory::run()
 {
   std::list<SharedObject> rootConses;
-  std::cout << "step,numRootConses,numReachableConses,voidConses,freeConses" << std::endl;
+  std::cout << "step,numRootConses,numReachableConses,voidConses,freeConses,numEdges,edgeFraction" << std::endl;
   for(std::size_t i = 0; i < num_steps; i++)
   {
     stepRootConses(rootConses);
     stepConses(rootConses);
+    stepEdge();
+    ConsGraph graph(*factory);
+    std::size_t max_edges = factory->numRootConses() + 2 * (graph.numNodes()-1);
+    std::size_t min_edges = graph.numNodes()-1;
+    double edge_fraction = 0;
+    if(max_edges - min_edges)
+    {
+      edge_fraction = (double)(graph.numEdges() - min_edges) / (max_edges - min_edges);
+    }
     std::cout << i << ","
               << factory->numRootConses() << ","
-              << factory->numReachableConses() << ","
+              << (graph.numNodes()-1) << ","
               << factory->numConses(Color::Void) << ","
-              << factory->numConses(Color::Free)
+              << factory->numConses(Color::Free) << ","
+              << graph.numEdges() << ","
+              << edge_fraction
               << std::endl;
   }
 }
@@ -118,17 +135,14 @@ bool Lisp::SimConsFactory::selectRemoveCons(std::size_t numberOfConses)
   }
 }
 
-
-
-void Lisp::SimConsFactory::stepConses(std::list<SharedObject> & rootConses)
+std::vector<std::pair<Lisp::Cons*, unsigned short> >
+Lisp::SimConsFactory::getFreeEdges()
 {
+  using ConsPair = std::pair<Cons*, unsigned short>;
   using Cons = Lisp::Cons;
   using Nil = Lisp::Nil;
-  using ConsPair = std::pair<Cons*, unsigned short>;
-  static const unsigned short carIndex = 1;
-  static const unsigned short cdrIndex = 2;
+
   std::vector<ConsPair> freeEdges;
-  std::size_t nNonRootConses = 0;
   for(Cons * cons : factory->getReachableConsesAsSet())
   {
     if(cons->getCarCell().isA<Nil>())
@@ -139,27 +153,97 @@ void Lisp::SimConsFactory::stepConses(std::list<SharedObject> & rootConses)
     {
       freeEdges.push_back(ConsPair(cons, cdrIndex));
     }
+  }
+  return freeEdges;
+}
+
+void Lisp::SimConsFactory::stepConses(std::list<SharedObject> & rootConses)
+{
+  using Cons = Lisp::Cons;
+  using Nil = Lisp::Nil;
+  using ConsPair = std::pair<Cons*, unsigned short>;
+  auto freeEdges = getFreeEdges();
+  std::vector<Cons *> nonRootConses;
+  for(Cons * cons : factory->getReachableConsesAsSet())
+  {
     if(!cons->isRoot())
     {
-      nNonRootConses++;
+      nonRootConses.push_back(cons);
     }
   }
-  if(freeEdges.size() > 0)
+  if(freeEdges.size() > 0 && selectAddCons(nonRootConses.size()))
   {
-    if(selectAddCons(nNonRootConses))
+    std::size_t i = rand() % freeEdges.size();
+    if(freeEdges[i].second == carIndex)
     {
-      std::size_t i = rand() % freeEdges.size();
-      if(freeEdges[i].second == carIndex)
+      freeEdges[i].first->setCar(Object(factory->make(Lisp::nil, Lisp::nil)));
+    }
+    else
+    {
+      freeEdges[i].first->setCdr(Object(factory->make(Lisp::nil, Lisp::nil)));
+    }
+  }
+  else if(selectRemoveCons(nonRootConses.size()))
+  {
+    ConsGraph graph(*factory);
+    std::size_t i = rand() % nonRootConses.size();
+    auto cons = nonRootConses[i];
+    auto node = graph.findNode(cons);
+    for(auto parent : node->getParents())
+    {
+      if(parent->getCarCell().as<Cons>() == cons)
       {
-        freeEdges[i].first->setCar(Object(factory->make(Lisp::nil, Lisp::nil)));
+        parent->unsetCar();
       }
-      else
+      if(parent->getCdrCell().as<Cons>() == cons)
       {
-        freeEdges[i].first->setCdr(Object(factory->make(Lisp::nil, Lisp::nil)));
+        parent->unsetCdr();
       }
     }
-    else if(selectRemoveCons(nNonRootConses))
+  }
+}
+
+void Lisp::SimConsFactory::stepEdge()
+{
+  static float acceptanceRate = 0.75f;
+  static float errorAcceptanceRate = 0.25f;
+  ConsGraph graph(*factory);
+  std::size_t n_root_conses = factory->numRootConses();
+  std::size_t n_conses = (graph.numNodes()-1) - n_root_conses;
+  double target_num_edges = target_edge_fraction * ( 2.0 * n_root_conses + n_conses) + n_root_conses + n_conses;
+  std::size_t num_edges = graph.numEdges();
+  std::size_t min_edges = n_root_conses + n_conses;
+  std::size_t max_edges = n_root_conses + 2 * (n_root_conses + n_conses );
+  std::cout << target_num_edges << " " << num_edges << std::endl;
+  if(num_edges  < max_edges)
+  {
+    if( (num_edges < target_num_edges && (float) rand() / (float) RAND_MAX < acceptanceRate) ||
+        (float) rand() / (float) RAND_MAX < errorAcceptanceRate )
     {
+      auto freeEdges = getFreeEdges();
+      std::size_t i = rand() % freeEdges.size();
+      std::size_t j = rand() % (graph.numNodes()-1);
+      auto node = graph.getNode(j+1);
+      auto cons = node->getCons();
+      if(cons)
+      {
+        if(freeEdges[i].second == carIndex)
+        {
+          //freeEdges[i].first->setCar(Object(cons));
+        }
+        else
+        {
+          //freeEdges[i].first->setCdr(Object(cons));
+        }
+      }
+    }
+  }
+  if(num_edges > min_edges)
+  {
+    if( (num_edges > target_num_edges && (float) rand() / (float) RAND_MAX < acceptanceRate) ||
+        (float) rand() / (float) RAND_MAX < errorAcceptanceRate )
+    {
+      //Todo remove edge
     }
   }
 }

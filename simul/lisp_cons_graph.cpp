@@ -48,7 +48,7 @@ bool Lisp::checkColorOfConses(const ConsFactory & factory, Color color)
 {
   auto conses = factory.getConses(color);
   std::size_t i = 0;
-  for(const Cons * cons : conses)
+  for(Cons * cons : conses)
   {
     if(cons->getColor() != color)
     {
@@ -107,7 +107,7 @@ bool Lisp::checkConsFactory(const ConsFactory & factory)
 
 ConsGraph::ConsGraph(const Lisp::ConsFactory & factory)
 {
-  std::unordered_set<const Cons*> reachable = factory.getReachableConsesAsConstSet();
+  std::unordered_set<Cons*> reachable = factory.getReachableConsesAsSet();
   nodes[nullptr] = std::make_shared<ConsGraphNode>(nullptr);
   for(auto cons : reachable)
   {
@@ -162,6 +162,18 @@ SharedNode ConsGraph::findNode(const Cons * cons) const
   }
 }
 
+std::shared_ptr<ConsGraphNode> ConsGraph::getNode(std::size_t index) const
+{
+  for(auto p : nodes)
+  {
+    if(!index)
+    {
+      return p.second;
+    }
+    index--;
+  }
+}
+
 SharedEdge ConsGraph::findEdge(const Cons * parent,
                                const Cons * child) const
 {
@@ -174,5 +186,15 @@ SharedEdge ConsGraph::findEdge(const Cons * parent,
   {
     return SharedEdge();
   }
+}
+
+std::size_t ConsGraph::numNodes() const
+{
+  return nodes.size();
+}
+
+std::size_t ConsGraph::numEdges() const
+{
+  return edges.size();
 }
 

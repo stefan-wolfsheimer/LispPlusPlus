@@ -42,13 +42,13 @@ namespace Lisp
   public:
     friend class ConsGraph;
     friend class ConsGraphEdge;
-    ConsGraphNode(const Cons * _cons);
-    const Lisp::Cons * getCons() const;
-    std::unordered_set<const Cons*> getConsParents() const;
-    std::unordered_set<const Cons*> getConsChildren() const;
+    ConsGraphNode(Cons * _cons);
+    Lisp::Cons * getCons() const;
+    std::unordered_set<Cons*> getParents() const;
+    std::unordered_set<Cons*> getChildren() const;
   private:
     std::vector<ConsGraphEdge*> edges;
-    const Lisp::Cons * cons;
+    Lisp::Cons * cons;
     std::unordered_set<ConsGraphNode*> parents;
     std::unordered_set<ConsGraphNode*> children;
   };

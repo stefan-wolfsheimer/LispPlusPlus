@@ -239,9 +239,9 @@ std::size_t Lisp::ConsFactory::numReachableConses() const
   return getReachableConsesAsConstSet().size();
 }
 
-std::vector<const Cons*> Lisp::ConsFactory::getConses(Color color) const
+std::vector<Cons*> Lisp::ConsFactory::getConses(Color color) const
 {
-  std::vector<const Cons*> ret;
+  std::vector<Cons*> ret;
   if(color == Color::Free)
   {
     for(auto & v : freeConses)
@@ -251,7 +251,7 @@ std::vector<const Cons*> Lisp::ConsFactory::getConses(Color color) const
   }
   else
   {
-    for(const Cons * v: conses[(unsigned char)color])
+    for(Cons * v: conses[(unsigned char)color])
     {
       ret.push_back(v);
     }
@@ -259,9 +259,9 @@ std::vector<const Cons*> Lisp::ConsFactory::getConses(Color color) const
   return ret;
 }
 
-std::vector<const Cons*> Lisp::ConsFactory::getRootConses() const
+std::vector<Cons*> Lisp::ConsFactory::getRootConses() const
 {
-  std::vector<const Cons*> ret;
+  std::vector<Cons*> ret;
   ret.insert(ret.end(),
              conses[(unsigned char)Color::BlackRoot].begin(),
              conses[(unsigned char)Color::BlackRoot].end());
@@ -321,11 +321,11 @@ std::unordered_set<Cons*> Lisp::ConsFactory::getReachableConsesAsSet() const
   return getReachableConsesAsSetIntneral<Cons>();
 }
 
-std::vector<const Cons*> Lisp::ConsFactory::getReachableConses() const
+std::vector<Cons*> Lisp::ConsFactory::getReachableConses() const
 {
   //Todo lock
-  std::unordered_set<const Cons*> root = getReachableConsesAsConstSet();
-  std::vector<const Cons*> ret(root.begin(), root.end());
+  std::unordered_set<Cons*> root = getReachableConsesAsSet();
+  std::vector<Cons*> ret(root.begin(), root.end());
   return ret;
 }
 

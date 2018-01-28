@@ -102,9 +102,9 @@ namespace Lisp
      */
     std::size_t numReachableConses() const;
 
-    std::vector<const Cons*> getConses(Color color) const;
-    std::vector<const Cons*> getRootConses() const;
-    std::vector<const Cons*> getReachableConses() const;
+    std::vector<Cons*> getConses(Color color) const;
+    std::vector<Cons*> getRootConses() const;
+    std::vector<Cons*> getReachableConses() const;
     std::unordered_set<const Cons*> getReachableConsesAsConstSet() const;
     std::unordered_set<Cons*> getReachableConsesAsSet() const;
     void cycleGarbageCollector();
