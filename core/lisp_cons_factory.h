@@ -84,8 +84,24 @@ namespace Lisp
      */
     void gcStep(Cons * cons);
 
+    /**
+     * The number of conses with a given color
+     * @return Number of conses
+     */
     std::size_t numConses(Color color) const;
+
+    /**
+     * The number of root conses
+     * @return Number of conses
+     */
     std::size_t numRootConses() const;
+
+    /**
+     * Compute the number of reachable conses.
+     * @return Number of reachable conses.
+     */
+    std::size_t numReachableConses() const;
+
     std::vector<const Cons*> getConses(Color color) const;
     std::vector<const Cons*> getRootConses() const;
     std::vector<const Cons*> getReachableConses() const;

@@ -234,6 +234,10 @@ std::size_t Lisp::ConsFactory::numRootConses() const
     conses[(unsigned char)Color::BlackRoot].size();
 }
 
+std::size_t Lisp::ConsFactory::numReachableConses() const
+{
+  return getReachableConsesAsConstSet().size();
+}
 
 std::vector<const Cons*> Lisp::ConsFactory::getConses(Color color) const
 {

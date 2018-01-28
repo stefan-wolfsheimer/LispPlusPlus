@@ -38,6 +38,8 @@ either expressed or implied, of the FreeBSD Project.
 #include <core/lisp_cons.h>
 
 #include "lisp_cons_graph.h"
+using ConsFactory = Lisp::ConsFactory;
+using Color = ConsFactory::Color;
 
 Lisp::SimConsFactory::SimConsFactory()
   : factory(std::make_shared<ConsFactory>(100))
@@ -47,11 +49,17 @@ Lisp::SimConsFactory::SimConsFactory()
 void Lisp::SimConsFactory::run()
 {
   std::list<SharedObject> rootConses;
+  std::cout << "step,numRootConses,numReachableConses,voidConses,freeConses" << std::endl;
   for(std::size_t i = 0; i < num_steps; i++)
   {
     stepRootConses(rootConses);
     stepConses(rootConses);
-    std::cout << i << " " << std::endl;
+    std::cout << i << ","
+              << factory->numRootConses() << ","
+              << factory->numReachableConses() << ","
+              << factory->numConses(Color::Void) << ","
+              << factory->numConses(Color::Free)
+              << std::endl;
   }
 }
 
