@@ -15,6 +15,7 @@ SET(CMAKE_CXX_FLAGS_RELEASE "-O2")
 SET(CMAKE_CXX_FLAGS_DEBUG  "-O0 -g")
 
 include_directories (${PROJECT_SOURCE_DIR}/Catch2/single_include)
+include_directories (${PROJECT_SOURCE_DIR}/CliArgs/include)
 include_directories (${PROJECT_SOURCE_DIR})
 
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
@@ -27,6 +28,10 @@ IF(CMAKE_BUILD_TYPE MATCHES Debug)
       test_core/test_object.cpp
       test_core/test_cons_factory.cpp
       test_core/test_cons.cpp
+      CliArgs/tests/test_flag.cpp
+      CliArgs/tests/test_multiple_flag.cpp
+      CliArgs/tests/test_parser.cpp
+      CliArgs/tests/test_value.cpp
       )
     target_link_libraries(runtest Catch Core Simul)
 ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
