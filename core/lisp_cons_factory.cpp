@@ -86,8 +86,9 @@ void Lisp::ConsFactory::removeFromVector(Cons * cons)
   std::vector<Cons*> & _conses(conses[(unsigned char)cons->color]);
   assert(_conses.size() > 0);
   assert(_conses[cons->index] == cons);
+  std::size_t index = cons->index;
   _conses[cons->index] = _conses.back();
-  _conses.back()->index = cons->index;
+  _conses[cons->index]->index = index;
   _conses.pop_back();
 }
 
@@ -108,6 +109,23 @@ void Lisp::ConsFactory::moveAllFromVectorToOther(Color colorFrom, Color colorTo)
   }
   vto.insert(vto.end(), vfrom.begin(), vfrom.end());
   vfrom.clear();
+}
+
+void Lisp::ConsFactory::gcStep(Cons * cons)
+{
+  Color color = cons->getColor();
+  if(color == fromColor || color == Color::Grey)
+  {
+    removeFromVector(cons);
+    addToVector(toColor, cons);
+  }
+  else if(color == fromRootColor || color == Color::GreyRoot)
+  {
+    removeFromVector(cons);
+    addToVector(toRootColor, cons);
+  }
+  greyChildInternal(cons->getCarCell());
+  greyChildInternal(cons->getCdrCell());
 }
 
 inline void Lisp::ConsFactory::greyChildInternal(const Cell & cell)
@@ -131,11 +149,6 @@ inline void Lisp::ConsFactory::greyChildInternal(Cons * cons)
     removeFromVector(cons);
     addToVector(Color::GreyRoot, cons);
   }
-}
-
-void Lisp::ConsFactory::greyChild(Cons * cons)
-{
-  greyChildInternal(cons);
 }
 
 Lisp::Cons * Lisp::ConsFactory::make(const Object & car,
@@ -175,6 +188,7 @@ void Lisp::ConsFactory::root(Cons * cons)
 {
   assert(!cons->isRoot());
   assert(cons->color != Cons::Color::Void);
+  assert(cons->index < conses[(unsigned char)cons->color].size());
   assert(cons == &*conses[(unsigned char)cons->color][cons->index]);
   removeFromVector(cons);
   cons->refCount = 1u;
@@ -190,8 +204,6 @@ void Lisp::ConsFactory::unroot(Cons * cons)
   assert(cons->isRoot());
   assert(cons == &*conses[(unsigned char)cons->color][cons->index]);
   removeFromVector(cons);
-  //@todo fix this: keep color, but move from root to non-root
-  //addToVector(toColor, cons);
   addToVector(Color((unsigned char)cons->color - 3), cons);
   stepGargabeCollector();
   stepRecycle();
@@ -243,23 +255,19 @@ std::vector<const Cons*> Lisp::ConsFactory::getConses(Color color) const
   return ret;
 }
 
-std::vector<const Cons*> Lisp::ConsFactory::getConses(Color begin,
-                                                      Color end) const
-{
-  std::vector<const Cons*> ret;
-  for(unsigned int curr = (unsigned int)begin;
-      curr < (unsigned int) end;
-      ++curr)
-  {
-    auto tmp = getConses((Color)curr);
-    ret.insert(ret.end(), tmp.begin(), tmp.end());
-  }
-  return ret;
-}
-
 std::vector<const Cons*> Lisp::ConsFactory::getRootConses() const
 {
-  return getConses(Lisp::Cons::Color::WhiteRoot, Lisp::Cons::Color::Free);
+  std::vector<const Cons*> ret;
+  ret.insert(ret.end(),
+             conses[(unsigned char)Color::BlackRoot].begin(),
+             conses[(unsigned char)Color::BlackRoot].end());
+  ret.insert(ret.end(),
+             conses[(unsigned char)Color::GreyRoot].begin(),
+             conses[(unsigned char)Color::GreyRoot].end());
+  ret.insert(ret.end(),
+             conses[(unsigned char)Color::WhiteRoot].begin(),
+             conses[(unsigned char)Color::WhiteRoot].end());
+  return ret;
 }
 
 template<typename T> std::unordered_set<T*>
@@ -281,13 +289,13 @@ Lisp::ConsFactory::getReachableConsesAsSetIntneral() const
     todo.erase(cons);
     root.insert(cons);
     {
-      const Object & ocar(cons->car);
+      const Cell & ocar(cons->car);
       ConsType * car = ocar.as<ConsType>();
       if(car && todo.find(car) == todo.end() && root.find(car) == root.end())
       {
         todo.insert(car);
       }
-      const Object & ocdr(cons->cdr);
+      const Cell & ocdr(cons->cdr);
       ConsType * cdr = ocdr.as<ConsType>();
       if(cdr && todo.find(cdr) == todo.end() && root.find(cdr) == root.end())
       {
@@ -371,6 +379,8 @@ void Lisp::ConsFactory::stepGargabeCollector()
     {
       // Todo: check edge case: cons == car or cons == cdr !
       auto cons = conses[(unsigned char)fromRootColor].back();
+      assert(cons->color == fromRootColor);
+      assert(cons->index == conses[(unsigned char)fromRootColor].size()-1);
       conses[(unsigned char)fromRootColor].pop_back();
       addToVector(toRootColor, cons);
       greyChildInternal(cons->getCarCell());
@@ -380,6 +390,8 @@ void Lisp::ConsFactory::stepGargabeCollector()
     {
       // Todo: check edge case: cons == car or cons == cdr !
       auto cons = conses[(unsigned char)Color::GreyRoot].back();
+      assert(cons->color == Color::GreyRoot);
+      assert(cons->index == conses[(unsigned char)Color::GreyRoot].size()-1);
       conses[(unsigned char)Color::GreyRoot].pop_back();
       addToVector(toRootColor, cons);
       greyChildInternal(cons->getCarCell());
@@ -389,6 +401,8 @@ void Lisp::ConsFactory::stepGargabeCollector()
     {
       // Todo: check edge case: cons == car or cons == cdr !
       auto cons = conses[(unsigned char)Color::Grey].back();
+      assert(cons->color == Color::Grey);
+      assert(cons->index == conses[(unsigned char)Color::Grey].size()-1);
       conses[(unsigned char)Color::Grey].pop_back();
       addToVector(toColor, cons);
       greyChildInternal(cons->getCarCell());

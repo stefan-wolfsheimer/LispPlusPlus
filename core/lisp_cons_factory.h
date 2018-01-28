@@ -83,12 +83,10 @@ namespace Lisp
      * to Color::GreyRoot or Color::Grey.
      */
     void gcStep(Cons * cons);
-    void greyChild(Cons * cons);
 
     std::size_t numConses(Color color) const;
     std::size_t numRootConses() const;
     std::vector<const Cons*> getConses(Color color) const;
-    std::vector<const Cons*> getConses(Color begin, Color end) const;
     std::vector<const Cons*> getRootConses() const;
     std::vector<const Cons*> getReachableConses() const;
     std::unordered_set<const Cons*> getReachableConsesAsConstSet() const;

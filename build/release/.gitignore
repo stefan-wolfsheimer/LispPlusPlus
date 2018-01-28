@@ -4,3 +4,4 @@ cmake_install.cmake
 core
 Makefile
 runtest
+sim_cons_factory

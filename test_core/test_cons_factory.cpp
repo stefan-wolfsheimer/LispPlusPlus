@@ -58,8 +58,6 @@ static const std::size_t error = std::numeric_limits<std::size_t>::max() - 1;
 static SharedConsFactory makeFactory(std::size_t pageSize=12);
 static std::size_t getNumConses(SharedConsFactory factory, Color color);
 static std::size_t getNumConses(SharedConsFactory factory);
-static bool checkColorOfConses(SharedConsFactory factory, Color color,
-                               const std::vector<const Cons*> conses);
 static std::pair<Color, std::size_t> operator==(Color, std::size_t);
 static bool checkConses(SharedConsFactory factory, const std::vector<std::pair<Color, std::size_t> > & conses);
 static bool checkConses(SharedConsFactory factory, std::size_t total, const std::vector<std::pair<Color, std::size_t> > & conses);
@@ -560,39 +558,6 @@ static SharedConsFactory makeFactory(std::size_t pageSize)
   return std::make_shared<ConsFactory>(pageSize, 0, 0);
 }
 
-static bool checkColorOfConses(SharedConsFactory factory, Color color,
-                               const std::vector<const Cons*> conses)
-{
-  for(auto cons : conses)
-  {
-    if(cons->getColor() != color)
-    {
-      return false;
-    }
-  }
-  if(color == factory->getToColor())
-  {
-    for(auto cons : conses)
-    {
-      if(cons->getCarCell().isA<Cons>())
-      {
-        if(cons->getCarCell().as<Cons>()->getColor() == factory->getFromColor())
-        {
-          return false;
-        }
-      }
-      if(cons->getCdrCell().isA<Cons>())
-      {
-        if(cons->getCarCell().as<Cons>()->getColor() == factory->getFromColor())
-        {
-          return false;
-        }
-      }
-    }
-  }
-  return true;
-}
-
 static std::size_t getNumConses(SharedConsFactory factory)
 {
   std::vector<Color> v({Color::Void,
@@ -616,16 +581,13 @@ static std::size_t getNumConses(SharedConsFactory factory)
   return ret;
 }
 
+
 static std::size_t getNumConses(SharedConsFactory factory, Color color)
 {
-  auto nConses = factory->numConses(color);
   auto conses = factory->getConses(color);
-  bool colorOfConsesEqual = true;
-  if(color != Color::Free)
-  {
-    colorOfConsesEqual = checkColorOfConses(factory, color, conses);
-    CHECK(colorOfConsesEqual);
-  }
+  auto nConses = factory->numConses(color);
+  bool colorOfConsesEqual = Lisp::checkColorOfConses(*factory, color);
+  CHECK(colorOfConsesEqual);
   CHECK(nConses == conses.size());
   return (nConses == conses.size() && colorOfConsesEqual) ? nConses : error;
 }

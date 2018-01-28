@@ -37,8 +37,10 @@ either expressed or implied, of the FreeBSD Project.
 #include <core/lisp_nil.h>
 #include <core/lisp_cons.h>
 
+#include "lisp_cons_graph.h"
+
 Lisp::SimConsFactory::SimConsFactory()
-  : factory(std::make_shared<ConsFactory>(100, 0, 0))
+  : factory(std::make_shared<ConsFactory>(100))
 {
 }
 
@@ -49,7 +51,7 @@ void Lisp::SimConsFactory::run()
   {
     stepRootConses(rootConses);
     stepConses(rootConses);
-    std::cout << i << " " << factory->numRootConses() << std::endl;
+    std::cout << i << " " << std::endl;
   }
 }
 

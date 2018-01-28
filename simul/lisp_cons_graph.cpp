@@ -39,10 +39,71 @@ using Cons = Lisp::Cons;
 using ConsGraphNode = Lisp::ConsGraphNode;
 using ConsGraphEdge = Lisp::ConsGraphEdge;
 using ConsFactory = Lisp::ConsFactory;
+using Color = ConsFactory::Color;
 using ConsGraph = Lisp::ConsGraph;
 using SharedNode = std::shared_ptr<ConsGraphNode>;
 using SharedEdge = std::shared_ptr<ConsGraphEdge>;
 
+bool Lisp::checkColorOfConses(const ConsFactory & factory, Color color)
+{
+  auto conses = factory.getConses(color);
+  std::size_t i = 0;
+  for(const Cons * cons : conses)
+  {
+    if(cons->getColor() != color)
+    {
+      return false;
+    }
+    if(color != Color::Void && color != Color::Free)
+    {
+      if(cons->getIndex() != i)
+      {
+        return false;
+      }
+    }
+    i++;
+  }
+  if(color == factory.getToColor())
+  {
+    for(auto cons : conses)
+    {
+      if(cons->getCarCell().isA<const Cons>())
+      {
+        if(cons->getCarCell().as<const Cons>()->getColor() == factory.getFromColor())
+        {
+          return false;
+        }
+      }
+      if(cons->getCdrCell().isA<const Cons>())
+      {
+        if(cons->getCdrCell().as<const Cons>()->getColor() == factory.getFromColor())
+        {
+          return false;
+        }
+      }
+    }
+  }
+  return true;
+}
+
+bool Lisp::checkConsFactory(const ConsFactory & factory)
+{
+  bool ret = true;
+  std::vector<Color> colors({Color::Void,
+                             Color::White,
+                             Color::Grey,
+                             Color::Black,
+                             Color::WhiteRoot,
+                             Color::GreyRoot,
+                             Color::BlackRoot,
+                             Color::Free});
+
+  for(auto color : colors)
+  {
+    ret&= checkColorOfConses(factory, color);
+  }
+  return true;
+}
 
 ConsGraph::ConsGraph(const Lisp::ConsFactory & factory)
 {

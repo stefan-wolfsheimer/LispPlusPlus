@@ -35,18 +35,22 @@ either expressed or implied, of the FreeBSD Project.
 #include <unordered_map>
 #include <map>
 #include <cstdint>
+#include "core/lisp_cons_factory.h"
 
 namespace Lisp
 {
   class Cons;
   class ConsGraphEdge;
   class ConsGraphNode;
-  class ConsFactory;
+
+  bool checkConsFactory(const ConsFactory & factory);
+  bool checkColorOfConses(const ConsFactory & factory,
+                          Lisp::ConsFactory::Color color);
 
   class ConsGraph
   {
   public:
-    ConsGraph(const ConsFactory & factor);
+    ConsGraph(const ConsFactory & factory);
     std::shared_ptr<ConsGraphNode> getRootNode() const;
     std::shared_ptr<ConsGraphNode> findNode(const Cons *) const;
     std::shared_ptr<ConsGraphEdge> findEdge(const Cons * parent,

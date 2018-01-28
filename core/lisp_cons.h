@@ -151,7 +151,7 @@ void Lisp::Cons::setCar(const Object & rhs)
     car = Lisp::nil;
     car.typeId = rhs.typeId;
     car.data.cons = rhs.as<Cons>();
-    consFactory->greyChild(this);
+    consFactory->gcStep(this);
   }
   else
   {
@@ -167,7 +167,7 @@ void Lisp::Cons::setCdr(const Object & rhs)
     cdr = Lisp::nil;
     cdr.typeId = rhs.typeId;
     cdr.data.cons = rhs.as<Cons>();
-    consFactory->greyChild(this);
+    consFactory->gcStep(this);
   }
   else
   {
