@@ -53,6 +53,7 @@ namespace Lisp
     inline void unsetCdr();
     inline void setCar(const Object & rhs);
     inline void setCdr(const Object & rhs);
+    inline std::size_t getIndex() const;
   private:
     ConsFactory * consFactory;
     Color color;
@@ -85,6 +86,11 @@ bool Lisp::Cons::isRoot() const
     color == Cons::Color::WhiteRoot ||
     color == Cons::Color::BlackRoot ||
     color == Cons::Color::GreyRoot;
+}
+
+std::size_t Lisp::Cons::getIndex() const
+{
+  return index;
 }
 
 void Lisp::Cons::unroot()
@@ -166,7 +172,7 @@ void Lisp::Cons::setCdr(const Object & rhs)
   else
   {
     // set non-cons
-    car = rhs;
+    cdr = rhs;
   }
 }
 
