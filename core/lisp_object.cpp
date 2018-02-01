@@ -57,8 +57,8 @@ Lisp::Object::Object() : Cell(Nil::typeId)
 
 Lisp::Object::Object(Cons * cons) : Cell(Lisp::Cons::typeId)
 {
+  assert(cons->isRoot());
   data.cons = cons;
-  cons->root();
 }
 
 Lisp::Object::~Object()

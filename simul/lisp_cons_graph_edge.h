@@ -35,6 +35,7 @@ either expressed or implied, of the FreeBSD Project.
 namespace Lisp
 {
   class ConsGraphNode;
+  class Cons;
   class ConsGraphEdge
   {
   public:
@@ -42,6 +43,8 @@ namespace Lisp
     std::size_t getWeight() const;
     ConsGraphEdge(const ConsGraphNode * _parent,
                   const ConsGraphNode * _child);
+    Cons * getParent() const;
+    Cons * getChild() const;
   private:
     static std::unordered_set<const ConsGraphNode*>
     computeChildSet(const std::unordered_set<const ConsGraphNode*>& input);

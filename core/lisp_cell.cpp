@@ -17,3 +17,9 @@ Lisp::Cell::Cell(const Object & rhs)
   data = rhs.data;
 }
 
+Lisp::Cell::Cell(Cons * cons)
+{
+  typeId = Lisp::Cons::typeId;
+  data.cons = cons;
+}
+

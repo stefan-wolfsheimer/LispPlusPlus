@@ -28,16 +28,18 @@ IF(CMAKE_BUILD_TYPE MATCHES Debug)
       test_core/test_object.cpp
       test_core/test_cons_factory.cpp
       test_core/test_cons.cpp
+      CliArgs/tests/test_argument.cpp
       CliArgs/tests/test_flag.cpp
       CliArgs/tests/test_multiple_flag.cpp
-      CliArgs/tests/test_parser.cpp
       CliArgs/tests/test_value.cpp
+      CliArgs/tests/test_multiple_value.cpp
+      CliArgs/tests/test_parser.cpp
       )
     target_link_libraries(runtest Catch Core Simul)
 ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
 
-add_executable(sim_cons_factory simul/lisp_sim_cons_factory.cpp)
-target_link_libraries(sim_cons_factory Core Simul)
+add_executable(sim_cons_factory sim_cons_factory.cpp)
+target_link_libraries(sim_cons_factory Simul Core)
 
 add_subdirectory (core)
 add_subdirectory (simul)

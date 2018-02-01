@@ -53,6 +53,8 @@ namespace Lisp
     inline void unsetCdr();
     inline void setCar(const Object & rhs);
     inline void setCdr(const Object & rhs);
+    inline void setCar(Cons * cons, std::size_t typeId=Lisp::Cons::typeId);
+    inline void setCdr(Cons * cons, std::size_t typeId=Lisp::Cons::typeId);
     inline std::size_t getIndex() const;
   private:
     ConsFactory * consFactory;
@@ -146,12 +148,10 @@ void Lisp::Cons::unsetCdr()
 
 void Lisp::Cons::setCar(const Object & rhs)
 {
-  if(rhs.isA<const Cons>())
+  Lisp::Cons * cons = rhs.as<Cons>();
+  if(cons)
   {
-    car = Lisp::nil;
-    car.typeId = rhs.typeId;
-    car.data.cons = rhs.as<Cons>();
-    consFactory->gcStep(this);
+    setCar(cons, rhs.typeId);
   }
   else
   {
@@ -162,18 +162,32 @@ void Lisp::Cons::setCar(const Object & rhs)
 
 void Lisp::Cons::setCdr(const Object & rhs)
 {
-  if(rhs.isA<const Cons>())
+  Lisp::Cons * cons = rhs.as<Cons>();
+  if(cons)
   {
-    cdr = Lisp::nil;
-    cdr.typeId = rhs.typeId;
-    cdr.data.cons = rhs.as<Cons>();
-    consFactory->gcStep(this);
+    setCdr(cons, rhs.typeId);
   }
   else
   {
     // set non-cons
     cdr = rhs;
   }
+}
+
+void Lisp::Cons::setCar(Cons * cons, std::size_t _typeId)
+{
+  car = Lisp::nil;
+  car.typeId = _typeId; 
+  car.data.cons = cons;
+  consFactory->gcStep(this);
+}
+
+void Lisp::Cons::setCdr(Cons * cons, std::size_t _typeId)
+{
+  cdr = Lisp::nil;
+  cdr.typeId = _typeId;
+  cdr.data.cons = cons;
+  consFactory->gcStep(this);
 }
 
 namespace Lisp

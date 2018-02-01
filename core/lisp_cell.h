@@ -49,6 +49,7 @@ namespace Lisp
     friend class Lisp::Cons;
 
     Cell(const Object & rhs);
+    Cell(Cons * cons);
     Cell& operator=(const Object & rhs);
 
     inline std::size_t getTypeId() const;

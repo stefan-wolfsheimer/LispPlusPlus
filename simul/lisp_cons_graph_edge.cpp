@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include "lisp_cons_graph_edge.h"
 #include "lisp_cons_graph_node.h"
+#include "core/lisp_cons.h"
 #include <unordered_set>
 
 using ConsGraphNode = Lisp::ConsGraphNode;
@@ -94,3 +95,14 @@ std::size_t Lisp::ConsGraphEdge::getWeight() const
   }
   return weight;
 }
+
+Lisp::Cons * Lisp::ConsGraphEdge::getParent() const
+{
+  return parent->getCons();
+}
+
+Lisp::Cons * Lisp::ConsGraphEdge::getChild() const
+{
+  return child->getCons();
+}
+

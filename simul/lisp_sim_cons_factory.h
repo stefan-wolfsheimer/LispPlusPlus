@@ -40,17 +40,42 @@ namespace Lisp
   class Object;
   class Cons;
 
+  struct SimConsFactoryRecord
+  {
+    std::size_t step;
+    std::size_t numRootConses;
+    std::size_t numReachableConses;
+    std::size_t numVoidConses;
+    std::size_t numFreeConses;
+    std::size_t numEdges;
+    double edgeFraction;
+    SimConsFactoryRecord();
+  };
+
   class SimConsFactory
   {
   public:
     SimConsFactory();
-    void run();
+    std::vector<SimConsFactoryRecord> run();
+
+    void setTargetNumRootConses(std::size_t v);
+    std::size_t getTargetNumRootConses() const;
+
+    void setTargetNumBulkConses(std::size_t v);
+    std::size_t getTargetNumBulkConses() const;
+
+    void setTargetEdgeFraction(double targetEdgeFraction);
+    double getTargetEdgeFraction() const;
+
+    void setNumSteps(std::size_t numSteps);
+    std::size_t getNumSteps() const;
+
   private:
     using SharedObject = std::shared_ptr<Object>;
 
-    std::size_t target_num_root_conses = 10;
-    std::size_t target_num_conses = 100;
-    double target_edge_fraction = 0.5;
+    std::size_t targetNumRootConses = 10;
+    std::size_t targetNumBulkConses = 100;
+    double targetEdgeFraction = 0.5;
     // min_edges = n_root_conses + n_conses = 3
     // max_edges = n_root_conses + 2 * (n_root_conses + n_conses ) = 7
     // edge_fraction = (edges - min_edges) / (max_edges - min_edges)
@@ -63,7 +88,7 @@ namespace Lisp
            o   o
 
      */
-    std::size_t num_steps = 100;
+    std::size_t numSteps = 100;
     std::shared_ptr<ConsFactory> factory;
     static const unsigned short carIndex;
     static const unsigned short cdrIndex;
@@ -72,8 +97,8 @@ namespace Lisp
     void stepRootConses(std::list<SharedObject> & rootConses);
     void stepConses(std::list<SharedObject> & rootConses);
     void stepEdge();
-    bool selectAddCons(std::size_t numberOfConses);
-    bool selectRemoveCons(std::size_t numberOfConses);
+    bool selectAddCons(std::size_t numberOfConses, std::size_t target);
+    bool selectRemoveCons(std::size_t numberOfConses, std::size_t target);
   };
 }
 

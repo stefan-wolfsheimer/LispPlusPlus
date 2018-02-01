@@ -32,12 +32,14 @@ either expressed or implied, of the FreeBSD Project.
 #include <list>
 #include <cstdlib>
 #include <iostream>
+#include <assert.h>
 #include <core/lisp_cons_factory.h>
 #include <core/lisp_object.h>
 #include <core/lisp_nil.h>
 #include <core/lisp_cons.h>
 #include "lisp_cons_graph.h"
 #include "lisp_cons_graph_node.h"
+#include "lisp_cons_graph_edge.h"
 
 using ConsFactory = Lisp::ConsFactory;
 using Color = ConsFactory::Color;
@@ -46,18 +48,70 @@ using ConsGraph = Lisp::ConsGraph;
 const unsigned short Lisp::SimConsFactory::carIndex = 1;
 const unsigned short Lisp::SimConsFactory::cdrIndex = 2;
 
+Lisp::SimConsFactoryRecord::SimConsFactoryRecord()
+{
+  step = 0;
+  numRootConses = 0;
+  numReachableConses = 0;
+  numVoidConses = 0;
+  numFreeConses = 0;
+  numEdges = 0;
+  edgeFraction = 0;
+}
 
 Lisp::SimConsFactory::SimConsFactory()
   : factory(std::make_shared<ConsFactory>(100))
 {
 }
 
-void Lisp::SimConsFactory::run()
+void Lisp::SimConsFactory::setTargetNumRootConses(std::size_t v)
 {
+  targetNumRootConses = v;
+}
+
+std::size_t Lisp::SimConsFactory::getTargetNumRootConses() const
+{
+  return targetNumRootConses;
+}
+
+void Lisp::SimConsFactory::setTargetNumBulkConses(std::size_t v)
+{
+  targetNumBulkConses = v;
+}
+    
+std::size_t Lisp::SimConsFactory::getTargetNumBulkConses() const
+{
+  return targetNumBulkConses;
+}
+
+void Lisp::SimConsFactory::setTargetEdgeFraction(double f)
+{
+  targetEdgeFraction = f;
+}
+
+double Lisp::SimConsFactory::getTargetEdgeFraction() const
+{
+  return targetEdgeFraction;
+}
+
+void Lisp::SimConsFactory::setNumSteps(std::size_t n)
+{
+  numSteps = n;
+}
+
+std::size_t Lisp::SimConsFactory::getNumSteps() const
+{
+  return numSteps;
+}
+
+std::vector<Lisp::SimConsFactoryRecord> Lisp::SimConsFactory::run()
+{
+  std::vector<SimConsFactoryRecord> ret;
   std::list<SharedObject> rootConses;
   std::cout << "step,numRootConses,numReachableConses,voidConses,freeConses,numEdges,edgeFraction" << std::endl;
-  for(std::size_t i = 0; i < num_steps; i++)
+  for(std::size_t i = 0; i < numSteps; i++)
   {
+    SimConsFactoryRecord rec;
     stepRootConses(rootConses);
     stepConses(rootConses);
     stepEdge();
@@ -69,6 +123,15 @@ void Lisp::SimConsFactory::run()
     {
       edge_fraction = (double)(graph.numEdges() - min_edges) / (max_edges - min_edges);
     }
+    assert((graph.numNodes()-1) == factory->getReachableConsesAsSet().size());
+    rec.step = i;
+    rec.numRootConses = factory->numRootConses();
+    rec.numReachableConses = (graph.numNodes()-1);
+    rec.numVoidConses = factory->numConses(Color::Void);
+    rec.numFreeConses = factory->numConses(Color::Free);
+    rec.numEdges = graph.numEdges();
+    rec.edgeFraction = edge_fraction;
+
     std::cout << i << ","
               << factory->numRootConses() << ","
               << (graph.numNodes()-1) << ","
@@ -77,16 +140,18 @@ void Lisp::SimConsFactory::run()
               << graph.numEdges() << ","
               << edge_fraction
               << std::endl;
+    ret.push_back(rec);
   }
+  return ret;
 }
 
 void Lisp::SimConsFactory::stepRootConses(std::list<SharedObject> & rootConses)
 {
-  if(selectAddCons(factory->numRootConses()))
+  if(selectAddCons(factory->numRootConses(), targetNumRootConses))
   {
     rootConses.push_back(std::make_shared<Object>(factory->make(Lisp::nil, Lisp::nil)));
   }
-  else if(selectRemoveCons(factory->numRootConses()))
+  else if(selectRemoveCons(factory->numRootConses(), targetNumRootConses))
   {
     std::size_t i = rand() % rootConses.size();
     auto itr = rootConses.begin();
@@ -99,7 +164,8 @@ void Lisp::SimConsFactory::stepRootConses(std::list<SharedObject> & rootConses)
   }
 }
 
-bool Lisp::SimConsFactory::selectAddCons(std::size_t numberOfConses)
+bool Lisp::SimConsFactory::selectAddCons(std::size_t numberOfConses,
+                                         std::size_t target)
 {
   static float acceptanceRate = 0.75f;
   static float errorAcceptanceRate = 0.25f;
@@ -107,7 +173,7 @@ bool Lisp::SimConsFactory::selectAddCons(std::size_t numberOfConses)
   {
     return true;
   }
-  else if(numberOfConses < target_num_root_conses)
+  else if(numberOfConses < target)
   {
     return ((float) rand() / (float) RAND_MAX < acceptanceRate);
   }
@@ -117,7 +183,8 @@ bool Lisp::SimConsFactory::selectAddCons(std::size_t numberOfConses)
   }
 }
 
-bool Lisp::SimConsFactory::selectRemoveCons(std::size_t numberOfConses)
+bool Lisp::SimConsFactory::selectRemoveCons(std::size_t numberOfConses,
+                                            std::size_t target)
 {
   static float acceptanceRate = 0.75f;
   static float errorAcceptanceRate = 0.25f;
@@ -125,7 +192,7 @@ bool Lisp::SimConsFactory::selectRemoveCons(std::size_t numberOfConses)
   {
     return false;
   }
-  else if(numberOfConses >= target_num_root_conses)
+  else if(numberOfConses >= target)
   {
     return ((float) rand() / (float) RAND_MAX < acceptanceRate);
   }
@@ -171,7 +238,8 @@ void Lisp::SimConsFactory::stepConses(std::list<SharedObject> & rootConses)
       nonRootConses.push_back(cons);
     }
   }
-  if(freeEdges.size() > 0 && selectAddCons(nonRootConses.size()))
+  if(freeEdges.size() > 0 && selectAddCons(nonRootConses.size(),
+                                           targetNumBulkConses))
   {
     std::size_t i = rand() % freeEdges.size();
     if(freeEdges[i].second == carIndex)
@@ -183,7 +251,7 @@ void Lisp::SimConsFactory::stepConses(std::list<SharedObject> & rootConses)
       freeEdges[i].first->setCdr(Object(factory->make(Lisp::nil, Lisp::nil)));
     }
   }
-  else if(selectRemoveCons(nonRootConses.size()))
+  else if(selectRemoveCons(nonRootConses.size(), targetNumBulkConses))
   {
     ConsGraph graph(*factory);
     std::size_t i = rand() % nonRootConses.size();
@@ -210,11 +278,10 @@ void Lisp::SimConsFactory::stepEdge()
   ConsGraph graph(*factory);
   std::size_t n_root_conses = factory->numRootConses();
   std::size_t n_conses = (graph.numNodes()-1) - n_root_conses;
-  double target_num_edges = target_edge_fraction * ( 2.0 * n_root_conses + n_conses) + n_root_conses + n_conses;
+  double target_num_edges = targetEdgeFraction * ( 2.0 * n_root_conses + n_conses) + n_root_conses + n_conses;
   std::size_t num_edges = graph.numEdges();
   std::size_t min_edges = n_root_conses + n_conses;
   std::size_t max_edges = n_root_conses + 2 * (n_root_conses + n_conses );
-  std::cout << target_num_edges << " " << num_edges << std::endl;
   if(num_edges  < max_edges)
   {
     if( (num_edges < target_num_edges && (float) rand() / (float) RAND_MAX < acceptanceRate) ||
@@ -222,18 +289,18 @@ void Lisp::SimConsFactory::stepEdge()
     {
       auto freeEdges = getFreeEdges();
       std::size_t i = rand() % freeEdges.size();
-      std::size_t j = rand() % (graph.numNodes()-1);
-      auto node = graph.getNode(j+1);
+      std::size_t j = rand() % graph.numNodes();
+      auto node = graph.getNode(j);
       auto cons = node->getCons();
       if(cons)
       {
         if(freeEdges[i].second == carIndex)
         {
-          //freeEdges[i].first->setCar(Object(cons));
+          freeEdges[i].first->setCar(cons);
         }
         else
         {
-          //freeEdges[i].first->setCdr(Object(cons));
+          freeEdges[i].first->setCdr(cons);
         }
       }
     }
@@ -244,14 +311,24 @@ void Lisp::SimConsFactory::stepEdge()
         (float) rand() / (float) RAND_MAX < errorAcceptanceRate )
     {
       //Todo remove edge
+      std::size_t i = rand() % graph.numEdges();
+      auto edge = graph.getEdge(i);
+      if(edge)
+      {
+        Cons * parent = edge->getParent();
+        Cons * child = edge->getChild();
+        if(parent && child)
+        {
+          if(parent->getCarCell().as<Cons>() == child)
+          {
+            parent->unsetCar();
+          }
+          else if(parent->getCdrCell().as<Cons>() == child)
+          {
+            parent->unsetCdr();
+          }
+        }
+      }
     }
   }
-}
-
-int main(int argc, const char ** argv)
-{
-  Lisp::SimConsFactory simConsFactory;
-  srand (1);
-  simConsFactory.run();
-  return 0;
 }

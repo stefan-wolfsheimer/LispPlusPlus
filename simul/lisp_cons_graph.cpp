@@ -188,6 +188,19 @@ SharedEdge ConsGraph::findEdge(const Cons * parent,
   }
 }
 
+SharedEdge ConsGraph::getEdge(std::size_t index) const
+{
+  for(auto p : edges)
+  {
+    if(!index)
+    {
+      return p.second;
+    }
+    index--;
+  }
+  return SharedEdge();
+}
+
 std::size_t ConsGraph::numNodes() const
 {
   return nodes.size();

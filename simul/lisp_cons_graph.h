@@ -56,6 +56,7 @@ namespace Lisp
     std::shared_ptr<ConsGraphNode> getNode(std::size_t index) const;
     std::shared_ptr<ConsGraphEdge> findEdge(const Cons * parent,
                                             const Cons * child) const;
+    std::shared_ptr<ConsGraphEdge> getEdge(std::size_t index) const;
     std::size_t numNodes() const;
     std::size_t numEdges() const;
   private:

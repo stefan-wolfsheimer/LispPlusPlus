@@ -39,12 +39,19 @@ namespace Lisp
   public:
     Object(const Object & rhs);
     Object(const Cell & rhs);
+    /** Create Cons object.
+     * assume that cons has already be rooted before boxing 
+     * @code
+     * cons->root();
+     * Object(cons);
+     * @endcode
+     */
+    Object(Cons * cons);
     Object();
     ~Object();
     Object & operator=(const Object & rhs);
-
-    Object(Cons * cons);
   private:
+
     inline void unsetCons();
   };
 
