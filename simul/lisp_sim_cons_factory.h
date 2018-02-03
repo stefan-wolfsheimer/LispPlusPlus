@@ -33,25 +33,58 @@ either expressed or implied, of the FreeBSD Project.
 #include <memory>
 #include <list>
 #include <vector>
+#include <map>
+#include <ostream>
 
 namespace Lisp
 {
   class ConsFactory;
+  class ConsGraph;
   class Object;
   class Cons;
 
+
   struct SimConsFactoryRecord
   {
+    typedef std::vector<SimConsFactoryRecord> SeriesType;
+    typedef std::map<std::size_t, SimConsFactoryRecord> QuantilesType;
+    typedef std::vector<QuantilesType> QuantilesSeries;
     std::size_t step;
     std::size_t numRootConses;
     std::size_t numReachableConses;
     std::size_t numVoidConses;
     std::size_t numFreeConses;
     std::size_t numEdges;
+    double expectedNumEdges;
     double edgeFraction;
     SimConsFactoryRecord();
-  };
 
+    static QuantilesSeries computeQuantiles(const std::vector<SeriesType> & r,
+                                            const std::vector<std::size_t> & q);
+    static std::vector<std::string> getHeaders();
+  private:
+    typedef std::size_t SimConsFactoryRecord::*size_t_ptr;
+    typedef double SimConsFactoryRecord::*double_ptr;
+    static std::vector<size_t_ptr> getSizeTypeValues();
+    static std::vector<double_ptr> getDoubleValues();
+    static QuantilesType
+    computeQuantiles(std::size_t i,
+                     const std::vector<SeriesType> & runs,
+                     const std::vector<std::size_t> & qs);
+  };
+}
+
+std::ostream& operator<<(std::ostream &,
+                         const Lisp::SimConsFactoryRecord & rec);
+
+std::ostream& operator<<(std::ostream &,
+                         const std::vector<Lisp::SimConsFactoryRecord> & data);
+
+std::ostream& operator<<(std::ostream &,
+                         const Lisp::SimConsFactoryRecord::QuantilesSeries &);
+
+namespace Lisp
+{
   class SimConsFactory
   {
   public:
@@ -70,6 +103,10 @@ namespace Lisp
     void setNumSteps(std::size_t numSteps);
     std::size_t getNumSteps() const;
 
+    double getTargetNumEdges(const Lisp::ConsGraph & graph) const;
+    double getTargetNumEdges() const;
+    double getEdgeFraction(const Lisp::ConsGraph & graph) const;
+    double getEdgeFraction() const;
   private:
     using SharedObject = std::shared_ptr<Object>;
 
@@ -101,4 +138,3 @@ namespace Lisp
     bool selectRemoveCons(std::size_t numberOfConses, std::size_t target);
   };
 }
-

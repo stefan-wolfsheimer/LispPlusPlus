@@ -30,19 +30,95 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include <cli.h>
 #include <iostream>
+#include <fstream>
+#include <sstream>
+#include <iomanip>
 #include <simul/lisp_sim_cons_factory.h>
+
+using SizeValue = Cli::Value<std::size_t>;
+using MultipleSizeValue = Cli::MultipleValue<std::size_t>;
+using StringValue = Cli::Value<std::string>;
+using DoubleValue = Cli::Value<double>;
+using Flag = Cli::Flag;
+
+using SimConsFactoryRecord = Lisp::SimConsFactoryRecord;
+using SimConsFactorySeries = std::vector<SimConsFactoryRecord>;
+
+static bool checkQuantiles(const std::vector<std::size_t> & quantiles,
+                           std::size_t numRuns)
+{
+  bool ok = true;
+  for(auto q : quantiles)
+  {
+    if(q > numRuns)
+    {
+      std::cerr << "Quantile " << q << " larger than num-runs ("
+                << numRuns << ")";
+      ok = false;
+    }
+  }
+  return ok;
+}
+
+static std::string sizeToStringWithZeroFill(std::size_t n, std::size_t w)
+{
+  std::stringstream ss;
+  ss << std::setw(w) << std::setfill('0') << n;
+  return ss.str();
+}
+
+static void writeResults(std::string & outputFileName,
+                         const std::vector<SimConsFactorySeries> & results)
+{
+  std::string runPattern("{RUN}");
+  if(outputFileName.empty())
+  {
+    for(auto series : results)
+    {
+      std::cout << series;
+    }
+  }
+  else
+  {
+    std::size_t pos = outputFileName.find(runPattern);
+    if(pos == std::string::npos)
+    {
+      std::ofstream outfile(outputFileName.c_str());
+      for(auto series : results)
+      {
+        outfile << series;
+      }
+      outfile.close();
+    }
+    else
+    {
+      for(std::size_t i = 0; i < results.size(); i++)
+      {
+        std::string tmp(outputFileName);
+        tmp.replace(pos,
+                    runPattern.size(),
+                    sizeToStringWithZeroFill(i+1, 3).c_str());
+        std::ofstream outfile(tmp.c_str());
+        outfile << results[i];
+        outfile.close();
+      }
+    }
+  }
+}
 
 int main(int argc, const char ** argv)
 {
-  using SizeValue = Cli::Value<std::size_t>;
-  using DoubleValue = Cli::Value<double>;
-  using Flag = Cli::Flag;
+
   std::size_t targetNumRootConses = 10;
   std::size_t targetNumBulkConses = 100;
   double targetEdgeFraction = 0.5;
   std::size_t numSteps = 100;
   std::size_t numRuns = 1;
   std::size_t seed = 1;
+  std::vector<std::size_t> quantiles;
+
+  std::string quantileFile;
+  std::string outputFiles;
 
   Cli::Parser parser("sim_cons_factory",
                      "simulate Cons garbage collector");
@@ -64,9 +140,25 @@ int main(int argc, const char ** argv)
   parser.add(SizeValue::make(numRuns,
                              "num-runs",
                              Cli::Doc("number of runs")));
+  parser.add(MultipleSizeValue::make(quantiles,
+                                     'q',
+                                     "quantiles",
+                                     Cli::Doc("Accumulate set of quantiles.\n"
+                                              "Values must be in [0...num-runs)\n")));
   parser.add(SizeValue::make(seed,
                              "seed",
                              Cli::Doc("random number generator seed")));
+  parser.add(StringValue::make(outputFiles,
+                               'o',
+                               "output",
+                               Cli::Doc("Filename of the time series\n"
+                                        "It can contain {RUN} for a "
+                                        "placeholder for the run number.\n"
+                                        "If filename does not contain {RUN} "
+                                        "all runs are written to one file")));
+  parser.add(StringValue::make(quantileFile,
+                               "quantile-output",
+                               Cli::Doc("Filename for generated quantiles")));
 
   std::vector<std::string> err;
   if(!parser.parse(argc, argv, err))
@@ -83,8 +175,13 @@ int main(int argc, const char ** argv)
     parser.printHelp(std::cout);
     return 0;
   }
-  srand (seed);
+  if(!checkQuantiles(quantiles, numRuns))
+  {
+    return 8;
+  }
 
+  srand (seed);
+  std::vector<SimConsFactorySeries> results;
   for(std::size_t run = 0; run < numRuns; run++)
   {
     Lisp::SimConsFactory simConsFactory;
@@ -92,7 +189,23 @@ int main(int argc, const char ** argv)
     simConsFactory.setTargetNumBulkConses(targetNumBulkConses);
     simConsFactory.setTargetEdgeFraction(targetEdgeFraction);
     simConsFactory.setNumSteps(numSteps);
-    simConsFactory.run();
+    results.push_back(simConsFactory.run());
+  }
+  writeResults(outputFiles, results);
+  if(!quantiles.empty())
+  {
+    auto quantileResults = SimConsFactoryRecord::computeQuantiles(results,
+                                                                  quantiles);
+    if(quantileFile.empty())
+    {
+      std::cout << quantileResults;
+    }
+    else
+    {
+      std::ofstream outfile(quantileFile.c_str());
+      outfile << quantileResults;
+      outfile.close();
+    }
   }
   return 0;
 }

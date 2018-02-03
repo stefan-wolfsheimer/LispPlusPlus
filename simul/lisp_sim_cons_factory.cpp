@@ -30,8 +30,9 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include "lisp_sim_cons_factory.h"
 #include <list>
+#include <algorithm>
 #include <cstdlib>
-#include <iostream>
+#include <exception>
 #include <assert.h>
 #include <core/lisp_cons_factory.h>
 #include <core/lisp_object.h>
@@ -44,71 +45,295 @@ either expressed or implied, of the FreeBSD Project.
 using ConsFactory = Lisp::ConsFactory;
 using Color = ConsFactory::Color;
 using ConsGraph = Lisp::ConsGraph;
+using SimConsFactory = Lisp::SimConsFactory;
+using SimConsFactoryRecord = Lisp::SimConsFactoryRecord;
+const unsigned short SimConsFactory::carIndex = 1;
+const unsigned short SimConsFactory::cdrIndex = 2;
 
-const unsigned short Lisp::SimConsFactory::carIndex = 1;
-const unsigned short Lisp::SimConsFactory::cdrIndex = 2;
 
-Lisp::SimConsFactoryRecord::SimConsFactoryRecord()
+std::vector<SimConsFactoryRecord::size_t_ptr>
+SimConsFactoryRecord::getSizeTypeValues()
 {
-  step = 0;
-  numRootConses = 0;
-  numReachableConses = 0;
-  numVoidConses = 0;
-  numFreeConses = 0;
-  numEdges = 0;
-  edgeFraction = 0;
+  return std::vector<size_t_ptr>({
+      &SimConsFactoryRecord::step,
+      &SimConsFactoryRecord::numRootConses,
+      &SimConsFactoryRecord::numReachableConses,
+      &SimConsFactoryRecord::numVoidConses,
+      &SimConsFactoryRecord::numFreeConses,
+      &SimConsFactoryRecord::numEdges });
 }
 
-Lisp::SimConsFactory::SimConsFactory()
+std::vector<SimConsFactoryRecord::double_ptr>
+SimConsFactoryRecord::getDoubleValues()
+{
+  return std::vector<double_ptr>({
+      &SimConsFactoryRecord::expectedNumEdges,
+      &SimConsFactoryRecord::edgeFraction});
+}
+
+std::vector<std::string> SimConsFactoryRecord::getHeaders()
+{
+  return {
+    "numRootConses",
+    "numReachableConses",
+    "voidConses",
+    "freeConses",
+    "numEdges",
+    "expectedNumEdges",
+    "edgeFraction" };
+}
+
+SimConsFactoryRecord::SimConsFactoryRecord()
+{
+  for(auto ptr : getSizeTypeValues())
+  {
+    this->*ptr = 0;
+  }
+  for(auto ptr : getDoubleValues())
+  {
+    this->*ptr = 0.0;
+  }
+}
+
+std::ostream& operator<<(std::ostream & ost,
+                         const SimConsFactoryRecord & rec)
+{
+  ost << rec.step << ","
+      << rec.numRootConses << ","
+      << rec.numReachableConses << ","
+      << rec.numVoidConses << ","
+      << rec.numFreeConses << ","
+      << rec.numEdges << ","
+      << rec.expectedNumEdges << ","
+      << rec.edgeFraction;
+  return ost;
+}
+
+std::ostream& operator<<(std::ostream & ost,
+                         const std::vector<SimConsFactoryRecord> & data)
+{
+  std::vector<std::string> headers = SimConsFactoryRecord::getHeaders();
+  bool first = true;
+  ost <<  "step";
+  for(auto header : headers)
+  {
+    ost << "," << header;
+  }
+  ost << std::endl;
+  for(const SimConsFactoryRecord & rec : data)
+  {
+    ost << rec << std::endl;
+  }
+  return ost;
+}
+
+std::ostream& operator<<(std::ostream & ost,
+                         const Lisp::SimConsFactoryRecord::QuantilesSeries & q)
+{
+  bool first = true;
+  for(const SimConsFactoryRecord::QuantilesType & quantiles : q)
+  {
+    if(first)
+    {
+      ost <<  "step";
+      auto headers = SimConsFactoryRecord::getHeaders();
+      for(auto header : headers)
+      {
+        for(auto pair : quantiles)
+        {
+          ost << "," << header << "_Q" << pair.first;
+        }
+      }
+      ost << std::endl;
+      first = false;
+    }
+    if(!quantiles.empty())
+    {
+      ost << quantiles.begin()->second.step;
+      for(auto pair : quantiles)
+      {
+        ost << "," << pair.second.numRootConses;
+      }
+      for(auto pair : quantiles)
+      {
+        ost << "," << pair.second.numReachableConses;
+      }
+      for(auto pair : quantiles)
+      {
+        ost << "," << pair.second.numVoidConses;
+      }
+      for(auto pair : quantiles)
+      {
+        ost << "," << pair.second.numFreeConses;
+      }
+      for(auto pair : quantiles)
+      {
+        ost << "," << pair.second.numEdges;
+      }
+      for(auto pair : quantiles)
+      {
+        ost << "," << pair.second.expectedNumEdges;
+      }
+      for(auto pair : quantiles)
+      {
+        ost << "," << pair.second.edgeFraction;
+      }
+      ost << std::endl;
+    }
+  }
+  return ost;
+}
+
+
+SimConsFactoryRecord::QuantilesType
+SimConsFactoryRecord::computeQuantiles(std::size_t i,
+                                       const std::vector<SimConsFactoryRecord::SeriesType> & runs,
+                                       const std::vector<std::size_t> & qs)
+{
+  QuantilesType ret;
+  for(std::size_t q : qs)
+  {
+    ret[q] = SimConsFactoryRecord();
+  }
+  for(auto ptr : getSizeTypeValues())
+  {
+    std::vector<std::size_t> values;
+    for(auto run : runs)
+    {
+      values.push_back(run[i].*ptr);
+    }
+    std::sort(values.begin(), values.end());
+    for(std::size_t q : qs)
+    {
+      ret[q].*ptr = values[q];
+    }
+  }
+  for(auto ptr : getDoubleValues())
+  {
+    std::vector<double> values;
+    for(auto run : runs)
+    {
+      values.push_back(run[i].*ptr);
+    }
+    std::sort(values.begin(), values.end());
+    for(std::size_t q : qs)
+    {
+      ret[q].*ptr = values[q];
+    }
+  }
+  return ret;
+}
+
+std::vector<SimConsFactoryRecord::QuantilesType>
+SimConsFactoryRecord::computeQuantiles(const std::vector<SeriesType> & runs,
+                                       const std::vector<std::size_t> & qs)
+{
+  std::vector<QuantilesType> ret;
+  std::size_t s = 0;
+  bool first = true;
+  for(auto & run : runs)
+  {
+    if(first)
+    {
+      first = false;
+      s = run.size();
+    }
+    else if(s != run.size())
+    {
+      throw std::logic_error("runs with different lengths in set of runs");
+    }
+  }
+  for(std::size_t i = 0; i < s; i++)
+  {
+    ret.push_back(computeQuantiles(i, runs, qs));
+  }
+  return ret;
+}
+
+SimConsFactory::SimConsFactory()
   : factory(std::make_shared<ConsFactory>(100))
 {
 }
 
-void Lisp::SimConsFactory::setTargetNumRootConses(std::size_t v)
+void SimConsFactory::setTargetNumRootConses(std::size_t v)
 {
   targetNumRootConses = v;
 }
 
-std::size_t Lisp::SimConsFactory::getTargetNumRootConses() const
+std::size_t SimConsFactory::getTargetNumRootConses() const
 {
   return targetNumRootConses;
 }
 
-void Lisp::SimConsFactory::setTargetNumBulkConses(std::size_t v)
+void SimConsFactory::setTargetNumBulkConses(std::size_t v)
 {
   targetNumBulkConses = v;
 }
     
-std::size_t Lisp::SimConsFactory::getTargetNumBulkConses() const
+std::size_t SimConsFactory::getTargetNumBulkConses() const
 {
   return targetNumBulkConses;
 }
 
-void Lisp::SimConsFactory::setTargetEdgeFraction(double f)
+void SimConsFactory::setTargetEdgeFraction(double f)
 {
   targetEdgeFraction = f;
 }
 
-double Lisp::SimConsFactory::getTargetEdgeFraction() const
+double SimConsFactory::getTargetEdgeFraction() const
 {
   return targetEdgeFraction;
 }
 
-void Lisp::SimConsFactory::setNumSteps(std::size_t n)
+void SimConsFactory::setNumSteps(std::size_t n)
 {
   numSteps = n;
 }
 
-std::size_t Lisp::SimConsFactory::getNumSteps() const
+std::size_t SimConsFactory::getNumSteps() const
 {
   return numSteps;
 }
 
-std::vector<Lisp::SimConsFactoryRecord> Lisp::SimConsFactory::run()
+double SimConsFactory::getTargetNumEdges(const ConsGraph & graph) const
+{
+  std::size_t numRootConses = factory->numRootConses();
+  std::size_t numConses = graph.numNodes()-1;
+  return getTargetEdgeFraction() *
+    ( 2.0 * numRootConses + numConses ) +
+    numRootConses + numConses;
+}
+
+double SimConsFactory::getTargetNumEdges() const
+{
+  ConsGraph graph(*factory);
+  return getTargetNumEdges(graph);
+}
+
+double SimConsFactory::getEdgeFraction(const Lisp::ConsGraph & graph) const
+{
+  std::size_t maxEdges = factory->numRootConses() + 2 * (graph.numNodes()-1);
+  std::size_t minEdges = graph.numNodes()-1;
+  if(maxEdges - minEdges)
+  {
+    return (double)(graph.numEdges() - minEdges) / (maxEdges - minEdges);
+  }
+  else
+  {
+    return 0;
+  }
+}
+
+double SimConsFactory::getEdgeFraction() const
+{
+  ConsGraph graph(*factory);
+  return getEdgeFraction(graph);
+}
+
+std::vector<SimConsFactoryRecord> SimConsFactory::run()
 {
   std::vector<SimConsFactoryRecord> ret;
   std::list<SharedObject> rootConses;
-  std::cout << "step,numRootConses,numReachableConses,voidConses,freeConses,numEdges,edgeFraction" << std::endl;
   for(std::size_t i = 0; i < numSteps; i++)
   {
     SimConsFactoryRecord rec;
@@ -116,30 +341,14 @@ std::vector<Lisp::SimConsFactoryRecord> Lisp::SimConsFactory::run()
     stepConses(rootConses);
     stepEdge();
     ConsGraph graph(*factory);
-    std::size_t max_edges = factory->numRootConses() + 2 * (graph.numNodes()-1);
-    std::size_t min_edges = graph.numNodes()-1;
-    double edge_fraction = 0;
-    if(max_edges - min_edges)
-    {
-      edge_fraction = (double)(graph.numEdges() - min_edges) / (max_edges - min_edges);
-    }
-    assert((graph.numNodes()-1) == factory->getReachableConsesAsSet().size());
     rec.step = i;
     rec.numRootConses = factory->numRootConses();
     rec.numReachableConses = (graph.numNodes()-1);
     rec.numVoidConses = factory->numConses(Color::Void);
     rec.numFreeConses = factory->numConses(Color::Free);
     rec.numEdges = graph.numEdges();
-    rec.edgeFraction = edge_fraction;
-
-    std::cout << i << ","
-              << factory->numRootConses() << ","
-              << (graph.numNodes()-1) << ","
-              << factory->numConses(Color::Void) << ","
-              << factory->numConses(Color::Free) << ","
-              << graph.numEdges() << ","
-              << edge_fraction
-              << std::endl;
+    rec.expectedNumEdges = getTargetNumEdges(graph);
+    rec.edgeFraction = getEdgeFraction(graph);
     ret.push_back(rec);
   }
   return ret;
@@ -271,7 +480,7 @@ void Lisp::SimConsFactory::stepConses(std::list<SharedObject> & rootConses)
   }
 }
 
-void Lisp::SimConsFactory::stepEdge()
+void SimConsFactory::stepEdge()
 {
   static float acceptanceRate = 0.75f;
   static float errorAcceptanceRate = 0.25f;
@@ -310,7 +519,6 @@ void Lisp::SimConsFactory::stepEdge()
     if( (num_edges > target_num_edges && (float) rand() / (float) RAND_MAX < acceptanceRate) ||
         (float) rand() / (float) RAND_MAX < errorAcceptanceRate )
     {
-      //Todo remove edge
       std::size_t i = rand() % graph.numEdges();
       auto edge = graph.getEdge(i);
       if(edge)
