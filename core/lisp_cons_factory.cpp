@@ -440,8 +440,32 @@ void Lisp::ConsFactory::stepGargabeCollector()
 
 void Lisp::ConsFactory::stepRecycle()
 {
-  for(unsigned short i=0; i < recycleSteps; i++)
+  std::size_t i = recycleSteps;
+  if(i && !freeConses.empty())
   {
+    if(freeConses.back().empty())
+    {
+      freeConses.pop_back();
+    }
+    else
+    {
+      auto cons = freeConses.back().back();
+      freeConses.back().pop_back();
+      if(freeConses.back().empty())
+      {
+        freeConses.pop_back();
+      }
+      if(!cons->getCarCell().isA<Cons>())
+      {
+        cons->unsetCar();
+      }
+      if(!cons->getCdrCell().isA<Cons>())
+      {
+        cons->unsetCdr();
+      }
+      conses[(unsigned char)Color::Void].push_back(cons);
+    }
+    i--;
   }
 }
 
