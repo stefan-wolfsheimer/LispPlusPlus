@@ -441,7 +441,7 @@ void Lisp::ConsFactory::stepGargabeCollector()
 void Lisp::ConsFactory::stepRecycle()
 {
   std::size_t i = recycleSteps;
-  if(i && !freeConses.empty())
+  while(i && !freeConses.empty())
   {
     if(freeConses.back().empty())
     {
