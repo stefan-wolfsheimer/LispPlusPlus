@@ -57,6 +57,7 @@ SimConsFactoryRecord::getSizeTypeValues()
   return std::vector<size_t_ptr>({
       &SimConsFactoryRecord::step,
       &SimConsFactoryRecord::numRootConses,
+      &SimConsFactoryRecord::numBulkConses,
       &SimConsFactoryRecord::numReachableConses,
       &SimConsFactoryRecord::numVoidConses,
       &SimConsFactoryRecord::numFreeConses,
@@ -75,6 +76,7 @@ std::vector<std::string> SimConsFactoryRecord::getHeaders()
 {
   return {
     "numRootConses",
+    "numBulkConses",
     "numReachableConses",
     "voidConses",
     "freeConses",
@@ -100,6 +102,7 @@ std::ostream& operator<<(std::ostream & ost,
 {
   ost << rec.step << ","
       << rec.numRootConses << ","
+      << rec.numBulkConses << ","
       << rec.numReachableConses << ","
       << rec.numVoidConses << ","
       << rec.numFreeConses << ","
@@ -153,6 +156,10 @@ std::ostream& operator<<(std::ostream & ost,
       for(auto pair : quantiles)
       {
         ost << "," << pair.second.numRootConses;
+      }
+      for(auto pair : quantiles)
+      {
+        ost << "," << pair.second.numBulkConses;
       }
       for(auto pair : quantiles)
       {
@@ -295,6 +302,27 @@ std::size_t SimConsFactory::getNumSteps() const
   return numSteps;
 }
 
+void SimConsFactory::setNumEdgeRewireSteps(std::size_t _numEdgeRewireSteps)
+{
+  numEdgeRewireSteps = _numEdgeRewireSteps;
+}
+
+std::size_t SimConsFactory::getNumEdgeRewireSteps() const
+{
+  return numEdgeRewireSteps;
+}
+
+void SimConsFactory::setNumBulkConsesSteps(std::size_t _numBulkConsesSteps)
+{
+  numBulkConsesSteps = _numBulkConsesSteps;
+}
+
+std::size_t SimConsFactory::getNumBulkConsesSteps() const
+{
+  return numBulkConsesSteps;
+}
+
+
 double SimConsFactory::getTargetNumEdges(const ConsGraph & graph) const
 {
   std::size_t numRootConses = factory->numRootConses();
@@ -338,11 +366,18 @@ std::vector<SimConsFactoryRecord> SimConsFactory::run()
   {
     SimConsFactoryRecord rec;
     stepRootConses(rootConses);
-    stepConses(rootConses);
-    stepEdge();
+    for(std::size_t j = 0; j < numBulkConsesSteps; j++)
+    {
+      stepConses(rootConses);
+    }
+    for(std::size_t j = 0; j < numEdgeRewireSteps; j++)
+    {
+      stepEdge();
+    }
     ConsGraph graph(*factory);
     rec.step = i;
     rec.numRootConses = factory->numRootConses();
+    rec.numBulkConses = (graph.numNodes()-1) - factory->numRootConses();
     rec.numReachableConses = (graph.numNodes()-1);
     rec.numVoidConses = factory->numConses(Color::Void);
     rec.numFreeConses = factory->numConses(Color::Free);
@@ -497,19 +532,22 @@ void SimConsFactory::stepEdge()
         (float) rand() / (float) RAND_MAX < errorAcceptanceRate )
     {
       auto freeEdges = getFreeEdges();
-      std::size_t i = rand() % freeEdges.size();
-      std::size_t j = rand() % graph.numNodes();
-      auto node = graph.getNode(j);
-      auto cons = node->getCons();
-      if(cons)
+      if(!freeEdges.empty() && graph.numNodes())
       {
-        if(freeEdges[i].second == carIndex)
+        std::size_t i = rand() % freeEdges.size();
+        std::size_t j = rand() % graph.numNodes();
+        auto node = graph.getNode(j);
+        auto cons = node->getCons();
+        if(cons)
         {
-          freeEdges[i].first->setCar(cons);
-        }
-        else
-        {
-          freeEdges[i].first->setCdr(cons);
+          if(freeEdges[i].second == carIndex)
+          {
+            freeEdges[i].first->setCar(cons);
+          }
+          else
+          {
+            freeEdges[i].first->setCdr(cons);
+          }
         }
       }
     }

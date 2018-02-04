@@ -113,6 +113,8 @@ int main(int argc, const char ** argv)
   std::size_t targetNumBulkConses = 100;
   double targetEdgeFraction = 0.5;
   std::size_t numSteps = 100;
+  std::size_t numEdgeRewire = 3;
+  std::size_t numBulkConsesSteps = 3;
   std::size_t numRuns = 1;
   std::size_t seed = 1;
   std::vector<std::size_t> quantiles;
@@ -137,6 +139,12 @@ int main(int argc, const char ** argv)
   parser.add(SizeValue::make(numSteps,
                              'n', "num-steps",
                              Cli::Doc("number of steps")));
+  parser.add(SizeValue::make(numEdgeRewire,
+                             "num-edge-rewire-steps",
+                             Cli::Doc("Number of attempts to set / unset edges after each step")));
+  parser.add(SizeValue::make(numBulkConsesSteps,
+                             "num-bulk-conses-steps",
+                             Cli::Doc("Number of attempts to set / unset edges after each step")));
   parser.add(SizeValue::make(numRuns,
                              "num-runs",
                              Cli::Doc("number of runs")));
@@ -189,6 +197,8 @@ int main(int argc, const char ** argv)
     simConsFactory.setTargetNumBulkConses(targetNumBulkConses);
     simConsFactory.setTargetEdgeFraction(targetEdgeFraction);
     simConsFactory.setNumSteps(numSteps);
+    simConsFactory.setNumEdgeRewireSteps(numEdgeRewire);
+    simConsFactory.setNumBulkConsesSteps(numBulkConsesSteps);
     results.push_back(simConsFactory.run());
   }
   writeResults(outputFiles, results);

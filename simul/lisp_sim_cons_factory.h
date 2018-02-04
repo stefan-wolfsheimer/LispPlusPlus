@@ -51,6 +51,7 @@ namespace Lisp
     typedef std::vector<QuantilesType> QuantilesSeries;
     std::size_t step;
     std::size_t numRootConses;
+    std::size_t numBulkConses;
     std::size_t numReachableConses;
     std::size_t numVoidConses;
     std::size_t numFreeConses;
@@ -103,6 +104,12 @@ namespace Lisp
     void setNumSteps(std::size_t numSteps);
     std::size_t getNumSteps() const;
 
+    void setNumEdgeRewireSteps(std::size_t numEdgeRewire);
+    std::size_t getNumEdgeRewireSteps() const;
+
+    void setNumBulkConsesSteps(std::size_t numBulkConsesSteps);
+    std::size_t getNumBulkConsesSteps() const;
+
     double getTargetNumEdges(const Lisp::ConsGraph & graph) const;
     double getTargetNumEdges() const;
     double getEdgeFraction(const Lisp::ConsGraph & graph) const;
@@ -113,6 +120,8 @@ namespace Lisp
     std::size_t targetNumRootConses = 10;
     std::size_t targetNumBulkConses = 100;
     double targetEdgeFraction = 0.5;
+    std::size_t numEdgeRewireSteps = 1;
+    std::size_t numBulkConsesSteps = 3;
     // min_edges = n_root_conses + n_conses = 3
     // max_edges = n_root_conses + 2 * (n_root_conses + n_conses ) = 7
     // edge_fraction = (edges - min_edges) / (max_edges - min_edges)
