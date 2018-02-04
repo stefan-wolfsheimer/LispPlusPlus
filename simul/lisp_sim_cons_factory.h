@@ -110,10 +110,18 @@ namespace Lisp
     void setNumBulkConsesSteps(std::size_t numBulkConsesSteps);
     std::size_t getNumBulkConsesSteps() const;
 
-    double getTargetNumEdges(const Lisp::ConsGraph & graph) const;
-    double getTargetNumEdges() const;
-    double getEdgeFraction(const Lisp::ConsGraph & graph) const;
-    double getEdgeFraction() const;
+    void setGarbageSteps(std::size_t garbageSteps);
+    std::size_t getGarbageSteps() const;
+
+    void setRecycleSteps(std::size_t recycleSteps);
+    std::size_t getRecycleSteps() const;
+
+    double getTargetNumEdges(std::shared_ptr<ConsFactory> factory,
+                             const Lisp::ConsGraph & graph) const;
+    double getTargetNumEdges(std::shared_ptr<ConsFactory> factory) const;
+    double getEdgeFraction(std::shared_ptr<ConsFactory> factory,
+                           const Lisp::ConsGraph & graph) const;
+    double getEdgeFraction(std::shared_ptr<ConsFactory> factory) const;
   private:
     using SharedObject = std::shared_ptr<Object>;
 
@@ -122,6 +130,9 @@ namespace Lisp
     double targetEdgeFraction = 0.5;
     std::size_t numEdgeRewireSteps = 1;
     std::size_t numBulkConsesSteps = 3;
+    std::size_t garbageSteps = 1; // parameters for ConsFactory
+    std::size_t recycleSteps = 1;
+
     // min_edges = n_root_conses + n_conses = 3
     // max_edges = n_root_conses + 2 * (n_root_conses + n_conses ) = 7
     // edge_fraction = (edges - min_edges) / (max_edges - min_edges)
@@ -135,14 +146,13 @@ namespace Lisp
 
      */
     std::size_t numSteps = 100;
-    std::shared_ptr<ConsFactory> factory;
     static const unsigned short carIndex;
     static const unsigned short cdrIndex;
 
-    std::vector<std::pair<Cons*, unsigned short> > getFreeEdges();
-    void stepRootConses(std::list<SharedObject> & rootConses);
-    void stepConses(std::list<SharedObject> & rootConses);
-    void stepEdge();
+    std::vector<std::pair<Cons*, unsigned short> > getFreeEdges(std::shared_ptr<ConsFactory> factory);
+    void stepRootConses(std::shared_ptr<ConsFactory> factory, std::list<SharedObject> & rootConses);
+    void stepConses(std::shared_ptr<ConsFactory> factory, std::list<SharedObject> & rootConses);
+    void stepEdge(std::shared_ptr<ConsFactory> factory);
     bool selectAddCons(std::size_t numberOfConses, std::size_t target);
     bool selectRemoveCons(std::size_t numberOfConses, std::size_t target);
   };

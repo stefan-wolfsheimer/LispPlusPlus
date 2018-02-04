@@ -117,6 +117,9 @@ int main(int argc, const char ** argv)
   std::size_t numBulkConsesSteps = 3;
   std::size_t numRuns = 1;
   std::size_t seed = 1;
+  std::size_t garbageSteps = 1;
+  std::size_t recycleSteps = 1;
+
   std::vector<std::size_t> quantiles;
 
   std::string quantileFile;
@@ -145,6 +148,14 @@ int main(int argc, const char ** argv)
   parser.add(SizeValue::make(numBulkConsesSteps,
                              "num-bulk-conses-steps",
                              Cli::Doc("Number of attempts to set / unset edges after each step")));
+  parser.add(SizeValue::make(garbageSteps,
+                             "garbage-steps",
+                             Cli::Doc("Number of times garbage is collected on each step.\n"
+                                      "(parameter of Lisp::ConsFactory)")));
+  parser.add(SizeValue::make(recycleSteps,
+                             "recycle-steps",
+                             Cli::Doc("Number of times conses are recycled on each step.\n"
+                                      "(parameter of Lisp::ConsFactory)")));
   parser.add(SizeValue::make(numRuns,
                              "num-runs",
                              Cli::Doc("number of runs")));
@@ -199,6 +210,8 @@ int main(int argc, const char ** argv)
     simConsFactory.setNumSteps(numSteps);
     simConsFactory.setNumEdgeRewireSteps(numEdgeRewire);
     simConsFactory.setNumBulkConsesSteps(numBulkConsesSteps);
+    simConsFactory.setGarbageSteps(garbageSteps);
+    simConsFactory.setRecycleSteps(recycleSteps);
     results.push_back(simConsFactory.run());
   }
   writeResults(outputFiles, results);

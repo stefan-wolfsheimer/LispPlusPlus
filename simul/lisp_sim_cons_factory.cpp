@@ -258,7 +258,6 @@ SimConsFactoryRecord::computeQuantiles(const std::vector<SeriesType> & runs,
 }
 
 SimConsFactory::SimConsFactory()
-  : factory(std::make_shared<ConsFactory>(100))
 {
 }
 
@@ -322,8 +321,29 @@ std::size_t SimConsFactory::getNumBulkConsesSteps() const
   return numBulkConsesSteps;
 }
 
+void SimConsFactory::setGarbageSteps(std::size_t _garbageSteps)
+{
+  garbageSteps = _garbageSteps;
+}
 
-double SimConsFactory::getTargetNumEdges(const ConsGraph & graph) const
+std::size_t SimConsFactory::getGarbageSteps() const
+{
+  return garbageSteps;
+}
+
+void SimConsFactory::setRecycleSteps(std::size_t _recycleSteps)
+{
+  recycleSteps = _recycleSteps;
+}
+
+std::size_t SimConsFactory::getRecycleSteps() const
+{
+  return recycleSteps;
+}
+
+
+double SimConsFactory::getTargetNumEdges(std::shared_ptr<ConsFactory> factory,
+                                         const ConsGraph & graph) const
 {
   std::size_t numRootConses = factory->numRootConses();
   std::size_t numConses = graph.numNodes()-1;
@@ -332,13 +352,14 @@ double SimConsFactory::getTargetNumEdges(const ConsGraph & graph) const
     numRootConses + numConses;
 }
 
-double SimConsFactory::getTargetNumEdges() const
+double SimConsFactory::getTargetNumEdges(std::shared_ptr<ConsFactory> factory) const
 {
   ConsGraph graph(*factory);
-  return getTargetNumEdges(graph);
+  return getTargetNumEdges(factory, graph);
 }
 
-double SimConsFactory::getEdgeFraction(const Lisp::ConsGraph & graph) const
+double SimConsFactory::getEdgeFraction(std::shared_ptr<ConsFactory> factory,
+                                       const Lisp::ConsGraph & graph) const
 {
   std::size_t maxEdges = factory->numRootConses() + 2 * (graph.numNodes()-1);
   std::size_t minEdges = graph.numNodes()-1;
@@ -352,44 +373,50 @@ double SimConsFactory::getEdgeFraction(const Lisp::ConsGraph & graph) const
   }
 }
 
-double SimConsFactory::getEdgeFraction() const
+double SimConsFactory::getEdgeFraction(std::shared_ptr<ConsFactory> factory) const
 {
   ConsGraph graph(*factory);
-  return getEdgeFraction(graph);
+  return getEdgeFraction(factory, graph);
 }
 
 std::vector<SimConsFactoryRecord> SimConsFactory::run()
 {
   std::vector<SimConsFactoryRecord> ret;
-  std::list<SharedObject> rootConses;
-  for(std::size_t i = 0; i < numSteps; i++)
+  auto factory = std::make_shared<ConsFactory>(100,
+                                               garbageSteps,
+                                               recycleSteps);
   {
-    SimConsFactoryRecord rec;
-    stepRootConses(rootConses);
-    for(std::size_t j = 0; j < numBulkConsesSteps; j++)
+    std::list<SharedObject> rootConses;
+    for(std::size_t i = 0; i < numSteps; i++)
     {
-      stepConses(rootConses);
+      SimConsFactoryRecord rec;
+      stepRootConses(factory, rootConses);
+      for(std::size_t j = 0; j < numBulkConsesSteps; j++)
+      {
+        stepConses(factory, rootConses);
+      }
+      for(std::size_t j = 0; j < numEdgeRewireSteps; j++)
+      {
+        stepEdge(factory);
+      }
+      ConsGraph graph(*factory);
+      rec.step = i;
+      rec.numRootConses = factory->numRootConses();
+      rec.numBulkConses = (graph.numNodes()-1) - factory->numRootConses();
+      rec.numReachableConses = (graph.numNodes()-1);
+      rec.numVoidConses = factory->numConses(Color::Void);
+      rec.numFreeConses = factory->numConses(Color::Free);
+      rec.numEdges = graph.numEdges();
+      rec.expectedNumEdges = getTargetNumEdges(factory, graph);
+      rec.edgeFraction = getEdgeFraction(factory, graph);
+      ret.push_back(rec);
     }
-    for(std::size_t j = 0; j < numEdgeRewireSteps; j++)
-    {
-      stepEdge();
-    }
-    ConsGraph graph(*factory);
-    rec.step = i;
-    rec.numRootConses = factory->numRootConses();
-    rec.numBulkConses = (graph.numNodes()-1) - factory->numRootConses();
-    rec.numReachableConses = (graph.numNodes()-1);
-    rec.numVoidConses = factory->numConses(Color::Void);
-    rec.numFreeConses = factory->numConses(Color::Free);
-    rec.numEdges = graph.numEdges();
-    rec.expectedNumEdges = getTargetNumEdges(graph);
-    rec.edgeFraction = getEdgeFraction(graph);
-    ret.push_back(rec);
   }
   return ret;
 }
 
-void Lisp::SimConsFactory::stepRootConses(std::list<SharedObject> & rootConses)
+void Lisp::SimConsFactory::stepRootConses(std::shared_ptr<ConsFactory> factory,
+                                          std::list<SharedObject> & rootConses)
 {
   if(selectAddCons(factory->numRootConses(), targetNumRootConses))
   {
@@ -447,7 +474,7 @@ bool Lisp::SimConsFactory::selectRemoveCons(std::size_t numberOfConses,
 }
 
 std::vector<std::pair<Lisp::Cons*, unsigned short> >
-Lisp::SimConsFactory::getFreeEdges()
+Lisp::SimConsFactory::getFreeEdges(std::shared_ptr<ConsFactory> factory)
 {
   using ConsPair = std::pair<Cons*, unsigned short>;
   using Cons = Lisp::Cons;
@@ -468,12 +495,13 @@ Lisp::SimConsFactory::getFreeEdges()
   return freeEdges;
 }
 
-void Lisp::SimConsFactory::stepConses(std::list<SharedObject> & rootConses)
+void Lisp::SimConsFactory::stepConses(std::shared_ptr<ConsFactory> factory,
+                                      std::list<SharedObject> & rootConses)
 {
   using Cons = Lisp::Cons;
   using Nil = Lisp::Nil;
   using ConsPair = std::pair<Cons*, unsigned short>;
-  auto freeEdges = getFreeEdges();
+  auto freeEdges = getFreeEdges(factory);
   std::vector<Cons *> nonRootConses;
   for(Cons * cons : factory->getReachableConsesAsSet())
   {
@@ -515,7 +543,7 @@ void Lisp::SimConsFactory::stepConses(std::list<SharedObject> & rootConses)
   }
 }
 
-void SimConsFactory::stepEdge()
+void SimConsFactory::stepEdge(std::shared_ptr<ConsFactory> factory)
 {
   static float acceptanceRate = 0.75f;
   static float errorAcceptanceRate = 0.25f;
@@ -531,7 +559,7 @@ void SimConsFactory::stepEdge()
     if( (num_edges < target_num_edges && (float) rand() / (float) RAND_MAX < acceptanceRate) ||
         (float) rand() / (float) RAND_MAX < errorAcceptanceRate )
     {
-      auto freeEdges = getFreeEdges();
+      auto freeEdges = getFreeEdges(factory);
       if(!freeEdges.empty() && graph.numNodes())
       {
         std::size_t i = rand() % freeEdges.size();
