@@ -33,7 +33,9 @@ either expressed or implied, of the FreeBSD Project.
 #include <list>
 #include <vector>
 #include <map>
+#include <memory>
 #include <ostream>
+#include <string>
 
 namespace Lisp
 {
@@ -41,6 +43,80 @@ namespace Lisp
   class ConsGraph;
   class Object;
   class Cons;
+
+  template<typename R>
+  class BasicMember
+  {
+  public:
+    typedef R ClassType;
+    virtual ~BasicMember() {}
+    BasicMember(const std::string & _name) : name(_name) {}
+    virtual void setDefaultValue(ClassType & obj) = 0;
+  private:
+    std::string name;
+  };
+
+  template<typename R>
+  class Builder
+  {
+  public:
+    typedef BasicMember<R> MemberType;
+    typedef std::shared_ptr<MemberType> SharedMemberType;
+
+    std::shared_ptr<R> makeShared() const
+    {
+      return std::shared_ptr<R>(new R());
+    }
+  
+    R * makePointer() const
+    {
+      return new R();
+    }
+
+    R make() const
+    {
+      return R();
+    }
+
+    void addMember(SharedMemberType member)
+    {
+      members.push_back(member);
+    }
+
+    std::vector<SharedMemberType> getMembers() const
+    {
+      return members;
+    }
+  private:
+    std::vector<SharedMemberType> members;
+  };
+
+
+  template<typename R, typename T>
+  class Field : public BasicMember<R>
+  {
+  public:
+    typedef R ClassType;
+    typedef T R::*PointerToMember;
+    typedef Field<R, T> Self;
+    typedef std::shared_ptr<Self> SharedSelf;
+    Field(PointerToMember _ptr, const std::string & _name, const T & def)
+      : BasicMember<R>(_name), defaultValue(def), ptr(_ptr) {}
+    static SharedSelf make(PointerToMember ptr,
+                           const std::string & _name,
+                           const T & _def)
+    {
+      return std::make_shared<Self>(ptr, _name, _def);
+    }
+
+    virtual void setDefaultValue(ClassType & obj) override
+    {
+      obj.*ptr = defaultValue;
+    }
+  private:
+    T defaultValue;
+    PointerToMember ptr;
+  };
 
   struct SimConsFactoryRecord
   {
@@ -56,6 +132,11 @@ namespace Lisp
     std::size_t numEdges;
     double expectedNumEdges;
     double edgeFraction;
+    double rootConsFraction;
+    double bulkConsFraction;
+    double reachableConsFraction;
+    double voidConsFraction;
+    double freeConsFraction;
     SimConsFactoryRecord();
 
     static QuantilesSeries computeQuantiles(const std::vector<SeriesType> & r,
@@ -66,10 +147,17 @@ namespace Lisp
     typedef double SimConsFactoryRecord::*double_ptr;
     static std::vector<size_t_ptr> getSizeTypeValues();
     static std::vector<double_ptr> getDoubleValues();
+
     static QuantilesType
     computeQuantiles(std::size_t i,
                      const std::vector<SeriesType> & runs,
                      const std::vector<std::size_t> & qs);
+  };
+
+  class SimConsFactoryRecordBuilder : Builder<SimConsFactoryRecord>
+  {
+  public:
+    SimConsFactoryRecordBuilder();
   };
 }
 

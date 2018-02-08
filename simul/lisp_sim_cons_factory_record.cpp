@@ -32,6 +32,54 @@ either expressed or implied, of the FreeBSD Project.
 #include <algorithm>
 using SimConsFactoryRecord = Lisp::SimConsFactoryRecord;
 
+Lisp::SimConsFactoryRecordBuilder::SimConsFactoryRecordBuilder()
+{
+  using SizeField = Field<SimConsFactoryRecord, std::size_t>;
+  using DoubleField = Field<SimConsFactoryRecord, double>;
+  addMember(SizeField::make(&SimConsFactoryRecord::step,
+                            "step",
+                            0));
+  addMember(SizeField::make(&SimConsFactoryRecord::numRootConses,
+                            "numRootConses",
+                            0));
+  addMember(SizeField::make(&SimConsFactoryRecord::numBulkConses,
+                            "numBulkConses",
+                            0));
+  addMember(SizeField::make(&SimConsFactoryRecord::numReachableConses,
+                            "numReachableConses",
+                            0));
+  addMember(SizeField::make(&SimConsFactoryRecord::numVoidConses,
+                            "numVoidConses",
+                            0));
+  addMember(SizeField::make(&SimConsFactoryRecord::numFreeConses,
+                            "numFreeConses",
+                            0));
+  addMember(SizeField::make(&SimConsFactoryRecord::numEdges,
+                            "numEdges",
+                            0));
+  addMember(DoubleField::make(&SimConsFactoryRecord::expectedNumEdges,
+                              "expectedNumEdges",
+                              0));
+  addMember(DoubleField::make(&SimConsFactoryRecord::edgeFraction,
+                              "edgeFraction",
+                              0));
+  addMember(DoubleField::make(&SimConsFactoryRecord::rootConsFraction,
+                              "rootConsFraction",
+                              0));
+  addMember(DoubleField::make(&SimConsFactoryRecord::bulkConsFraction,
+                              "bulkConsFraction",
+                              0));
+  addMember(DoubleField::make(&SimConsFactoryRecord::reachableConsFraction,
+                              "reachableConsFraction",
+                              0));
+  addMember(DoubleField::make(&SimConsFactoryRecord::voidConsFraction,
+                              "voidConsFraction",
+                              0));
+  addMember(DoubleField::make(&SimConsFactoryRecord::freeConsFraction,
+                              "freeConsFraction",
+                              0));
+}
+
 std::vector<SimConsFactoryRecord::size_t_ptr>
 SimConsFactoryRecord::getSizeTypeValues()
 {
@@ -50,7 +98,12 @@ SimConsFactoryRecord::getDoubleValues()
 {
   return std::vector<double_ptr>({
       &SimConsFactoryRecord::expectedNumEdges,
-      &SimConsFactoryRecord::edgeFraction});
+      &SimConsFactoryRecord::edgeFraction,
+      &SimConsFactoryRecord::rootConsFraction,
+      &SimConsFactoryRecord::bulkConsFraction,
+      &SimConsFactoryRecord::reachableConsFraction,
+      &SimConsFactoryRecord::voidConsFraction,
+      &SimConsFactoryRecord::freeConsFraction});
 }
 
 std::vector<std::string> SimConsFactoryRecord::getHeaders()
@@ -63,7 +116,12 @@ std::vector<std::string> SimConsFactoryRecord::getHeaders()
     "freeConses",
     "numEdges",
     "expectedNumEdges",
-    "edgeFraction" };
+    "edgeFraction",
+    "rootConsFraction",
+    "bulkConsFraction",
+    "reachableConsFraction",
+    "voidConsFraction",
+    "freeConsFraction"};
 }
 
 SimConsFactoryRecord::SimConsFactoryRecord()
@@ -89,7 +147,12 @@ std::ostream& operator<<(std::ostream & ost,
       << rec.numFreeConses << ","
       << rec.numEdges << ","
       << rec.expectedNumEdges << ","
-      << rec.edgeFraction;
+      << rec.edgeFraction << ","
+      << rec.rootConsFraction << ","
+      << rec.bulkConsFraction << ","
+      << rec.reachableConsFraction << ","
+      << rec.voidConsFraction << ","
+      << rec.freeConsFraction << std::endl;
   return ost;
 }
 
@@ -165,6 +228,26 @@ std::ostream& operator<<(std::ostream & ost,
       for(auto pair : quantiles)
       {
         ost << "," << pair.second.edgeFraction;
+      }
+      for(auto pair : quantiles)
+      {
+        ost << "," << pair.second.rootConsFraction;
+      }
+      for(auto pair : quantiles)
+      {
+        ost << "," << pair.second.bulkConsFraction;
+      }
+      for(auto pair : quantiles)
+      {
+        ost << "," << pair.second.reachableConsFraction;
+      }
+      for(auto pair : quantiles)
+      {
+        ost << "," << pair.second.voidConsFraction;
+      }
+      for(auto pair : quantiles)
+      {
+        ost << "," << pair.second.freeConsFraction;
       }
       ost << std::endl;
     }
