@@ -16,6 +16,7 @@ SET(CMAKE_CXX_FLAGS_DEBUG  "-O0 -g")
 
 include_directories (${PROJECT_SOURCE_DIR}/Catch2/single_include)
 include_directories (${PROJECT_SOURCE_DIR}/CliArgs/include)
+include_directories (${PROJECT_SOURCE_DIR}/CSVPlusPlus/)
 include_directories (${PROJECT_SOURCE_DIR})
 
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
@@ -34,6 +35,11 @@ IF(CMAKE_BUILD_TYPE MATCHES Debug)
       CliArgs/tests/test_value.cpp
       CliArgs/tests/test_multiple_value.cpp
       CliArgs/tests/test_parser.cpp
+      CSVPlusPlus/test/test_builder.cpp
+      CSVPlusPlus/test/test_cell.cpp
+      CSVPlusPlus/test/test_reader.cpp
+      CSVPlusPlus/test/test_row.cpp
+      CSVPlusPlus/test/test_specification.cpp
       )
     target_link_libraries(runtest Catch Core Simul)
 ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
