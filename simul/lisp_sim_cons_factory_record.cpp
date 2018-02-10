@@ -30,54 +30,28 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include "lisp_sim_cons_factory_record.h"
 #include <algorithm>
+
 using SimConsFactoryRecord = Lisp::SimConsFactoryRecord;
 
-Lisp::SimConsFactoryRecordBuilder::SimConsFactoryRecordBuilder()
+SimConsFactoryRecord::Builder SimConsFactoryRecord::getBuilder()
 {
-  using SizeField = Field<SimConsFactoryRecord, std::size_t>;
-  using DoubleField = Field<SimConsFactoryRecord, double>;
-  addMember(SizeField::make(&SimConsFactoryRecord::step,
-                            "step",
-                            0));
-  addMember(SizeField::make(&SimConsFactoryRecord::numRootConses,
-                            "numRootConses",
-                            0));
-  addMember(SizeField::make(&SimConsFactoryRecord::numBulkConses,
-                            "numBulkConses",
-                            0));
-  addMember(SizeField::make(&SimConsFactoryRecord::numReachableConses,
-                            "numReachableConses",
-                            0));
-  addMember(SizeField::make(&SimConsFactoryRecord::numVoidConses,
-                            "numVoidConses",
-                            0));
-  addMember(SizeField::make(&SimConsFactoryRecord::numFreeConses,
-                            "numFreeConses",
-                            0));
-  addMember(SizeField::make(&SimConsFactoryRecord::numEdges,
-                            "numEdges",
-                            0));
-  addMember(DoubleField::make(&SimConsFactoryRecord::expectedNumEdges,
-                              "expectedNumEdges",
-                              0));
-  addMember(DoubleField::make(&SimConsFactoryRecord::edgeFraction,
-                              "edgeFraction",
-                              0));
-  addMember(DoubleField::make(&SimConsFactoryRecord::rootConsFraction,
-                              "rootConsFraction",
-                              0));
-  addMember(DoubleField::make(&SimConsFactoryRecord::bulkConsFraction,
-                              "bulkConsFraction",
-                              0));
-  addMember(DoubleField::make(&SimConsFactoryRecord::reachableConsFraction,
-                              "reachableConsFraction",
-                              0));
-  addMember(DoubleField::make(&SimConsFactoryRecord::voidConsFraction,
-                              "voidConsFraction",
-                              0));
-  addMember(DoubleField::make(&SimConsFactoryRecord::freeConsFraction,
-                              "freeConsFraction",
-                              0));
+  Builder builder;
+  builder
+    .member<std::size_t>(&SimConsFactoryRecord::step, "step", 0)
+    .member<std::size_t>(&SimConsFactoryRecord::numRootConses, "numRootConses", 0)
+    .member<std::size_t>(&SimConsFactoryRecord::numBulkConses, "numBulkConses",0)
+    .member<std::size_t>(&SimConsFactoryRecord::numReachableConses, "numReachableConses", 0)
+    .member<std::size_t>(&SimConsFactoryRecord::numVoidConses, "numVoidConses",0)
+    .member<std::size_t>(&SimConsFactoryRecord::numFreeConses, "numFreeConses",0)
+    .member<std::size_t>(&SimConsFactoryRecord::numEdges, "numEdges",0)
+    .member<double>(&SimConsFactoryRecord::expectedNumEdges,"expectedNumEdges",0) 
+    .member<double>(&SimConsFactoryRecord::edgeFraction,"edgeFraction", 0)
+    .member<double>(&SimConsFactoryRecord::rootConsFraction, "rootConsFraction", 0)
+    .member<double>(&SimConsFactoryRecord::bulkConsFraction, "bulkConsFraction", 0)
+    .member<double>(&SimConsFactoryRecord::reachableConsFraction,"reachableConsFraction", 0) 
+    .member<double>(&SimConsFactoryRecord::voidConsFraction, "voidConsFraction", 0)
+    .member<double>(&SimConsFactoryRecord::freeConsFraction, "freeConsFraction", 0);
+  return builder;
 }
 
 std::vector<SimConsFactoryRecord::size_t_ptr>
@@ -106,24 +80,6 @@ SimConsFactoryRecord::getDoubleValues()
       &SimConsFactoryRecord::freeConsFraction});
 }
 
-std::vector<std::string> SimConsFactoryRecord::getHeaders()
-{
-  return {
-    "numRootConses",
-    "numBulkConses",
-    "numReachableConses",
-    "voidConses",
-    "freeConses",
-    "numEdges",
-    "expectedNumEdges",
-    "edgeFraction",
-    "rootConsFraction",
-    "bulkConsFraction",
-    "reachableConsFraction",
-    "voidConsFraction",
-    "freeConsFraction"};
-}
-
 SimConsFactoryRecord::SimConsFactoryRecord()
 {
   for(auto ptr : getSizeTypeValues())
@@ -139,37 +95,37 @@ SimConsFactoryRecord::SimConsFactoryRecord()
 std::ostream& operator<<(std::ostream & ost,
                          const SimConsFactoryRecord & rec)
 {
-  ost << rec.step << ","
-      << rec.numRootConses << ","
-      << rec.numBulkConses << ","
-      << rec.numReachableConses << ","
-      << rec.numVoidConses << ","
-      << rec.numFreeConses << ","
-      << rec.numEdges << ","
-      << rec.expectedNumEdges << ","
-      << rec.edgeFraction << ","
-      << rec.rootConsFraction << ","
-      << rec.bulkConsFraction << ","
-      << rec.reachableConsFraction << ","
-      << rec.voidConsFraction << ","
-      << rec.freeConsFraction << std::endl;
+  bool first = true;
+  for(auto member : SimConsFactoryRecord::getBuilder())
+  {
+    if(!first)
+    {
+      ost.put(',');
+    }
+    member->streamOut(ost, rec);
+    first = false;
+  }
+  ost << std::endl;
   return ost;
 }
 
 std::ostream& operator<<(std::ostream & ost,
                          const std::vector<SimConsFactoryRecord> & data)
 {
-  std::vector<std::string> headers = SimConsFactoryRecord::getHeaders();
   bool first = true;
-  ost <<  "step";
-  for(auto header : headers)
+  for(auto member : SimConsFactoryRecord::getBuilder())
   {
-    ost << "," << header;
+    if(!first)
+    {
+      ost.put(',');
+    }
+    ost << member->getName();
+    first = false;
   }
   ost << std::endl;
   for(const SimConsFactoryRecord & rec : data)
   {
-    ost << rec << std::endl;
+    ost << rec;
   }
   return ost;
 }
@@ -184,15 +140,18 @@ std::ostream& operator<<(std::ostream & ost,
     {
       ost <<  "step";
       auto headers = SimConsFactoryRecord::getHeaders();
-      for(auto header : headers)
+      for(auto member : SimConsFactoryRecord::getBuilder())
       {
-        for(auto pair : quantiles)
+        if(member->getName() != "step")
         {
-          ost << "," << header << "_Q" << pair.first;
+          for(auto pair : quantiles)
+          {
+            ost << "," << member->getName() << "_Q" << pair.first;
+          }
         }
+        ost << std::endl;
+        first = false;
       }
-      ost << std::endl;
-      first = false;
     }
     if(!quantiles.empty())
     {
