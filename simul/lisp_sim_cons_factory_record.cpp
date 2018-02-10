@@ -139,7 +139,6 @@ std::ostream& operator<<(std::ostream & ost,
     if(first)
     {
       ost <<  "step";
-      auto headers = SimConsFactoryRecord::getHeaders();
       for(auto member : SimConsFactoryRecord::getBuilder())
       {
         if(member->getName() != "step")
