@@ -32,8 +32,12 @@ either expressed or implied, of the FreeBSD Project.
 #include <algorithm>
 
 using SimConsFactoryRecord = Lisp::SimConsFactoryRecord;
+using SeriesType = SimConsFactoryRecord::SeriesType;
+using QuantilesType = SimConsFactoryRecord::QuantilesType;
+using QuantilesSeries = SimConsFactoryRecord::QuantilesSeries;
+using Builder = SimConsFactoryRecord::Builder;
 
-SimConsFactoryRecord::Builder SimConsFactoryRecord::getBuilder()
+Builder SimConsFactoryRecord::getBuilder()
 {
   Builder builder;
   builder
@@ -45,58 +49,44 @@ SimConsFactoryRecord::Builder SimConsFactoryRecord::getBuilder()
     .member<std::size_t>(&SimConsFactoryRecord::numFreeConses, "numFreeConses",0)
     .member<std::size_t>(&SimConsFactoryRecord::numEdges, "numEdges",0)
     .member<double>(&SimConsFactoryRecord::expectedNumEdges,"expectedNumEdges",0) 
-    .member<double>(&SimConsFactoryRecord::edgeFraction,"edgeFraction", 0)
-    .member<double>(&SimConsFactoryRecord::rootConsFraction, "rootConsFraction", 0)
-    .member<double>(&SimConsFactoryRecord::bulkConsFraction, "bulkConsFraction", 0)
-    .member<double>(&SimConsFactoryRecord::reachableConsFraction,"reachableConsFraction", 0) 
-    .member<double>(&SimConsFactoryRecord::voidConsFraction, "voidConsFraction", 0)
-    .member<double>(&SimConsFactoryRecord::freeConsFraction, "freeConsFraction", 0);
+    .member<double>(&SimConsFactoryRecord::edgeFraction,"edgeFraction", 0);
   return builder;
 }
 
-std::vector<SimConsFactoryRecord::size_t_ptr>
-SimConsFactoryRecord::getSizeTypeValues()
+SimConsFactoryRecord::ConsFractions::Builder SimConsFactoryRecord::ConsFractions::getBuilder()
 {
-  return std::vector<size_t_ptr>({
-      &SimConsFactoryRecord::step,
-      &SimConsFactoryRecord::numRootConses,
-      &SimConsFactoryRecord::numBulkConses,
-      &SimConsFactoryRecord::numReachableConses,
-      &SimConsFactoryRecord::numVoidConses,
-      &SimConsFactoryRecord::numFreeConses,
-      &SimConsFactoryRecord::numEdges });
-}
-
-std::vector<SimConsFactoryRecord::double_ptr>
-SimConsFactoryRecord::getDoubleValues()
-{
-  return std::vector<double_ptr>({
-      &SimConsFactoryRecord::expectedNumEdges,
-      &SimConsFactoryRecord::edgeFraction,
-      &SimConsFactoryRecord::rootConsFraction,
-      &SimConsFactoryRecord::bulkConsFraction,
-      &SimConsFactoryRecord::reachableConsFraction,
-      &SimConsFactoryRecord::voidConsFraction,
-      &SimConsFactoryRecord::freeConsFraction});
+  SimConsFactoryRecord::ConsFractions::Builder builder;
+  builder
+    .member<std::size_t>(&SimConsFactoryRecord::ConsFractions::step, "step", 0)
+    .member<double>(&SimConsFactoryRecord::ConsFractions::rootConsFraction, "rootConsFraction", 0.0)
+    .member<double>(&SimConsFactoryRecord::ConsFractions::bulkConsFraction, "bulkConsFraction", 0.0)
+    .member<double>(&SimConsFactoryRecord::ConsFractions::voidConsFraction, "voidConsFraction", 0.0)
+    .member<double>(&SimConsFactoryRecord::ConsFractions::freeConsFraction, "freeConsFraction", 0.0)
+    .member<double>(&SimConsFactoryRecord::ConsFractions::numberOfConses,   "numberOfConses", 0.0);
+  return builder;
 }
 
 SimConsFactoryRecord::SimConsFactoryRecord()
 {
-  for(auto ptr : getSizeTypeValues())
+  for(auto memb : SimConsFactoryRecord::getBuilder())
   {
-    this->*ptr = 0;
-  }
-  for(auto ptr : getDoubleValues())
-  {
-    this->*ptr = 0.0;
+    memb->initialize(*this);
   }
 }
 
-std::ostream& operator<<(std::ostream & ost,
-                         const SimConsFactoryRecord & rec)
+SimConsFactoryRecord::ConsFractions::ConsFractions()
+{
+  for(auto memb : SimConsFactoryRecord::ConsFractions::getBuilder())
+  {
+    memb->initialize(*this);
+  }
+}
+
+template<typename T>
+static std::ostream& streamOut(std::ostream & ost, const T & rec)
 {
   bool first = true;
-  for(auto member : SimConsFactoryRecord::getBuilder())
+  for(auto member : T::getBuilder())
   {
     if(!first)
     {
@@ -109,11 +99,11 @@ std::ostream& operator<<(std::ostream & ost,
   return ost;
 }
 
-std::ostream& operator<<(std::ostream & ost,
-                         const std::vector<SimConsFactoryRecord> & data)
+template<typename T>
+static std::ostream& streamOutVector(std::ostream & ost, const std::vector<T> & data)
 {
   bool first = true;
-  for(auto member : SimConsFactoryRecord::getBuilder())
+  for(auto member : T::getBuilder())
   {
     if(!first)
     {
@@ -123,18 +113,38 @@ std::ostream& operator<<(std::ostream & ost,
     first = false;
   }
   ost << std::endl;
-  for(const SimConsFactoryRecord & rec : data)
+  for(const T & rec : data)
   {
-    ost << rec;
+    streamOut<T>(ost, rec);
   }
   return ost;
 }
 
-std::ostream& operator<<(std::ostream & ost,
-                         const Lisp::SimConsFactoryRecord::QuantilesSeries & q)
+
+std::ostream& operator<<(std::ostream & ost, const SimConsFactoryRecord & rec)
+{
+  return streamOut<SimConsFactoryRecord>(ost, rec);
+}
+
+std::ostream& operator<<(std::ostream & ost, const Lisp::SimConsFactoryRecord::ConsFractions & rec)
+{
+  return streamOut<Lisp::SimConsFactoryRecord::ConsFractions>(ost, rec);
+}
+
+std::ostream& operator<<(std::ostream & ost, const std::vector<SimConsFactoryRecord> & data)
+{
+  return streamOutVector<SimConsFactoryRecord>(ost, data);
+}
+
+std::ostream& operator<<(std::ostream & ost, const std::vector<Lisp::SimConsFactoryRecord::ConsFractions> & data)
+{
+  return streamOutVector<SimConsFactoryRecord::ConsFractions>(ost, data);
+}
+
+std::ostream& operator<<(std::ostream & ost, const QuantilesSeries & q)
 {
   bool first = true;
-  for(const SimConsFactoryRecord::QuantilesType & quantiles : q)
+  for(const QuantilesType & quantiles : q)
   {
     if(first)
     {
@@ -148,64 +158,23 @@ std::ostream& operator<<(std::ostream & ost,
             ost << "," << member->getName() << "_Q" << pair.first;
           }
         }
-        ost << std::endl;
         first = false;
       }
+      ost << std::endl;
     }
     if(!quantiles.empty())
     {
       ost << quantiles.begin()->second.step;
-      for(auto pair : quantiles)
+      for(auto member : SimConsFactoryRecord::getBuilder())
       {
-        ost << "," << pair.second.numRootConses;
-      }
-      for(auto pair : quantiles)
-      {
-        ost << "," << pair.second.numBulkConses;
-      }
-      for(auto pair : quantiles)
-      {
-        ost << "," << pair.second.numReachableConses;
-      }
-      for(auto pair : quantiles)
-      {
-        ost << "," << pair.second.numVoidConses;
-      }
-      for(auto pair : quantiles)
-      {
-        ost << "," << pair.second.numFreeConses;
-      }
-      for(auto pair : quantiles)
-      {
-        ost << "," << pair.second.numEdges;
-      }
-      for(auto pair : quantiles)
-      {
-        ost << "," << pair.second.expectedNumEdges;
-      }
-      for(auto pair : quantiles)
-      {
-        ost << "," << pair.second.edgeFraction;
-      }
-      for(auto pair : quantiles)
-      {
-        ost << "," << pair.second.rootConsFraction;
-      }
-      for(auto pair : quantiles)
-      {
-        ost << "," << pair.second.bulkConsFraction;
-      }
-      for(auto pair : quantiles)
-      {
-        ost << "," << pair.second.reachableConsFraction;
-      }
-      for(auto pair : quantiles)
-      {
-        ost << "," << pair.second.voidConsFraction;
-      }
-      for(auto pair : quantiles)
-      {
-        ost << "," << pair.second.freeConsFraction;
+        if(member->getName() != "step")
+        {
+          for(auto pair : quantiles)
+          {
+            ost << ",";
+            member->streamOut(ost, pair.second);
+          }
+        }
       }
       ost << std::endl;
     }
@@ -213,51 +182,43 @@ std::ostream& operator<<(std::ostream & ost,
   return ost;
 }
 
+template<typename T>
+void SimConsFactoryRecord::computeQuantiles(std::size_t i, const std::vector<SeriesType> & runs, QuantilesType & ret)
+{
+  for(auto member : SimConsFactoryRecord::getBuilder())
+  {
+    if(member->getTypeInfo() == typeid(T))
+    {
+      std::vector<T> values;
+      for(auto run : runs)
+      {
+        values.push_back(member->bind<T>(run[i]));
+      }
+      std::sort(values.begin(), values.end());
+      for(auto & pair : ret)
+      {
+        member->bind<T>(pair.second) = values[pair.first];
+      }
+    }
+  }
+}
 
-SimConsFactoryRecord::QuantilesType
-SimConsFactoryRecord::computeQuantiles(std::size_t i,
-                                       const std::vector<SimConsFactoryRecord::SeriesType> & runs,
-                                       const std::vector<std::size_t> & qs)
+QuantilesType SimConsFactoryRecord::computeQuantiles(std::size_t i,
+                                                     const std::vector<SeriesType> & runs,
+                                                     const std::vector<std::size_t> & qs)
 {
   QuantilesType ret;
   for(std::size_t q : qs)
   {
     ret[q] = SimConsFactoryRecord();
   }
-  for(auto ptr : getSizeTypeValues())
-  {
-    std::vector<std::size_t> values;
-    for(auto run : runs)
-    {
-      values.push_back(run[i].*ptr);
-    }
-    std::sort(values.begin(), values.end());
-    for(std::size_t q : qs)
-    {
-      ret[q].*ptr = values[q];
-    }
-  }
-  for(auto ptr : getDoubleValues())
-  {
-    std::vector<double> values;
-    for(auto run : runs)
-    {
-      values.push_back(run[i].*ptr);
-    }
-    std::sort(values.begin(), values.end());
-    for(std::size_t q : qs)
-    {
-      ret[q].*ptr = values[q];
-    }
-  }
+  computeQuantiles<std::size_t>(i, runs, ret);
+  computeQuantiles<double>(i, runs, ret);
   return ret;
 }
 
-std::vector<SimConsFactoryRecord::QuantilesType>
-SimConsFactoryRecord::computeQuantiles(const std::vector<SeriesType> & runs,
-                                       const std::vector<std::size_t> & qs)
+std::size_t SimConsFactoryRecord::getLengthOfSeries(const std::vector<SeriesType> & runs)
 {
-  std::vector<QuantilesType> ret;
   std::size_t s = 0;
   bool first = true;
   for(auto & run : runs)
@@ -272,9 +233,51 @@ SimConsFactoryRecord::computeQuantiles(const std::vector<SeriesType> & runs,
       throw std::logic_error("runs with different lengths in set of runs");
     }
   }
-  for(std::size_t i = 0; i < s; i++)
+  return s;
+}
+
+std::vector<QuantilesType> SimConsFactoryRecord::computeQuantiles(const std::vector<SeriesType> & runs,
+                                                                  const std::vector<std::size_t> & qs)
+{
+  std::vector<QuantilesType> ret;
+  std::size_t len = getLengthOfSeries(runs);
+  for(std::size_t i = 0; i < len; i++)
   {
     ret.push_back(computeQuantiles(i, runs, qs));
+  }
+  return ret;
+}
+
+std::vector<SimConsFactoryRecord::ConsFractions> SimConsFactoryRecord::computeAverageFractions(const std::vector<SeriesType> & runs)
+{
+  std::size_t len = getLengthOfSeries(runs);
+  std::vector<SimConsFactoryRecord::ConsFractions> ret(len);
+  for(auto & run : runs)
+  {
+    for(std::size_t i = 0; i < len; i++)
+    {
+      ret[i].step = run[i].step;
+      ret[i].rootConsFraction += run[i].numRootConses;
+      ret[i].bulkConsFraction += run[i].numBulkConses;
+      ret[i].voidConsFraction += run[i].numVoidConses;
+      ret[i].freeConsFraction += run[i].numFreeConses;
+      ret[i].numberOfConses   += run[i].numRootConses + run[i].numBulkConses + run[i].numVoidConses + run[i].numFreeConses;
+    }
+  }
+  for(std::size_t i = 0; i < len; i++)
+  {
+    double z = ret[i].rootConsFraction + ret[i].bulkConsFraction + ret[i].voidConsFraction + ret[i].freeConsFraction;
+    if(z > 1e-8)
+    {
+      ret[i].rootConsFraction/= z;
+      ret[i].bulkConsFraction/= z;
+      ret[i].voidConsFraction/= z;
+      ret[i].freeConsFraction/= z;
+      if(runs.size())
+      {
+        ret[i].numberOfConses/= runs.size();
+      }
+    }
   }
   return ret;
 }

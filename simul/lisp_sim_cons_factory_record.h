@@ -44,7 +44,6 @@ namespace Lisp
   class ConsGraph;
   class Object;
   class Cons;
-
   struct SimConsFactoryRecord
   {
     typedef std::vector<SimConsFactoryRecord> SeriesType;
@@ -60,26 +59,33 @@ namespace Lisp
     std::size_t numEdges;
     double expectedNumEdges;
     double edgeFraction;
-    double rootConsFraction;
-    double bulkConsFraction;
-    double reachableConsFraction;
-    double voidConsFraction;
-    double freeConsFraction;
-    SimConsFactoryRecord();
 
+    struct ConsFractions
+    {
+      typedef csv::Builder<SimConsFactoryRecord::ConsFractions> Builder;
+      std::size_t step;
+      double rootConsFraction; /* fraction of root conses among all conses */ 
+      double bulkConsFraction; /* fraction of bulk conses among all conses */ 
+      double voidConsFraction; /* fraction of void conses among all conses */ 
+      double freeConsFraction; /* fraction of free conses amgon all conses */
+      double numberOfConses;
+      ConsFractions();
+      static Builder getBuilder();
+    };
+
+    SimConsFactoryRecord();
     static QuantilesSeries computeQuantiles(const std::vector<SeriesType> & r,
                                             const std::vector<std::size_t> & q);
+    static std::vector<ConsFractions> computeAverageFractions(const std::vector<SeriesType> & r);
     static Builder getBuilder();
-  private:
-    typedef std::size_t SimConsFactoryRecord::*size_t_ptr;
-    typedef double SimConsFactoryRecord::*double_ptr;
-    static std::vector<size_t_ptr> getSizeTypeValues();
-    static std::vector<double_ptr> getDoubleValues();
 
-    static QuantilesType
-    computeQuantiles(std::size_t i,
-                     const std::vector<SeriesType> & runs,
-                     const std::vector<std::size_t> & qs);
+  private:
+    static std::size_t getLengthOfSeries(const std::vector<SeriesType> & runs);
+    static QuantilesType computeQuantiles(std::size_t i,
+                                          const std::vector<SeriesType> & runs,
+                                          const std::vector<std::size_t> & qs);
+    template<typename T>
+    static void computeQuantiles(std::size_t i, const std::vector<SeriesType> & runs, QuantilesType & ret);
   };
 }
 
@@ -87,7 +93,13 @@ std::ostream& operator<<(std::ostream &,
                          const Lisp::SimConsFactoryRecord & rec);
 
 std::ostream& operator<<(std::ostream &,
+                         const Lisp::SimConsFactoryRecord::ConsFractions & rec);
+
+std::ostream& operator<<(std::ostream &,
                          const std::vector<Lisp::SimConsFactoryRecord> & data);
+
+std::ostream& operator<<(std::ostream &,
+                         const std::vector<Lisp::SimConsFactoryRecord::ConsFractions> & data);
 
 std::ostream& operator<<(std::ostream &,
                          const Lisp::SimConsFactoryRecord::QuantilesSeries &);

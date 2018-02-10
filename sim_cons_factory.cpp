@@ -124,6 +124,7 @@ int main(int argc, const char ** argv)
 
   std::string quantileFile;
   std::string outputFiles;
+  std::string consFractionFile;
 
   Cli::Parser parser("sim_cons_factory",
                      "simulate Cons garbage collector");
@@ -178,6 +179,9 @@ int main(int argc, const char ** argv)
   parser.add(StringValue::make(quantileFile,
                                "quantile-output",
                                Cli::Doc("Filename for generated quantiles")));
+  parser.add(StringValue::make(consFractionFile,
+                               "cons-fraction-output",
+                               Cli::Doc("Filename for cons fraction statistics")));
 
   std::vector<std::string> err;
   if(!parser.parse(argc, argv, err))
@@ -229,6 +233,14 @@ int main(int argc, const char ** argv)
       outfile << quantileResults;
       outfile.close();
     }
+  }
+  if(!consFractionFile.empty())
+  {
+    auto avgFrac = SimConsFactoryRecord::computeAverageFractions(results);
+    std::ofstream outfile(consFractionFile.c_str());
+    outfile << avgFrac;
+    outfile.close();
+
   }
   return 0;
 }
