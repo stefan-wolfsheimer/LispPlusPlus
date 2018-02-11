@@ -207,6 +207,7 @@ int main(int argc, const char ** argv)
   std::vector<SimConsFactorySeries> results;
   for(std::size_t run = 0; run < numRuns; run++)
   {
+    std::cout << "run " << (run+1) << "/" << numRuns << std::endl;
     Lisp::SimConsFactory simConsFactory;
     simConsFactory.setTargetNumRootConses(targetNumRootConses);
     simConsFactory.setTargetNumBulkConses(targetNumBulkConses);

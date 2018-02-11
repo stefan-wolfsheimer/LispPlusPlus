@@ -137,11 +137,12 @@ std::size_t SimConsFactory::getRecycleSteps() const
 double SimConsFactory::getTargetNumEdges(std::shared_ptr<ConsFactory> factory,
                                          const ConsGraph & graph) const
 {
-  std::size_t numRootConses = factory->numRootConses();
-  std::size_t numConses = graph.numNodes()-1;
-  return getTargetEdgeFraction() *
-    ( 2.0 * numRootConses + numConses ) +
-    numRootConses + numConses;
+  // f = (n - min_edges) / (max_edges - min_edges)
+  // f * (max_edges - min_edges) = n - min_edges
+  // n = f * (max_edges - min_edges) + min_edges
+  std::size_t maxEdges = factory->numRootConses() + 2 * (graph.numNodes()-1);
+  std::size_t minEdges = graph.numNodes()-1;
+  return getTargetEdgeFraction() * (maxEdges - minEdges) + minEdges;
 }
 
 double SimConsFactory::getTargetNumEdges(std::shared_ptr<ConsFactory> factory) const
@@ -153,6 +154,9 @@ double SimConsFactory::getTargetNumEdges(std::shared_ptr<ConsFactory> factory) c
 double SimConsFactory::getEdgeFraction(std::shared_ptr<ConsFactory> factory,
                                        const Lisp::ConsGraph & graph) const
 {
+  // min_edges = n_root_conses + n_conses
+  // max_edges = n_root_conses + 2 * (n_conses + n_root_conses)
+  // f = (n - min_edges) / (max_edges - min_edges)
   std::size_t maxEdges = factory->numRootConses() + 2 * (graph.numNodes()-1);
   std::size_t minEdges = graph.numNodes()-1;
   if(maxEdges - minEdges)
