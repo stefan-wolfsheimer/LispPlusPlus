@@ -19,7 +19,7 @@ plot quantile_file u 1:7  w l,\
      quantile_file u 1:18 w l,\
      quantile_file u 1:29 w l,\
      quantile_file u 1:40 w l,\
-     quantile_file u 1:55 w l,\
+     quantile_file u 1:51 w l,\
      quantile_file u 1:62 w l,\
      quantile_file u 1:73 w l
 
