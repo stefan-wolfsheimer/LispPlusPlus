@@ -2,8 +2,13 @@
 #include "lisp_cell.h"
 #include "lisp_object.h"
 #include "lisp_cons.h"
+#include "lisp_symbol.h"
 
-Lisp::Cell& Lisp::Cell::operator=(const Object & rhs)
+using Cell = Lisp::Cell;
+using Cons = Lisp::Cons;
+using Symbol = Lisp::Symbol;
+
+Cell& Cell::operator=(const Object & rhs)
 {
   assert(!rhs.isA<Cons>() || rhs.as<Cons>()->isRoot());
   typeId = rhs.typeId;
@@ -17,9 +22,14 @@ Lisp::Cell::Cell(const Object & rhs)
   data = rhs.data;
 }
 
-Lisp::Cell::Cell(Cons * cons)
+Cell::Cell(Cons * cons)
 {
-  typeId = Lisp::Cons::typeId;
+  typeId = Cons::typeId;
   data.cons = cons;
 }
 
+Cell::Cell(Symbol * symbol)
+{
+  typeId = Symbol::typeId;
+  data.symbol = symbol;
+}

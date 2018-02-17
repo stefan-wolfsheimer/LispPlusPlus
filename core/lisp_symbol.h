@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2017, Stefan Wolfsheimer
+Copyright (c) 2017-2018, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -30,77 +30,79 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
 #include <cstdint>
+#include <functional>
+#include "lisp_object.h"
 
 namespace Lisp
 {
-  namespace Details
-  {
-    template<typename T>
-    struct Converter;
-  }
-  class Cons;
-  class Symbol;
-  class Object;
+  class SymbolFactory;
 
-  class Cell
+  class Symbol
   {
   public:
-    template<typename T>
-    friend class Lisp::Details::Converter;
-    friend class Lisp::Cons;
-
-    Cell(const Object & rhs);
-    Cell(Cons * cons);
-    Cell(Symbol * cons);
-    Cell& operator=(const Object & rhs);
-
-    inline std::size_t getTypeId() const;
-
-    template<typename T>
-    inline bool isA() const;
-
-    template<typename T>
-    inline T * as() const;
-
-  protected:
-    Cell(std::size_t _typeId) : typeId(_typeId) {}
-    std::size_t typeId;
-    union
-    {
-      Cons * cons;
-      Symbol * symbol;
-    } data;
+    static const std::size_t typeId;
+    inline std::size_t getRefCount() const;
+    inline const std::string& getName() const;
+  private:
+    friend class SymbolFactory;
+    friend class Object;
+    Symbol(const std::string & _name, SymbolFactory * _factory=nullptr, std::size_t _refCount=1);
+    std::string name;
+    std::size_t refCount;
+    SymbolFactory * factory;
   };
+}
+
+inline Lisp::Symbol::Symbol(const std::string & _name, SymbolFactory * _factory, std::size_t _refCount)
+  : name(_name), refCount(_refCount), factory(_factory)
+{
+}
+
+inline std::size_t Lisp::Symbol::getRefCount() const
+{
+  return refCount;
+}
+
+inline const std::string& Lisp::Symbol::getName() const
+{
+  return name;
 }
 
 namespace Lisp
 {
   namespace Details
   {
-    template<typename T>
-    struct Converter
+    template<>
+    struct Converter<::Lisp::Symbol>
     {
-      static T * as(const Lisp::Cell * obj)
+      static Symbol * as(const Cell * obj)
       {
-        return nullptr;
+        if(obj->isA<Symbol>())
+        {
+          return obj->data.symbol;
+        }
+        else
+        {
+          return nullptr;
+        }
+      }
+    };
+
+    template<>
+    struct Converter<const Symbol>
+    {
+      static const Symbol * as(const Cell * obj)
+      {
+        if(obj->isA<const Symbol>())
+        {
+          return obj->data.symbol;
+        }
+        else
+        {
+          return nullptr;
+        }
       }
     };
   }
 }
 
-inline std::size_t Lisp::Cell::getTypeId() const
-{
-  return typeId;
-}
-
-template<typename T>
-inline bool Lisp::Cell::isA() const
-{
-  return typeId == T::typeId;
-}
-
-template<typename T>
-inline T * Lisp::Cell::as() const
-{
-  return Lisp::Details::Converter<T>::as(this);
-}

@@ -63,6 +63,10 @@ namespace Lisp
     Color getFromRootColor() const;
     Color getToRootColor() const;
 
+    /**
+     * Allocate and initialize a new Cons object in the root set.
+     * Reference count is 0.
+     */
     Cons * make(const Object & car, const Object & cdr);
 
     /**

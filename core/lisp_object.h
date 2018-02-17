@@ -38,7 +38,7 @@ namespace Lisp
   {
   public:
     Object(const Object & rhs);
-    Object(const Cell & rhs);
+    explicit Object(const Cell & rhs);
     /** Create Cons object.
      * assume that cons has already be rooted before boxing 
      * @code
@@ -51,8 +51,7 @@ namespace Lisp
     ~Object();
     Object & operator=(const Object & rhs);
   private:
-
-    inline void unsetCons();
+    inline void unset();
   };
 
   extern Object nil;

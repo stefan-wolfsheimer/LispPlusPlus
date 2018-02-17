@@ -176,7 +176,7 @@ Lisp::Cons * Lisp::ConsFactory::make(const Object & car,
   ret->car = car;
   ret->cdr = cdr;
   ret->consFactory = this;
-  ret->refCount = 1;
+  ret->refCount = 0;
 
   // new cons is root with from-color
   addToVector((toColor == Cons::Color::Black ? Cons::Color::WhiteRoot : Cons::Color::BlackRoot),

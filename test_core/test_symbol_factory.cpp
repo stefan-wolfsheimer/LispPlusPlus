@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2017, Stefan Wolfsheimer
+Copyright (c) 2018, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -28,79 +28,34 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#pragma once
-#include <cstdint>
+#include "core/lisp_symbol_factory.h"
+#include "core/lisp_object.h"
+#include "core/lisp_symbol.h"
+#include <catch.hpp>
 
-namespace Lisp
+using Symbol = Lisp::Symbol;
+using SymbolFactory = Lisp::SymbolFactory;
+using Object = Lisp::Object;
+
+TEST_CASE("symbol_life_cycle", "[SymbolFactory]")
 {
-  namespace Details
+  SymbolFactory factory;
+  Symbol * psymb = factory.make("symb1");
+  REQUIRE(psymb->getRefCount() == 0);
+  Object symb1(psymb);
+  REQUIRE(psymb->getRefCount() == 1);
+  REQUIRE(symb1.isA<Symbol>());
+  REQUIRE(symb1.as<Symbol>() == psymb);
+  REQUIRE(symb1.as<Lisp::Symbol>()->getName() == "symb1");
   {
-    template<typename T>
-    struct Converter;
+    Object symb1Copy1(symb1);
+    REQUIRE(symb1Copy1.isA<Symbol>());
+    REQUIRE(symb1Copy1.as<Lisp::Symbol>() == psymb);
+    REQUIRE(psymb->getRefCount() == 2);
+    Object symb1Copy2(factory.make("symb1"));
+    REQUIRE(symb1Copy2.isA<Symbol>());
+    REQUIRE(psymb->getRefCount() == 3);
+    REQUIRE(symb1Copy2.as<Lisp::Symbol>() == psymb);
   }
-  class Cons;
-  class Symbol;
-  class Object;
-
-  class Cell
-  {
-  public:
-    template<typename T>
-    friend class Lisp::Details::Converter;
-    friend class Lisp::Cons;
-
-    Cell(const Object & rhs);
-    Cell(Cons * cons);
-    Cell(Symbol * cons);
-    Cell& operator=(const Object & rhs);
-
-    inline std::size_t getTypeId() const;
-
-    template<typename T>
-    inline bool isA() const;
-
-    template<typename T>
-    inline T * as() const;
-
-  protected:
-    Cell(std::size_t _typeId) : typeId(_typeId) {}
-    std::size_t typeId;
-    union
-    {
-      Cons * cons;
-      Symbol * symbol;
-    } data;
-  };
-}
-
-namespace Lisp
-{
-  namespace Details
-  {
-    template<typename T>
-    struct Converter
-    {
-      static T * as(const Lisp::Cell * obj)
-      {
-        return nullptr;
-      }
-    };
-  }
-}
-
-inline std::size_t Lisp::Cell::getTypeId() const
-{
-  return typeId;
-}
-
-template<typename T>
-inline bool Lisp::Cell::isA() const
-{
-  return typeId == T::typeId;
-}
-
-template<typename T>
-inline T * Lisp::Cell::as() const
-{
-  return Lisp::Details::Converter<T>::as(this);
+  REQUIRE(psymb->getRefCount() == 1);
 }

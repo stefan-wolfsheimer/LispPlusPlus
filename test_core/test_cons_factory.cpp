@@ -239,7 +239,7 @@ SCENARIO("a cons with 2 children", "[ConsFactory]")
       REQUIRE(cons);
       REQUIRE(cons->isRoot());
       REQUIRE(cons->getColor() == factory->getFromRootColor());
-      REQUIRE(cons->getRefCount() == 1u);
+      REQUIRE(cons->getRefCount() == 0u);
     }
     THEN("the parent of its children is the cons")
     {

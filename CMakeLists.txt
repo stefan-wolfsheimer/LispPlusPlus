@@ -29,6 +29,7 @@ IF(CMAKE_BUILD_TYPE MATCHES Debug)
       test_core/test_object.cpp
       test_core/test_cons_factory.cpp
       test_core/test_cons.cpp
+      test_core/test_symbol_factory.cpp
       CliArgs/tests/test_argument.cpp
       CliArgs/tests/test_flag.cpp
       CliArgs/tests/test_multiple_flag.cpp

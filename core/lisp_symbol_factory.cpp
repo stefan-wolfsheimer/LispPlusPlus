@@ -28,79 +28,30 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#pragma once
-#include <cstdint>
+#include <assert.h>
+#include "lisp_symbol_factory.h"
+using SymbolFactory = Lisp::SymbolFactory;
+using Symbol = Lisp::Symbol;
 
-namespace Lisp
+Symbol * SymbolFactory::make(const std::string & name)
 {
-  namespace Details
+  auto res = symbols.insert(std::make_pair(name, (Symbol*)nullptr));
+  if(res.second)
   {
-    template<typename T>
-    struct Converter;
+    res.first->second = new Symbol(res.first->first.c_str(), this, 0);
+    return res.first->second;
   }
-  class Cons;
-  class Symbol;
-  class Object;
-
-  class Cell
+  else
   {
-  public:
-    template<typename T>
-    friend class Lisp::Details::Converter;
-    friend class Lisp::Cons;
-
-    Cell(const Object & rhs);
-    Cell(Cons * cons);
-    Cell(Symbol * cons);
-    Cell& operator=(const Object & rhs);
-
-    inline std::size_t getTypeId() const;
-
-    template<typename T>
-    inline bool isA() const;
-
-    template<typename T>
-    inline T * as() const;
-
-  protected:
-    Cell(std::size_t _typeId) : typeId(_typeId) {}
-    std::size_t typeId;
-    union
-    {
-      Cons * cons;
-      Symbol * symbol;
-    } data;
-  };
-}
-
-namespace Lisp
-{
-  namespace Details
-  {
-    template<typename T>
-    struct Converter
-    {
-      static T * as(const Lisp::Cell * obj)
-      {
-        return nullptr;
-      }
-    };
+    return res.first->second;
   }
 }
 
-inline std::size_t Lisp::Cell::getTypeId() const
+void SymbolFactory::remove(Symbol * symbol)
 {
-  return typeId;
+  auto itr = symbols.find(symbol->getName());
+  assert(itr != symbols.end());
+  delete itr->second;
+  symbols.erase(itr);
 }
 
-template<typename T>
-inline bool Lisp::Cell::isA() const
-{
-  return typeId == T::typeId;
-}
-
-template<typename T>
-inline T * Lisp::Cell::as() const
-{
-  return Lisp::Details::Converter<T>::as(this);
-}

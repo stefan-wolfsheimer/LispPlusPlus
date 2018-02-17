@@ -112,7 +112,6 @@ void Lisp::Cons::root()
   else
   {
     consFactory->root(this);
-    // Todo move from heap to root
   }
 }
 

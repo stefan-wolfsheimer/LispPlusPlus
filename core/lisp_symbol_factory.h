@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2017, Stefan Wolfsheimer
+Copyright (c) 2017-2018, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -29,78 +29,21 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
-#include <cstdint>
+#include <string>
+#include <unordered_map>
+#include "lisp_symbol.h"
 
 namespace Lisp
 {
-  namespace Details
-  {
-    template<typename T>
-    struct Converter;
-  }
-  class Cons;
-  class Symbol;
-  class Object;
 
-  class Cell
-  {
-  public:
-    template<typename T>
-    friend class Lisp::Details::Converter;
-    friend class Lisp::Cons;
-
-    Cell(const Object & rhs);
-    Cell(Cons * cons);
-    Cell(Symbol * cons);
-    Cell& operator=(const Object & rhs);
-
-    inline std::size_t getTypeId() const;
-
-    template<typename T>
-    inline bool isA() const;
-
-    template<typename T>
-    inline T * as() const;
-
-  protected:
-    Cell(std::size_t _typeId) : typeId(_typeId) {}
-    std::size_t typeId;
-    union
-    {
-      Cons * cons;
-      Symbol * symbol;
-    } data;
-  };
-}
-
-namespace Lisp
+class SymbolFactory
 {
-  namespace Details
-  {
-    template<typename T>
-    struct Converter
-    {
-      static T * as(const Lisp::Cell * obj)
-      {
-        return nullptr;
-      }
-    };
-  }
-}
+public:
+  Symbol * make(const std::string & name);
+private:
+  friend class Object;
+  void remove(Symbol * symbol);
+  std::unordered_map<std::string, Symbol*> symbols;
+};
 
-inline std::size_t Lisp::Cell::getTypeId() const
-{
-  return typeId;
-}
-
-template<typename T>
-inline bool Lisp::Cell::isA() const
-{
-  return typeId == T::typeId;
-}
-
-template<typename T>
-inline T * Lisp::Cell::as() const
-{
-  return Lisp::Details::Converter<T>::as(this);
-}
+} //namespace Lisp
