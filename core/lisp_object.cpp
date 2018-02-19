@@ -32,34 +32,20 @@ either expressed or implied, of the FreeBSD Project.
 #include "lisp_object.h"
 #include "lisp_nil.h"
 #include "lisp_cons.h"
-#include "lisp_symbol.h"
-#include "lisp_symbol_factory.h"
 
-Lisp::Object::Object(const Object & rhs) : Cell(rhs.typeId)
+Lisp::Object::Object(const Object & rhs) : Cell(rhs)
 {
   if(rhs.isA<Lisp::Cons>())
   {
-    data.cons = rhs.data.cons;
     data.cons->root();
-  }
-  else if(rhs.isA<Lisp::Symbol>())
-  {
-    data.symbol = rhs.data.symbol;
-    data.symbol->refCount++;
   }
 }
 
-Lisp::Object::Object(const Cell & rhs) : Cell(rhs.getTypeId())
+Lisp::Object::Object(const Cell & rhs) : Cell(rhs)
 {
   if(rhs.isA<Lisp::Cons>())
   {
-    data.cons = rhs.as<Lisp::Cons>();
     data.cons->root();
-  }
-  else if(rhs.isA<Lisp::Symbol>())
-  {
-    data.symbol = rhs.as<Lisp::Symbol>();
-    data.symbol->refCount++;
   }
 }
 
@@ -76,13 +62,14 @@ Lisp::Object::Object(Cons * cons) : Cell(Lisp::Cons::typeId)
 
 Lisp::Object::~Object()
 {
-  unset();
+  unsetCons();
 }
 
 
 Lisp::Object & Lisp::Object::operator=(const Object & rhs)
 {
-  unset();
+  Cell::unset();
+  unsetCons();
   typeId = rhs.typeId;
   if(rhs.isA<Lisp::Cons>())
   {
@@ -94,25 +81,13 @@ Lisp::Object & Lisp::Object::operator=(const Object & rhs)
   return *this;
 }
 
-void Lisp::Object::unset()
+void Lisp::Object::unsetCons()
 {
   if(isA<Cons>())
   {
     assert(data.cons->isRoot());
     assert(data.cons->getRefCount() > 0u);
     data.cons->unroot();
-  }
-  else if(isA<Symbol>())
-  {
-    if(data.symbol->refCount)
-    {
-      data.symbol->refCount--;
-    }
-    if(data.symbol->refCount == 0)
-    {
-      data.symbol->factory->remove(data.symbol);
-      data.symbol = nullptr;
-    }
   }
 }
 

@@ -45,7 +45,7 @@ namespace Lisp
     inline const std::string& getName() const;
   private:
     friend class SymbolFactory;
-    friend class Object;
+    friend class Cell;
     Symbol(const std::string & _name, SymbolFactory * _factory=nullptr, std::size_t _refCount=1);
     std::string name;
     std::size_t refCount;

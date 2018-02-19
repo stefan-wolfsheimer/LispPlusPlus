@@ -37,21 +37,15 @@ namespace Lisp
   class Object : public Cell
   {
   public:
+    Object();
     Object(const Object & rhs);
     explicit Object(const Cell & rhs);
-    /** Create Cons object.
-     * assume that cons has already be rooted before boxing 
-     * @code
-     * cons->root();
-     * Object(cons);
-     * @endcode
-     */
-    Object(Cons * cons);
-    Object();
-    ~Object();
+    explicit Object(Cons * cons);
     Object & operator=(const Object & rhs);
+    ~Object();
+
   private:
-    inline void unset();
+    inline void unsetCons();
   };
 
   extern Object nil;

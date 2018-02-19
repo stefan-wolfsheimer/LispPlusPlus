@@ -48,10 +48,15 @@ namespace Lisp
     template<typename T>
     friend class Lisp::Details::Converter;
     friend class Lisp::Cons;
-
+    Cell(const Cell & rhs);
     Cell(const Object & rhs);
     Cell(Cons * cons);
     Cell(Symbol * cons);
+    /**
+     * deletes object with no reference, except for conses
+     * conses are managed by the garbage collector
+     */
+    ~Cell();
     Cell& operator=(const Object & rhs);
 
     inline std::size_t getTypeId() const;
@@ -63,13 +68,14 @@ namespace Lisp
     inline T * as() const;
 
   protected:
-    Cell(std::size_t _typeId) : typeId(_typeId) {}
     std::size_t typeId;
     union
     {
       Cons * cons;
       Symbol * symbol;
     } data;
+    Cell(std::size_t _typeId) : typeId(_typeId) {}
+    void unset();
   };
 }
 

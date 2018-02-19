@@ -41,7 +41,7 @@ class SymbolFactory
 public:
   Symbol * make(const std::string & name);
 private:
-  friend class Object;
+  friend class Cell;
   void remove(Symbol * symbol);
   std::unordered_map<std::string, Symbol*> symbols;
 };
