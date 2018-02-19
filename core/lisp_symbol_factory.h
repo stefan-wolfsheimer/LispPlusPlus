@@ -31,11 +31,10 @@ either expressed or implied, of the FreeBSD Project.
 #pragma once
 #include <string>
 #include <unordered_map>
-#include "lisp_symbol.h"
 
 namespace Lisp
 {
-
+class Symbol;
 class SymbolFactory
 {
 public:

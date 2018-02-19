@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2017, Stefan Wolfsheimer
+Copyright (c) 2017-2018, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -28,15 +28,81 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#include <assert.h>
-#include "lisp_cons.h"
-#include "lisp_cons_factory.h"
+#pragma once
+#include <cstdint>
+#include <functional>
+#include "core/lisp_object.h"
 
-Lisp::Cons::Cons() :
-   color(Color::Void),
-   refCount(0),
-   car(Lisp::nil),
-   cdr(Lisp::nil)
+namespace Lisp
 {
+  class SymbolFactory;
+
+  class Symbol
+  {
+  public:
+    static const std::size_t typeId;
+    inline std::size_t getRefCount() const;
+    inline const std::string& getName() const;
+  private:
+    friend class SymbolFactory;
+    friend class Cell;
+    Symbol(const std::string & _name, SymbolFactory * _factory=nullptr, std::size_t _refCount=1);
+    std::string name;
+    std::size_t refCount;
+    SymbolFactory * factory;
+  };
+}
+
+inline Lisp::Symbol::Symbol(const std::string & _name, SymbolFactory * _factory, std::size_t _refCount)
+  : name(_name), refCount(_refCount), factory(_factory)
+{
+}
+
+inline std::size_t Lisp::Symbol::getRefCount() const
+{
+  return refCount;
+}
+
+inline const std::string& Lisp::Symbol::getName() const
+{
+  return name;
+}
+
+namespace Lisp
+{
+  namespace Details
+  {
+    template<>
+    struct Converter<::Lisp::Symbol>
+    {
+      static Symbol * as(const Cell * obj)
+      {
+        if(obj->isA<Symbol>())
+        {
+          return obj->data.symbol;
+        }
+        else
+        {
+          return nullptr;
+        }
+      }
+    };
+
+    template<>
+    struct Converter<const Symbol>
+    {
+      static const Symbol * as(const Cell * obj)
+      {
+        if(obj->isA<const Symbol>())
+        {
+          return obj->data.symbol;
+        }
+        else
+        {
+          return nullptr;
+        }
+      }
+    };
+  }
 }
 

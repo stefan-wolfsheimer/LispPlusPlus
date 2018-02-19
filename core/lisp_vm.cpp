@@ -30,7 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include "lisp_vm.h"
 #include "lisp_cons_factory.h"
-#include "lisp_cons.h"
+#include "types/lisp_cons.h"
 
 Lisp::Vm::Vm(std::shared_ptr<ConsFactory> _consFactory)
   : consFactory( _consFactory ?

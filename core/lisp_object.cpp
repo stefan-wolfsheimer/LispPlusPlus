@@ -30,8 +30,8 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include <assert.h>
 #include "lisp_object.h"
-#include "lisp_nil.h"
-#include "lisp_cons.h"
+#include "types/lisp_nil.h"
+#include "types/lisp_cons.h"
 
 Lisp::Object::Object(const Object & rhs) : Cell(rhs)
 {

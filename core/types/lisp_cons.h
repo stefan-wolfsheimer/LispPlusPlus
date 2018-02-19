@@ -30,8 +30,8 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
 #include <cstdint>
-#include "lisp_object.h"
-#include "lisp_cons_factory.h"
+#include "core/lisp_object.h"
+#include "core/lisp_cons_factory.h"
 
 namespace Lisp
 {

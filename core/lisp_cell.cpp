@@ -1,8 +1,8 @@
 #include <assert.h>
 #include "lisp_cell.h"
 #include "lisp_object.h"
-#include "lisp_cons.h"
-#include "lisp_symbol.h"
+#include "types/lisp_cons.h"
+#include "types/lisp_symbol.h"
 #include "lisp_symbol_factory.h"
 
 using Cell = Lisp::Cell;

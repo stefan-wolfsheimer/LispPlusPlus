@@ -30,7 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include "core/lisp_symbol_factory.h"
 #include "core/lisp_object.h"
-#include "core/lisp_symbol.h"
+#include "core/types/lisp_symbol.h"
 #include <catch.hpp>
 
 using Symbol = Lisp::Symbol;

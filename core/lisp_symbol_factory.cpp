@@ -30,6 +30,8 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include <assert.h>
 #include "lisp_symbol_factory.h"
+#include "types/lisp_symbol.h"
+
 using SymbolFactory = Lisp::SymbolFactory;
 using Symbol = Lisp::Symbol;
 

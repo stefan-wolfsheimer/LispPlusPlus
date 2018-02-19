@@ -34,9 +34,9 @@ either expressed or implied, of the FreeBSD Project.
 #include <catch.hpp>
 
 #include "core/lisp_cons_factory.h"
-#include "core/lisp_cons.h"
+#include "core/types/lisp_cons.h"
 #include "core/lisp_object.h"
-#include "core/lisp_nil.h"
+#include "core/types/lisp_nil.h"
 #include "simul/lisp_cons_graph.h"
 #include "simul/lisp_cons_graph_edge.h"
 #include "simul/lisp_cons_graph_node.h"
