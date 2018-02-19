@@ -22,9 +22,9 @@ Lisp::Cell::Cell(const Cell & rhs)
 {
   typeId = rhs.typeId;
   data = rhs.data;
-  if(rhs.isA<Lisp::Symbol>())
+  if(isA<Symbol>())
   {
-    data.symbol->refCount++;
+    ((Lisp::Symbol*)(data.ptr))->refCount++;
   }
 }
 
@@ -32,9 +32,9 @@ Lisp::Cell::Cell(const Object & rhs)
 {
   typeId = rhs.typeId;
   data = rhs.data;
-  if(rhs.isA<Lisp::Symbol>())
+  if(isA<Symbol>())
   {
-    data.symbol->refCount++;
+    ((Lisp::Symbol*)(data.ptr))->refCount++;
   }
 }
 
@@ -42,14 +42,14 @@ Lisp::Cell::Cell(const Object & rhs)
 Cell::Cell(Cons * cons)
 {
   typeId = Cons::typeId;
-  data.cons = cons;
+  data.ptr = cons;
 }
 
 Cell::Cell(Symbol * symbol)
 {
   typeId = Symbol::typeId;
-  data.symbol = symbol;
-  data.symbol->refCount++;
+  symbol->refCount++;
+  data.ptr = symbol;
 }
 
 Cell::~Cell()
@@ -61,14 +61,15 @@ void Cell::unset()
 {
   if(isA<Symbol>())
   {
-    if(data.symbol->refCount)
+    Symbol * symbol = (Symbol*)data.ptr;
+    if(symbol->refCount)
     {
-      data.symbol->refCount--;
+      symbol->refCount--;
     }
-    if(data.symbol->refCount == 0)
+    if(symbol->refCount == 0)
     {
-      data.symbol->factory->remove(data.symbol);
-      data.symbol = nullptr;
+      symbol->factory->remove(symbol);
+      symbol = nullptr;
     }
   }
 }

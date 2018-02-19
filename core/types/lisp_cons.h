@@ -177,7 +177,7 @@ void Lisp::Cons::setCar(Cons * cons, std::size_t _typeId)
 {
   car = Lisp::nil;
   car.typeId = _typeId; 
-  car.data.cons = cons;
+  car.data.ptr = cons;
   consFactory->gcStep(this);
 }
 
@@ -185,46 +185,6 @@ void Lisp::Cons::setCdr(Cons * cons, std::size_t _typeId)
 {
   cdr = Lisp::nil;
   cdr.typeId = _typeId;
-  cdr.data.cons = cons;
+  cdr.data.ptr = cons;
   consFactory->gcStep(this);
 }
-
-namespace Lisp
-{
-  namespace Details
-  {
-    template<>
-    struct Converter<Cons>
-    {
-      static Cons * as(const Cell * obj)
-      {
-        if(obj->isA<Cons>())
-        {
-          return obj->data.cons;
-        }
-        else
-        {
-          return nullptr;
-        }
-      }
-    };
-
-    template<>
-    struct Converter<const Cons>
-    {
-      static const Cons * as(const Cell * obj)
-      {
-        if(obj->isA<const Cons>())
-        {
-          return obj->data.cons;
-        }
-        else
-        {
-          return nullptr;
-        }
-      }
-    };
-
-  }
-}
-

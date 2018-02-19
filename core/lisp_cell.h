@@ -33,11 +33,6 @@ either expressed or implied, of the FreeBSD Project.
 
 namespace Lisp
 {
-  namespace Details
-  {
-    template<typename T>
-    struct Converter;
-  }
   class Cons;
   class Symbol;
   class Object;
@@ -45,9 +40,7 @@ namespace Lisp
   class Cell
   {
   public:
-    template<typename T>
-    friend class Lisp::Details::Converter;
-    friend class Lisp::Cons;
+    friend class Cons;
     Cell(const Cell & rhs);
     Cell(const Object & rhs);
     Cell(Cons * cons);
@@ -71,27 +64,12 @@ namespace Lisp
     std::size_t typeId;
     union
     {
-      Cons * cons;
-      Symbol * symbol;
+      int int_val;
+      void * ptr;
     } data;
     Cell(std::size_t _typeId) : typeId(_typeId) {}
     void unset();
   };
-}
-
-namespace Lisp
-{
-  namespace Details
-  {
-    template<typename T>
-    struct Converter
-    {
-      static T * as(const Lisp::Cell * obj)
-      {
-        return nullptr;
-      }
-    };
-  }
 }
 
 inline std::size_t Lisp::Cell::getTypeId() const
@@ -108,5 +86,12 @@ inline bool Lisp::Cell::isA() const
 template<typename T>
 inline T * Lisp::Cell::as() const
 {
-  return Lisp::Details::Converter<T>::as(this);
+  if(isA<T>())
+  {
+    return (T*)data.ptr;
+  }
+  else
+  {
+    return nullptr;
+  }
 }

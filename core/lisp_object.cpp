@@ -37,7 +37,7 @@ Lisp::Object::Object(const Object & rhs) : Cell(rhs)
 {
   if(rhs.isA<Lisp::Cons>())
   {
-    data.cons->root();
+    ((Cons*)data.ptr)->root();
   }
 }
 
@@ -45,7 +45,7 @@ Lisp::Object::Object(const Cell & rhs) : Cell(rhs)
 {
   if(rhs.isA<Lisp::Cons>())
   {
-    data.cons->root();
+    ((Cons*)data.ptr)->root();
   }
 }
 
@@ -57,7 +57,7 @@ Lisp::Object::Object(Cons * cons) : Cell(Lisp::Cons::typeId)
 {
   assert(cons->isRoot());
   cons->refCount++;
-  data.cons = cons;
+  data.ptr = cons;
 }
 
 Lisp::Object::~Object()
@@ -73,10 +73,10 @@ Lisp::Object & Lisp::Object::operator=(const Object & rhs)
   typeId = rhs.typeId;
   if(rhs.isA<Lisp::Cons>())
   {
-    assert(rhs.data.cons->isRoot());
-    assert(rhs.data.cons->getRefCount() > 0u);
-    data.cons = rhs.data.cons;
-    data.cons->root();
+    assert(rhs.as<Cons>()->isRoot());
+    assert(rhs.as<Cons>()->getRefCount() > 0u);
+    data.ptr = rhs.as<Cons>();
+    ((Cons*)data.ptr)->root();
   }
   return *this;
 }
@@ -85,9 +85,9 @@ void Lisp::Object::unsetCons()
 {
   if(isA<Cons>())
   {
-    assert(data.cons->isRoot());
-    assert(data.cons->getRefCount() > 0u);
-    data.cons->unroot();
+    assert(as<Cons>()->isRoot());
+    assert(as<Cons>()->getRefCount() > 0u);
+    ((Cons*)data.ptr)->unroot();
   }
 }
 
