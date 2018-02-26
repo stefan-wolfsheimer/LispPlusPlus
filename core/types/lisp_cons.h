@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
 #include <cstdint>
+#include "lisp_type_id.h"
 #include "core/lisp_object.h"
 #include "core/lisp_cons_factory.h"
 
@@ -41,7 +42,7 @@ namespace Lisp
     friend class ConsFactory;
     friend class Object;
     using Color = ConsFactory::Color;
-    static const std::size_t typeId;
+    static const TypeId typeId;
     inline std::size_t getRefCount() const;
     inline Color getColor() const;
     inline bool isRoot() const;

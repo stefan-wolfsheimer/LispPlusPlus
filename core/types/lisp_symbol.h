@@ -31,36 +31,30 @@ either expressed or implied, of the FreeBSD Project.
 #pragma once
 #include <cstdint>
 #include <functional>
-#include "core/lisp_object.h"
+#include "lisp_managed_type.h"
 
 namespace Lisp
 {
   class SymbolFactory;
 
-  class Symbol
+  class Symbol : public ManagedType
   {
   public:
-    static const std::size_t typeId;
-    inline std::size_t getRefCount() const;
+    static const TypeId typeId;
+    ~Symbol();
     inline const std::string& getName() const;
   private:
     friend class SymbolFactory;
     friend class Cell;
-    Symbol(const std::string & _name, SymbolFactory * _factory=nullptr, std::size_t _refCount=1);
+    Symbol(const std::string & _name, SymbolFactory * _factory=nullptr);
     std::string name;
-    std::size_t refCount;
     SymbolFactory * factory;
   };
 }
 
-inline Lisp::Symbol::Symbol(const std::string & _name, SymbolFactory * _factory, std::size_t _refCount)
-  : name(_name), refCount(_refCount), factory(_factory)
+inline Lisp::Symbol::Symbol(const std::string & _name, SymbolFactory * _factory)
+  : name(_name), factory(_factory)
 {
-}
-
-inline std::size_t Lisp::Symbol::getRefCount() const
-{
-  return refCount;
 }
 
 inline const std::string& Lisp::Symbol::getName() const

@@ -35,12 +35,21 @@ either expressed or implied, of the FreeBSD Project.
 using SymbolFactory = Lisp::SymbolFactory;
 using Symbol = Lisp::Symbol;
 
+SymbolFactory::~SymbolFactory()
+{
+  for(auto & p : symbols)
+  {
+    assert(p.second->factory == this);
+    p.second->factory = nullptr;
+  }
+}
+
 Symbol * SymbolFactory::make(const std::string & name)
 {
   auto res = symbols.insert(std::make_pair(name, (Symbol*)nullptr));
   if(res.second)
   {
-    res.first->second = new Symbol(res.first->first.c_str(), this, 0);
+    res.first->second = new Symbol(res.first->first.c_str(), this);
     return res.first->second;
   }
   else
@@ -53,7 +62,6 @@ void SymbolFactory::remove(Symbol * symbol)
 {
   auto itr = symbols.find(symbol->getName());
   assert(itr != symbols.end());
-  delete itr->second;
   symbols.erase(itr);
 }
 

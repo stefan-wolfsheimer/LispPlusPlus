@@ -30,29 +30,34 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
 #include <cstdint>
+#include "types/lisp_type_id.h"
+#include "types/lisp_managed_type.h"
+#include "types/lisp_nil.h"
 
 namespace Lisp
 {
   class Cons;
-  class Symbol;
   class Object;
 
   class Cell
   {
   public:
     friend class Cons;
+    Cell();
     Cell(const Cell & rhs);
     Cell(const Object & rhs);
-    Cell(Cons * cons);
-    Cell(Symbol * cons);
+
+    template<typename T>
+    Cell(T * obj);
+
     /**
      * deletes object with no reference, except for conses
      * conses are managed by the garbage collector
      */
     ~Cell();
-    Cell& operator=(const Object & rhs);
+     Cell& operator=(const Object & rhs);
 
-    inline std::size_t getTypeId() const;
+    inline TypeId getTypeId() const;
 
     template<typename T>
     inline bool isA() const;
@@ -61,26 +66,83 @@ namespace Lisp
     inline T * as() const;
 
   protected:
-    std::size_t typeId;
+    TypeId typeId;
     union
     {
       int int_val;
       void * ptr;
     } data;
-    Cell(std::size_t _typeId) : typeId(_typeId) {}
     void unset();
+    inline void init(Cons * cons, TypeId _typeId);
+    inline void init(ManagedType * managedType, TypeId _typeId);
   };
 }
 
-inline std::size_t Lisp::Cell::getTypeId() const
+//////////////////////////////////////////////////////////////////////
+//
+// Implementation
+//
+//////////////////////////////////////////////////////////////////////
+inline Lisp::Cell::Cell()
+{
+  data.ptr = nullptr;
+  typeId = Lisp::Nil::typeId;
+}
+
+template<typename T>
+inline Lisp::Cell::Cell(T * obj)
+{
+  init(obj, T::typeId);
+}
+
+inline void Lisp::Cell::init(Lisp::Cons * cons,
+                             Lisp::TypeId _typeId)
+{
+  typeId = _typeId;
+  data.ptr = cons;
+}
+
+inline void Lisp::Cell::init(Lisp::ManagedType * obj,
+                             Lisp::TypeId _typeId)
+{
+  typeId = _typeId;
+  obj->refCount++;
+  data.ptr = obj;
+}
+
+inline Lisp::TypeId Lisp::Cell::getTypeId() const
 {
   return typeId;
+}
+
+namespace Lisp
+{
+  namespace Detail
+  {
+    template<typename T>
+    struct TypeChecker
+    {
+      static inline bool isA(TypeId tid)
+      {
+        return T::typeId == tid;
+      }
+    };
+
+    template<>
+    struct TypeChecker<ManagedType>
+    {
+      static inline bool isA(TypeId tid)
+      {
+        return isManagedTypeId(tid);
+      }
+    };
+  }
 }
 
 template<typename T>
 inline bool Lisp::Cell::isA() const
 {
-  return typeId == T::typeId;
+  return Detail::TypeChecker<T>::isA(typeId);
 }
 
 template<typename T>

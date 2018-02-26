@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2017, Stefan Wolfsheimer
+Copyright (c) 2018, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -30,42 +30,12 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
 #include <cstdint>
-#include "lisp_cell.h"
+#include <memory>
 
 namespace Lisp
 {
-  class Object : public Cell
+  class AtomType
   {
   public:
-    Object();
-    Object(const Object & rhs);
-    explicit Object(const Cell & rhs);
-
-    template<typename T>
-    Object(T * obj);
-
-    Object & operator=(const Object & rhs);
-    ~Object();
-
-  protected:
-    void init(Cons * cons, TypeId _typeId);
-    inline void init(ManagedType * managedType, TypeId _typeId);
-  private:
-    inline void unsetCons();
   };
-
-  extern Object nil;
-}
-
-inline Lisp::Object::Object() : Lisp::Cell() {}
-
-template<typename T>
-inline Lisp::Object::Object(T * obj)
-{
-  init(obj, T::typeId);
-}
-
-inline void Lisp::Object::init(ManagedType * managedType, TypeId _typeId)
-{
-  Cell::init(managedType, _typeId);
 }

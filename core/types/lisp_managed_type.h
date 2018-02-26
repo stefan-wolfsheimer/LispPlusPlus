@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2017, Stefan Wolfsheimer
+Copyright (c) 2018, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -30,42 +30,30 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
 #include <cstdint>
-#include "lisp_cell.h"
+#include <memory>
+#include "lisp_type_id.h"
 
 namespace Lisp
 {
-  class Object : public Cell
+  class ManagedType
   {
   public:
-    Object();
-    Object(const Object & rhs);
-    explicit Object(const Cell & rhs);
-
-    template<typename T>
-    Object(T * obj);
-
-    Object & operator=(const Object & rhs);
-    ~Object();
-
-  protected:
-    void init(Cons * cons, TypeId _typeId);
-    inline void init(ManagedType * managedType, TypeId _typeId);
+    ManagedType();
+    virtual ~ManagedType() {}
+    inline std::size_t getRefCount() const;
   private:
-    inline void unsetCons();
+    friend class Cell;
+    std::size_t refCount;
   };
-
-  extern Object nil;
 }
 
-inline Lisp::Object::Object() : Lisp::Cell() {}
-
-template<typename T>
-inline Lisp::Object::Object(T * obj)
+inline Lisp::ManagedType::ManagedType()
 {
-  init(obj, T::typeId);
+  refCount = 0;
 }
 
-inline void Lisp::Object::init(ManagedType * managedType, TypeId _typeId)
+inline std::size_t Lisp::ManagedType::getRefCount() const
 {
-  Cell::init(managedType, _typeId);
+  return refCount;
 }
+

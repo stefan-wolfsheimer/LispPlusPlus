@@ -28,44 +28,17 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#pragma once
-#include <cstdint>
-#include "lisp_cell.h"
+#include <catch.hpp>
+#include "core/lisp_cell.h"
+#include "core/types/lisp_string.h"
 
-namespace Lisp
+using Cell = Lisp::Cell;
+using String = Lisp::String;
+using ManagedType = Lisp::ManagedType;
+
+TEST_CASE("cons", "[String]")
 {
-  class Object : public Cell
-  {
-  public:
-    Object();
-    Object(const Object & rhs);
-    explicit Object(const Cell & rhs);
-
-    template<typename T>
-    Object(T * obj);
-
-    Object & operator=(const Object & rhs);
-    ~Object();
-
-  protected:
-    void init(Cons * cons, TypeId _typeId);
-    inline void init(ManagedType * managedType, TypeId _typeId);
-  private:
-    inline void unsetCons();
-  };
-
-  extern Object nil;
-}
-
-inline Lisp::Object::Object() : Lisp::Cell() {}
-
-template<typename T>
-inline Lisp::Object::Object(T * obj)
-{
-  init(obj, T::typeId);
-}
-
-inline void Lisp::Object::init(ManagedType * managedType, TypeId _typeId)
-{
-  Cell::init(managedType, _typeId);
+  Cell cell(new String("abc"));
+  REQUIRE(cell.isA<ManagedType>());
+  REQUIRE(cell.isA<String>());
 }

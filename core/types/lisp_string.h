@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2017, Stefan Wolfsheimer
+Copyright (c) 2018, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -30,42 +30,23 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
 #include <cstdint>
-#include "lisp_cell.h"
+#include <memory>
+#include "lisp_type_id.h"
+#include "lisp_managed_type.h"
 
 namespace Lisp
 {
-  class Object : public Cell
-  {
-  public:
-    Object();
-    Object(const Object & rhs);
-    explicit Object(const Cell & rhs);
 
-    template<typename T>
-    Object(T * obj);
-
-    Object & operator=(const Object & rhs);
-    ~Object();
-
-  protected:
-    void init(Cons * cons, TypeId _typeId);
-    inline void init(ManagedType * managedType, TypeId _typeId);
-  private:
-    inline void unsetCons();
-  };
-
-  extern Object nil;
-}
-
-inline Lisp::Object::Object() : Lisp::Cell() {}
-
-template<typename T>
-inline Lisp::Object::Object(T * obj)
+class String : public ManagedType
 {
-  init(obj, T::typeId);
-}
+public:
+  String(const std::string & str) {}
+  static const TypeId typeId;
+private:
 
-inline void Lisp::Object::init(ManagedType * managedType, TypeId _typeId)
-{
-  Cell::init(managedType, _typeId);
+  std::shared_ptr<std::string> shared_string;
+  std::string::iterator begin;
+  std::string::iterator end;
+};
+
 }

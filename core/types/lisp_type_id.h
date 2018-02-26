@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2017, Stefan Wolfsheimer
+Copyright (c) 2018, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -30,42 +30,38 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
 #include <cstdint>
-#include "lisp_cell.h"
+#include <memory>
 
 namespace Lisp
 {
-  class Object : public Cell
-  {
-  public:
-    Object();
-    Object(const Object & rhs);
-    explicit Object(const Cell & rhs);
+typedef ::std::uint_least16_t TypeId;
+inline bool isCoreTypeId(TypeId typeId);
+inline bool isManagedTypeId(TypeId typeId);
+inline bool isAtomTypeId(TypeId typeId);
+inline bool isCoreTypeId(TypeId typeId);
+inline bool isAtomTypeId(TypeId typeId);
+inline bool isManagedTypeId(TypeId typeId);
 
-    template<typename T>
-    Object(T * obj);
-
-    Object & operator=(const Object & rhs);
-    ~Object();
-
-  protected:
-    void init(Cons * cons, TypeId _typeId);
-    inline void init(ManagedType * managedType, TypeId _typeId);
-  private:
-    inline void unsetCons();
-  };
-
-  extern Object nil;
 }
 
-inline Lisp::Object::Object() : Lisp::Cell() {}
-
-template<typename T>
-inline Lisp::Object::Object(T * obj)
+inline bool Lisp::isCoreTypeId(Lisp::TypeId typeId)
 {
-  init(obj, T::typeId);
+  // largest bit flags managed types
+  // 00: core classes, like cons, nil, symbol, lambda
+  // 01: atoms (0x4000)
+  // 10: managed types (0x8000)
+  // 
+  return !(typeId ^ 0xc000);
 }
 
-inline void Lisp::Object::init(ManagedType * managedType, TypeId _typeId)
+inline bool Lisp::isAtomTypeId(Lisp::TypeId typeId)
 {
-  Cell::init(managedType, _typeId);
+  return typeId & 0x4000;
 }
+
+inline bool Lisp::isManagedTypeId(Lisp::TypeId typeId)
+{
+  return typeId & 0x8000;
+}
+
+

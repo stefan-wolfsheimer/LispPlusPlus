@@ -30,7 +30,6 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include <assert.h>
 #include "lisp_object.h"
-#include "types/lisp_nil.h"
 #include "types/lisp_cons.h"
 
 Lisp::Object::Object(const Object & rhs) : Cell(rhs)
@@ -47,17 +46,6 @@ Lisp::Object::Object(const Cell & rhs) : Cell(rhs)
   {
     ((Cons*)data.ptr)->root();
   }
-}
-
-Lisp::Object::Object() : Cell(Nil::typeId)
-{
-}
-
-Lisp::Object::Object(Cons * cons) : Cell(Lisp::Cons::typeId)
-{
-  assert(cons->isRoot());
-  cons->refCount++;
-  data.ptr = cons;
 }
 
 Lisp::Object::~Object()
@@ -78,6 +66,10 @@ Lisp::Object & Lisp::Object::operator=(const Object & rhs)
     data.ptr = rhs.as<Cons>();
     ((Cons*)data.ptr)->root();
   }
+  if(rhs.isA<Lisp::ManagedType>())
+  {
+    Cell::init(rhs.as<ManagedType>(), rhs.getTypeId());
+  }
   return *this;
 }
 
@@ -89,6 +81,13 @@ void Lisp::Object::unsetCons()
     assert(as<Cons>()->getRefCount() > 0u);
     ((Cons*)data.ptr)->unroot();
   }
+}
+
+void Lisp::Object::init(Cons * cons, TypeId _typeId)
+{
+  Cell::init(cons, _typeId);
+  assert(cons->isRoot());
+  cons->refCount++;
 }
 
 Lisp::Object Lisp::nil = Lisp::Object();
