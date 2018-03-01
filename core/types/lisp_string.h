@@ -32,21 +32,16 @@ either expressed or implied, of the FreeBSD Project.
 #include <cstdint>
 #include <memory>
 #include "lisp_type_id.h"
-#include "lisp_managed_type.h"
 
 namespace Lisp
 {
-
-class String : public ManagedType
-{
-public:
-  String(const std::string & str) {}
-  static const TypeId typeId;
-private:
-
-  std::shared_ptr<std::string> shared_string;
-  std::string::iterator begin;
-  std::string::iterator end;
-};
-
+  class String : public ManagedType
+  {
+  public:
+    String(const std::string & str) {}
+  private:
+    std::shared_ptr<std::string> shared_string;
+    std::string::iterator begin;
+    std::string::iterator end;
+  };
 }

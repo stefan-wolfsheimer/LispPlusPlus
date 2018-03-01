@@ -41,6 +41,12 @@ namespace Lisp
     Vm(std::shared_ptr<ConsFactory> _consFactory = nullptr);
     Object cons(const Object & car,
                 const Object & cdr);
+    inline Object list();
+    inline Object list(const Object & a);
+
+    template<typename... ARGS>
+    Object list(const Object & a, ARGS... rest);
+
     inline std::shared_ptr<ConsFactory> getConsFactory() const;
   private:
     std::shared_ptr<ConsFactory> consFactory;
@@ -53,5 +59,21 @@ namespace Lisp
 std::shared_ptr<Lisp::ConsFactory> Lisp::Vm::getConsFactory() const
 {
   return consFactory;
+}
+
+inline Lisp::Object Lisp::Vm::list()
+{
+  return Lisp::nil;
+}
+
+inline Lisp::Object Lisp::Vm::list(const Object & a)
+{
+  return cons(a, Lisp::nil);
+}
+
+template<typename... ARGS>
+Lisp::Object Lisp::Vm::list(const Lisp::Object & a, ARGS... rest)
+{
+  return cons(a, list(rest...));
 }
 

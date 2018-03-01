@@ -28,32 +28,18 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#pragma once
-#include <cstdint>
-#include <memory>
-#include "lisp_type_id.h"
+#include <catch.hpp>
+#include "core/lisp_object.h"
+#include "core/types/lisp_type_id.h"
 
-namespace Lisp
+using Object = Lisp::Object;
+using IntegerType = Lisp::IntegerType;
+using AtomType = Lisp::AtomType;
+
+TEST_CASE("integer_is_a_integer", "[Integer]")
 {
-  class ManagedType
-  {
-  public:
-    ManagedType();
-    virtual ~ManagedType() {}
-    inline std::size_t getRefCount() const;
-  private:
-    friend class Cell;
-    std::size_t refCount;
-  };
+  Object obj(2);
+  REQUIRE(obj.isA<IntegerType>());
+  REQUIRE(obj.isA<AtomType>());
+  REQUIRE(obj.as<IntegerType>() == 2);
 }
-
-inline Lisp::ManagedType::ManagedType()
-{
-  refCount = 0;
-}
-
-inline std::size_t Lisp::ManagedType::getRefCount() const
-{
-  return refCount;
-}
-

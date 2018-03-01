@@ -34,34 +34,184 @@ either expressed or implied, of the FreeBSD Project.
 
 namespace Lisp
 {
-typedef ::std::uint_least16_t TypeId;
-inline bool isCoreTypeId(TypeId typeId);
-inline bool isManagedTypeId(TypeId typeId);
-inline bool isAtomTypeId(TypeId typeId);
-inline bool isCoreTypeId(TypeId typeId);
-inline bool isAtomTypeId(TypeId typeId);
-inline bool isManagedTypeId(TypeId typeId);
+  /** typeId
+   *  largest bit flags managed types
+   *  00: cons, nil
+   *  01: value types (0x4000)
+   *  10: managed types (0x8000)
+   *  11: atom types    (0xc000)
+   */
 
+  typedef ::std::uint_least16_t TypeId;
+  typedef ::std::int_fast32_t IntegerType;
+  class Symbol;
+  class String;
+  class Cons;
+  struct BasicType {};
+  struct SpecialType : BasicType {};
+  struct ValueType : BasicType {};
+  struct Nil : SpecialType {};
+  class ManagedType : public BasicType
+  {
+  public:
+    ManagedType();
+    virtual ~ManagedType() {}
+    inline std::size_t getRefCount() const;
+  private:
+    friend class Cell;
+    std::size_t refCount;
+  };
+  struct AtomType : ValueType, public ManagedType {};
+
+  union CellDataType
+  {
+    IntegerType intValue;
+    BasicType * ptr;
+  };
+
+  template<typename T>
+  struct TypeTraits
+  {
+  };
+
+  template<TypeId TID>
+  struct TypeIdTraits
+  {
+    static const TypeId typeId = TID;
+    static inline bool isA(TypeId tid)
+    {
+      return tid == typeId;
+    }
+  };
+
+  template<TypeId TID, typename T>
+  struct PointerTypeTraits : public TypeIdTraits<TID>
+  {
+    typedef T * Type;
+    static inline Type as(const CellDataType & data, TypeId tid)
+    {
+      if(TypeIdTraits<TID>::isA(tid))
+      {
+        return static_cast<T*>(data.ptr);
+      }
+      else
+      {
+        return nullptr;
+      }
+    }
+  };
+
+  template<TypeId TID, typename T>
+  struct ValueTypeTraits : public TypeIdTraits<TID>
+  {
+  };
+
+  template<>
+  struct TypeTraits<Nil> : public TypeIdTraits<0x0000>
+  {
+  };
+
+  template<>
+  struct TypeTraits<IntegerType> : TypeIdTraits<0x4001u>
+  {
+    typedef IntegerType Type;
+    static inline Type as(const CellDataType & data, TypeId tid)
+    {
+      if(TypeTraits<IntegerType>::isA(tid))
+      {
+        return data.intValue;
+      }
+      else
+      {
+        return 0;
+      }
+    }
+  };
+
+  template<>
+  struct TypeTraits<String> : PointerTypeTraits<0x8001u, String>
+  {
+  };
+
+  template<>
+  struct TypeTraits<Symbol> : PointerTypeTraits<0x8002u, Symbol>
+  {
+  };
+
+  template<>
+  struct TypeTraits<Cons> : PointerTypeTraits<0x0001u, Cons>
+  {
+  };
+
+  template<>
+  struct TypeTraits<const Cons> : PointerTypeTraits<0x0001u, const Cons>
+  {
+  };
+
+  template<>
+  struct TypeTraits<ManagedType> : public TypeTraits<void>
+  {
+    typedef ManagedType * Type;
+    static inline bool isA(TypeId tid)
+    {
+      return tid & 0x8000;
+    }
+
+    static inline Type as(const CellDataType & data, TypeId tid)
+    {
+      if(isA(tid))
+      {
+        return static_cast<ManagedType*>(data.ptr);
+      }
+      else
+      {
+        return nullptr;
+      }
+    }
+  };
+
+  template<>
+  struct TypeTraits<ValueType>
+  {
+    static inline bool isA(TypeId tid)
+    {
+      return tid & 0x4000;
+    }
+  };
+
+  template<>
+  struct TypeTraits<AtomType>
+  {
+    static inline bool isA(TypeId tid)
+    {
+      return tid & 0xc000;
+    }
+  };
+
+  template<>
+  struct TypeTraits<SpecialType>
+  {
+    static inline bool isA(TypeId tid)
+    {
+      return !(tid ^ 0xc000);
+    }
+  };
 }
 
-inline bool Lisp::isCoreTypeId(Lisp::TypeId typeId)
+///////////////////////////////////////////////////////////////////////
+//
+// ManagedType
+//
+///////////////////////////////////////////////////////////////////////
+inline Lisp::ManagedType::ManagedType()
 {
-  // largest bit flags managed types
-  // 00: core classes, like cons, nil, symbol, lambda
-  // 01: atoms (0x4000)
-  // 10: managed types (0x8000)
-  // 
-  return !(typeId ^ 0xc000);
+  refCount = 0;
 }
 
-inline bool Lisp::isAtomTypeId(Lisp::TypeId typeId)
+inline std::size_t Lisp::ManagedType::getRefCount() const
 {
-  return typeId & 0x4000;
+  return refCount;
 }
 
-inline bool Lisp::isManagedTypeId(Lisp::TypeId typeId)
-{
-  return typeId & 0x8000;
-}
 
 

@@ -31,7 +31,7 @@ either expressed or implied, of the FreeBSD Project.
 #pragma once
 #include <cstdint>
 #include <functional>
-#include "lisp_managed_type.h"
+#include "lisp_type_id.h"
 
 namespace Lisp
 {
@@ -40,7 +40,6 @@ namespace Lisp
   class Symbol : public ManagedType
   {
   public:
-    static const TypeId typeId;
     ~Symbol();
     inline const std::string& getName() const;
   private:

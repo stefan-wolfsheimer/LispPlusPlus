@@ -62,7 +62,7 @@ inline Lisp::Object::Object() : Lisp::Cell() {}
 template<typename T>
 inline Lisp::Object::Object(T * obj)
 {
-  init(obj, T::typeId);
+  init(obj, TypeTraits<T>::typeId);
 }
 
 inline void Lisp::Object::init(ManagedType * managedType, TypeId _typeId)

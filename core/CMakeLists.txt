@@ -1,5 +1,4 @@
 add_library( Core
-  types/lisp_type_id.cpp
   types/lisp_cons.cpp
   types/lisp_symbol.cpp
   lisp_cell.cpp

@@ -30,7 +30,6 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include <catch.hpp>
 #include "core/lisp_object.h"
-#include "core/types/lisp_nil.h"
 
 TEST_CASE("nil_is_a_nil", "[Object]")
 {

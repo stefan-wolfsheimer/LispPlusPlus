@@ -2,7 +2,6 @@
 #include "lisp_cell.h"
 #include "lisp_object.h"
 #include "types/lisp_cons.h"
-#include "types/lisp_managed_type.h"
 #include "lisp_symbol_factory.h"
 
 using Cell = Lisp::Cell;
@@ -18,7 +17,7 @@ Cell& Cell::operator=(const Object & rhs)
   data = rhs.data;
   if(isA<ManagedType>())
   {
-    ((ManagedType*)(data.ptr))->refCount++;
+    static_cast<ManagedType*>(data.ptr)->refCount++;
   }
   return *this;
 }
@@ -29,7 +28,7 @@ Lisp::Cell::Cell(const Cell & rhs)
   data = rhs.data;
   if(rhs.isA<ManagedType>())
   {
-    ((ManagedType*)(data.ptr))->refCount++;
+    static_cast<ManagedType*>(data.ptr)->refCount++;
   }
 }
 
@@ -39,7 +38,7 @@ Lisp::Cell::Cell(const Object & rhs)
   data = rhs.data;
   if(rhs.isA<ManagedType>())
   {
-    ((ManagedType*)(data.ptr))->refCount++;
+    static_cast<ManagedType*>(data.ptr)->refCount++;
   }
 }
 
@@ -49,11 +48,18 @@ Cell::~Cell()
   unset();
 }
 
+void Lisp::Cell::init(Lisp::Cons * cons,
+                      Lisp::TypeId _typeId)
+{
+  typeId = _typeId;
+  data.ptr = static_cast<BasicType*>(cons);
+}
+
 void Cell::unset()
 {
-  if(isManagedTypeId(typeId))
+  if(TypeTraits<ManagedType>::isA(typeId))
   {
-    ManagedType * obj = (ManagedType*)data.ptr;
+    ManagedType * obj = static_cast<ManagedType*>(data.ptr);
     assert(obj->refCount);
     if(! --obj->refCount)
     {

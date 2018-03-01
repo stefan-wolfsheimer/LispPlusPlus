@@ -36,13 +36,12 @@ either expressed or implied, of the FreeBSD Project.
 
 namespace Lisp
 {
-  class Cons
+  class Cons : public BasicType
   {
   public:
     friend class ConsFactory;
     friend class Object;
     using Color = ConsFactory::Color;
-    static const TypeId typeId;
     inline std::size_t getRefCount() const;
     inline Color getColor() const;
     inline bool isRoot() const;
@@ -54,8 +53,10 @@ namespace Lisp
     inline void unsetCdr();
     inline void setCar(const Object & rhs);
     inline void setCdr(const Object & rhs);
-    inline void setCar(Cons * cons, std::size_t typeId=Lisp::Cons::typeId);
-    inline void setCdr(Cons * cons, std::size_t typeId=Lisp::Cons::typeId);
+    inline void setCar(Cons * cons,
+                       TypeId typeId=TypeTraits<Cons>::typeId);
+    inline void setCdr(Cons * cons,
+                       TypeId typeId=TypeTraits<Cons>::typeId);
     inline std::size_t getIndex() const;
   private:
     ConsFactory * consFactory;
@@ -174,7 +175,7 @@ void Lisp::Cons::setCdr(const Object & rhs)
   }
 }
 
-void Lisp::Cons::setCar(Cons * cons, std::size_t _typeId)
+void Lisp::Cons::setCar(Cons * cons, TypeId _typeId)
 {
   car = Lisp::nil;
   car.typeId = _typeId; 
@@ -182,7 +183,7 @@ void Lisp::Cons::setCar(Cons * cons, std::size_t _typeId)
   consFactory->gcStep(this);
 }
 
-void Lisp::Cons::setCdr(Cons * cons, std::size_t _typeId)
+void Lisp::Cons::setCdr(Cons * cons, TypeId _typeId)
 {
   cdr = Lisp::nil;
   cdr.typeId = _typeId;
