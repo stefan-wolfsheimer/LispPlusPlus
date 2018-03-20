@@ -29,19 +29,20 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include "lisp_vm.h"
-#include "lisp_cons_factory.h"
-#include "types/lisp_cons.h"
+
+#ifdef NDEBUG
+const bool Lisp::Vm::withDebug = false;
+#else
+const bool Lisp::Vm::withDebug = true;
+#endif
 
 Lisp::Vm::Vm(std::shared_ptr<ConsFactory> _consFactory)
   : consFactory( _consFactory ?
                  _consFactory :
                  std::make_shared<ConsFactory>())
 {
+  dataStack.reserve(1024);
 }
 
-Lisp::Object Lisp::Vm::cons(const Lisp::Object & _car,
-                            const Lisp::Object & _cdr)
-{
-  return Lisp::Object(consFactory->make(_car, _cdr));
-}
+
 

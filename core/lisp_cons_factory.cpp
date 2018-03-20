@@ -34,6 +34,7 @@ either expressed or implied, of the FreeBSD Project.
 #include "types/lisp_cons.h"
 
 using Cons = Lisp::Cons;
+using ConsFactory = Lisp::ConsFactory;
 
 Lisp::ConsFactory::ConsFactory(std::size_t _pageSize,
                                unsigned short _garbageSteps,
@@ -151,8 +152,7 @@ inline void Lisp::ConsFactory::greyChildInternal(Cons * cons)
   }
 }
 
-Lisp::Cons * Lisp::ConsFactory::make(const Object & car,
-                                     const Object & cdr)
+inline Cons * ConsFactory::make()
 {
   stepGargabeCollector();
   stepRecycle();
@@ -173,16 +173,45 @@ Lisp::Cons * Lisp::ConsFactory::make(const Object & car,
     ret = _conses.back();
     _conses.pop_back();
   }
-  ret->car = car;
-  ret->cdr = cdr;
-  ret->consFactory = this;
   ret->refCount = 0;
-
+  ret->consFactory = this;
   // new cons is root with from-color
-  addToVector((toColor == Cons::Color::Black ? Cons::Color::WhiteRoot : Cons::Color::BlackRoot),
-              ret);
+  addToVector((toColor == Cons::Color::Black ? Cons::Color::WhiteRoot : Cons::Color::BlackRoot), ret);
   return ret;
 }
+
+Cons * ConsFactory::make(const Object & car, const Object & cdr)
+{
+  Cons * ret = make();
+  ret->car = car;
+  ret->cdr = cdr;
+  return ret;
+}
+
+Cons * ConsFactory::make(Object && car, const Object & cdr)
+{
+  Cons * ret = make();
+  ret->car = car;
+  ret->cdr = cdr;
+  return ret;
+}
+
+Cons * ConsFactory::make(const Object & car, Object && cdr)
+{
+  Cons * ret = make();
+  ret->car = car;
+  ret->cdr = cdr;
+  return ret;
+}
+
+Cons * ConsFactory::make(Object && car, Object && cdr)
+{
+  Cons * ret = make();
+  ret->car = car;
+  ret->cdr = cdr;
+  return ret;
+}
+
 
 void Lisp::ConsFactory::root(Cons * cons)
 {

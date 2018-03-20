@@ -32,33 +32,52 @@ either expressed or implied, of the FreeBSD Project.
 #include <memory>
 #include "lisp_cons_factory.h"
 #include "lisp_object.h"
+#include "types/lisp_function_interface.h"
 
 namespace Lisp
 {
   class Vm
   {
   public:
+    static const bool withDebug;
     Vm(std::shared_ptr<ConsFactory> _consFactory = nullptr);
-    Object cons(const Object & car,
-                const Object & cdr);
+    inline std::shared_ptr<ConsFactory> getConsFactory() const;
+    inline Object cons(const Object & car, const Object & cdr);
     inline Object list();
     inline Object list(const Object & a);
+    inline Object list(Object && a);
 
     template<typename... ARGS>
     Object list(const Object & a, ARGS... rest);
 
-    inline std::shared_ptr<ConsFactory> getConsFactory() const;
+    template<typename... ARGS>
+    Object list(Object && a, ARGS... rest);
+
+    inline void push(const Object & rhs);
+    inline void push(Object && rhs);
+
+    inline void pop();
+    inline void pop(std::size_t n);
+
+    Object compile(const Object & obj);
   private:
     std::shared_ptr<ConsFactory> consFactory;
+    std::vector<Object> dataStack;
   };
 }
 
 /******************************************************************************
- * Implementation
+ * implementation
  ******************************************************************************/
 std::shared_ptr<Lisp::ConsFactory> Lisp::Vm::getConsFactory() const
 {
   return consFactory;
+}
+
+inline Lisp::Object Lisp::Vm::cons(const Lisp::Object & _car,
+                                   const Lisp::Object & _cdr)
+{
+  return Lisp::Object(consFactory->make(_car, _cdr));
 }
 
 inline Lisp::Object Lisp::Vm::list()
@@ -71,9 +90,40 @@ inline Lisp::Object Lisp::Vm::list(const Object & a)
   return cons(a, Lisp::nil);
 }
 
+inline Lisp::Object Lisp::Vm::list(Object && a)
+{
+  return cons(a, Lisp::nil);
+}
+
 template<typename... ARGS>
 Lisp::Object Lisp::Vm::list(const Lisp::Object & a, ARGS... rest)
 {
-  return cons(a, list(rest...));
+  return cons(a, std::move(list(rest...)));
+}
+
+template<typename... ARGS>
+Lisp::Object Lisp::Vm::list(Lisp::Object && a, ARGS... rest)
+{
+  return cons(a, std::move(list(rest...)));
+}
+
+inline void Lisp::Vm::push(const Object & rhs)
+{
+  dataStack.emplace_back(rhs);
+}
+
+inline void Lisp::Vm::push(Object && rhs)
+{
+  dataStack.emplace_back(std::move(rhs));
+}
+
+inline void Lisp::Vm::pop()
+{
+  dataStack.pop_back();
+}
+
+inline void Lisp::Vm::pop(std::size_t n)
+{
+  dataStack.erase(dataStack.end()-n, dataStack.end());
 }
 

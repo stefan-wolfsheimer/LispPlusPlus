@@ -5,4 +5,5 @@ add_library( Core
   lisp_object.cpp
   lisp_cons_factory.cpp
   lisp_symbol_factory.cpp
-  lisp_vm.cpp )
+  lisp_vm.cpp
+  lisp_compile.cpp )

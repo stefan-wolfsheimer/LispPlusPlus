@@ -47,10 +47,13 @@ namespace Lisp
   class Symbol;
   class String;
   class Cons;
+  class BuiltinFunction;
+  class Function;
   struct BasicType {};
   struct SpecialType : BasicType {};
   struct ValueType : BasicType {};
   struct Nil : SpecialType {};
+
   class ManagedType : public BasicType
   {
   public:
@@ -139,6 +142,17 @@ namespace Lisp
   };
 
   template<>
+  struct TypeTraits<BuiltinFunction> : PointerTypeTraits<0x8003u,
+                                                         BuiltinFunction>
+  {
+  };
+
+  template<>
+  struct TypeTraits<Function> : PointerTypeTraits<0x8004u, Function>
+  {
+  };
+
+  template<>
   struct TypeTraits<Cons> : PointerTypeTraits<0x0001u, Cons>
   {
   };
@@ -147,6 +161,7 @@ namespace Lisp
   struct TypeTraits<const Cons> : PointerTypeTraits<0x0001u, const Cons>
   {
   };
+
 
   template<>
   struct TypeTraits<ManagedType> : public TypeTraits<void>

@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2017, Stefan Wolfsheimer
+Copyright (c) 2018, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -28,80 +28,75 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#include <assert.h>
-#include "lisp_object.h"
-#include "types/lisp_cons.h"
+#include <catch.hpp>
+#include <core/lisp_vm.h>
+#include <core/types/lisp_cons.h>
 
+using Vm = Lisp::Vm;
 using Object = Lisp::Object;
+using Cons = Lisp::Cons;
 using Nil = Lisp::Nil;
 
-Object::Object(const Object & rhs) : Cell(rhs)
+TEST_CASE("is_debug_enabled", "[Vm]")
 {
-  if(rhs.isA<Lisp::Cons>())
+  Vm vm;
+  REQUIRE(vm.withDebug);
+}
+
+TEST_CASE("vm_move_cons", "[Vm]")
+{
+  Vm vm;
+  Object cons = std::move(vm.cons(Lisp::nil, Lisp::nil));
+  REQUIRE(cons.isA<Cons>());
+  REQUIRE(cons.as<Cons>()->getRefCount() == 1u);
+}
+
+TEST_CASE("vm_cons_does_not_create_temporary_objects", "[Vm]")
+{
+  Vm vm;
   {
-    ((Cons*)data.ptr)->root();
+    Object cons = vm.cons(Lisp::nil, Lisp::nil);
+    REQUIRE(cons.isA<Cons>());
   }
 }
 
-Object::Object(const Cell & rhs) : Cell(rhs)
+TEST_CASE("vm_list_does_not_create_temporary_objects", "[Vm]")
 {
-  if(rhs.isA<Lisp::Cons>())
+  Vm vm;
   {
-    ((Cons*)data.ptr)->root();
+    Object lst = vm.list();
+    REQUIRE(lst.isA<Nil>());
+  }
+  {
+    Object lst = vm.list(Lisp::nil);
+    REQUIRE(lst.isA<Cons>());
+  }
+  {
+    Object lst = vm.list(Lisp::nil, Lisp::nil, Lisp::nil, Lisp::nil);
+    REQUIRE(lst.isA<Cons>());
+    REQUIRE(lst.as<Cons>()
+            ->getCar().isA<Nil>());
+    REQUIRE(lst.as<Cons>()
+            ->getCdr().isA<Cons>());
+    REQUIRE(lst.as<Cons>()
+            ->getCdr().as<Cons>()
+            ->getCar().isA<Nil>());
+    REQUIRE(lst.as<Cons>()
+            ->getCdr().as<Cons>()
+            ->getCdr().as<Cons>()
+            ->getCar().isA<Nil>());
+    REQUIRE(lst.as<Cons>()
+            ->getCdr().as<Cons>()
+            ->getCdr().as<Cons>()
+            ->getCdr().as<Cons>()
+            ->getCar().isA<Nil>());
   }
 }
 
-Object::~Object()
+TEST_CASE("push_does_not_create_temporary_objects", "[Vm]")
 {
-  unsetCons();
+  Vm vm;
+  vm.push(Lisp::nil);
+  vm.push(vm.cons(Lisp::nil, Lisp::nil));
 }
-
-
-Object & Lisp::Object::operator=(const Object & rhs)
-{
-  Cell::unset();
-  unsetCons();
-  typeId = rhs.typeId;
-  if(rhs.isA<Lisp::Cons>())
-  {
-    assert(rhs.as<Cons>()->isRoot());
-    assert(rhs.as<Cons>()->getRefCount() > 0u);
-    data.ptr = rhs.as<Cons>();
-    ((Cons*)data.ptr)->root();
-  }
-  if(rhs.isA<Lisp::ManagedType>())
-  {
-    Cell::init(rhs.as<ManagedType>(), rhs.getTypeId());
-  }
-  return *this;
-}
-
-Lisp::Object & Lisp::Object::operator=(Object && rhs)
-{
-  Cell::unset();
-  unsetCons();
-  typeId = rhs.typeId;
-  data = rhs.data;
-  rhs.typeId = TypeTraits<Nil>::typeId;
-  return *this;
-}
-
-void Object::unsetCons()
-{
-  if(isA<Cons>())
-  {
-    assert(as<Cons>()->isRoot());
-    assert(as<Cons>()->getRefCount() > 0u);
-    ((Cons*)data.ptr)->unroot();
-  }
-}
-
-void Object::init(Cons * cons, TypeId _typeId)
-{
-  Cell::init(cons, _typeId);
-  assert(cons->isRoot());
-  cons->refCount++;
-}
-
-Object Lisp::nil = Object();
 

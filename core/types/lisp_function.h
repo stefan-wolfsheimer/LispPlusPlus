@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2017, Stefan Wolfsheimer
+Copyright (c) 2018, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -28,80 +28,32 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#include <assert.h>
-#include "lisp_object.h"
-#include "types/lisp_cons.h"
+#pragma once
+#include <cstdint>
+#include <vector>
+#include "lisp_type_id.h"
 
-using Object = Lisp::Object;
-using Nil = Lisp::Nil;
-
-Object::Object(const Object & rhs) : Cell(rhs)
+namespace Lisp
 {
-  if(rhs.isA<Lisp::Cons>())
+  class Object;
+  class Vm;
+
+  class Function : public ManagedType
   {
-    ((Cons*)data.ptr)->root();
-  }
+  public:
+    typedef std::size_t InstructionType;
+    static std::size_t SETV;
+  private:
+    friend class Vm;
+    Function(std::size_t reserveInstr, std::size_t reserveData);
+    std::vector<std::pair<InstructionType, std::size_t> > instr;
+    std::vector<Object> data;
+  };
 }
 
-Object::Object(const Cell & rhs) : Cell(rhs)
+inline Lisp::Function::Function(std::size_t reserveInstr,
+                                std::size_t reserveData)
 {
-  if(rhs.isA<Lisp::Cons>())
-  {
-    ((Cons*)data.ptr)->root();
-  }
+  instr.reserve(reserveInstr);
+  data.reserve(reserveData);
 }
-
-Object::~Object()
-{
-  unsetCons();
-}
-
-
-Object & Lisp::Object::operator=(const Object & rhs)
-{
-  Cell::unset();
-  unsetCons();
-  typeId = rhs.typeId;
-  if(rhs.isA<Lisp::Cons>())
-  {
-    assert(rhs.as<Cons>()->isRoot());
-    assert(rhs.as<Cons>()->getRefCount() > 0u);
-    data.ptr = rhs.as<Cons>();
-    ((Cons*)data.ptr)->root();
-  }
-  if(rhs.isA<Lisp::ManagedType>())
-  {
-    Cell::init(rhs.as<ManagedType>(), rhs.getTypeId());
-  }
-  return *this;
-}
-
-Lisp::Object & Lisp::Object::operator=(Object && rhs)
-{
-  Cell::unset();
-  unsetCons();
-  typeId = rhs.typeId;
-  data = rhs.data;
-  rhs.typeId = TypeTraits<Nil>::typeId;
-  return *this;
-}
-
-void Object::unsetCons()
-{
-  if(isA<Cons>())
-  {
-    assert(as<Cons>()->isRoot());
-    assert(as<Cons>()->getRefCount() > 0u);
-    ((Cons*)data.ptr)->unroot();
-  }
-}
-
-void Object::init(Cons * cons, TypeId _typeId)
-{
-  Cell::init(cons, _typeId);
-  assert(cons->isRoot());
-  cons->refCount++;
-}
-
-Object Lisp::nil = Object();
-

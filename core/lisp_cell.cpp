@@ -22,6 +22,7 @@ Cell& Cell::operator=(const Object & rhs)
   return *this;
 }
 
+
 Lisp::Cell::Cell(const Cell & rhs)
 {
   typeId = rhs.typeId;
@@ -41,7 +42,6 @@ Lisp::Cell::Cell(const Object & rhs)
     static_cast<ManagedType*>(data.ptr)->refCount++;
   }
 }
-
 
 Cell::~Cell()
 {

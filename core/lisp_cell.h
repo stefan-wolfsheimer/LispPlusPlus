@@ -54,7 +54,7 @@ namespace Lisp
      * conses are managed by the garbage collector
      */
     ~Cell();
-     Cell& operator=(const Object & rhs);
+    Cell& operator=(const Object & rhs);
 
     inline TypeId getTypeId() const;
 

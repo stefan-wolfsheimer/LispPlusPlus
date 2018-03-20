@@ -68,6 +68,9 @@ namespace Lisp
      * Reference count is 0.
      */
     Cons * make(const Object & car, const Object & cdr);
+    Cons * make(Object && car, const Object & cdr);
+    Cons * make(const Object & car, Object && cdr);
+    Cons * make(Object && car, Object && cdr);
 
     /**
      * Move cons to root set and set the color to getFromRootColor()
@@ -116,6 +119,7 @@ namespace Lisp
     void stepRecycle();
 
   private:
+    inline Cons * make();
     inline void removeFromVector(Cons * cons);
     inline void addToVector(Color color, Lisp::Cons * cons);
     inline void moveAllFromVectorToOther(Color colorFrom, Color colorTo);

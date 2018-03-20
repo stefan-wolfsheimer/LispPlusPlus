@@ -31,6 +31,7 @@ either expressed or implied, of the FreeBSD Project.
 #pragma once
 #include <cstdint>
 #include "lisp_cell.h"
+#include "lisp_config.h"
 
 namespace Lisp
 {
@@ -39,12 +40,15 @@ namespace Lisp
   public:
     Object();
     Object(const Object & rhs);
+    Object(Object && rhs);
     explicit Object(const Cell & rhs);
 
     template<typename T>
     Object(T * obj);
 
     Object & operator=(const Object & rhs);
+    Object & operator=(Object && rhs);
+ 
     ~Object();
 
   protected:
@@ -57,7 +61,16 @@ namespace Lisp
   extern Object nil;
 }
 
-inline Lisp::Object::Object() : Lisp::Cell() {}
+inline Lisp::Object::Object() : Lisp::Cell()
+{
+}
+
+inline Lisp::Object::Object(Object && rhs)
+{
+  typeId = rhs.typeId;
+  data = rhs.data;
+  rhs.typeId = TypeTraits<Nil>::typeId;
+}
 
 template<typename T>
 inline Lisp::Object::Object(T * obj)

@@ -11,7 +11,7 @@ if(CMAKE_CONFIGURATION_TYPES)
     FORCE)
 endif()
 
-SET(CMAKE_CXX_FLAGS_RELEASE "-O2")
+SET(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
 SET(CMAKE_CXX_FLAGS_DEBUG  "-O0 -g")
 
 include_directories (${PROJECT_SOURCE_DIR}/Catch2/single_include)
@@ -32,6 +32,8 @@ IF(CMAKE_BUILD_TYPE MATCHES Debug)
       test_core/test_cons_factory.cpp
       test_core/test_cons.cpp
       test_core/test_symbol_factory.cpp
+      test_core/test_vm.cpp
+      test_core/test_builtin_function.cpp
       CliArgs/tests/test_argument.cpp
       CliArgs/tests/test_flag.cpp
       CliArgs/tests/test_multiple_flag.cpp
