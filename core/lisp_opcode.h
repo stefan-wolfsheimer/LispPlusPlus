@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2018, Stefan Wolfsheimer
+Copyright (c) 2017, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -29,25 +29,9 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
-#include <cstdint>
-#include <memory>
-#include "lisp_type_id.h"
 
 namespace Lisp
 {
-  class String : public ManagedType
-  {
-  public:
-    String(const std::string & str) {}
-    inline std::string getCString() const;
-  private:
-    std::shared_ptr<std::string> shared_string;
-    std::string::iterator begin;
-    std::string::iterator end;
-  };
+  static const std::size_t SETV = 0x01;
 }
 
-inline std::string Lisp::String::getCString() const
-{
-  return std::string(begin, end);
-}

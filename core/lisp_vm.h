@@ -59,10 +59,13 @@ namespace Lisp
     inline void pop();
     inline void pop(std::size_t n);
 
-    Object compile(const Object & obj);
+    Object compile(const Object & obj) const;
+    void eval(const Function * func);
+    inline Object getValue() const;
   private:
     std::shared_ptr<ConsFactory> consFactory;
     std::vector<Object> dataStack;
+    std::vector<Object> values;
   };
 }
 
@@ -125,5 +128,10 @@ inline void Lisp::Vm::pop()
 inline void Lisp::Vm::pop(std::size_t n)
 {
   dataStack.erase(dataStack.end()-n, dataStack.end());
+}
+
+inline Lisp::Object Lisp::Vm::getValue() const
+{
+  return values.front();
 }
 

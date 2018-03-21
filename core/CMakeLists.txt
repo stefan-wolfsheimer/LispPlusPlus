@@ -1,6 +1,7 @@
 add_library( Core
   types/lisp_cons.cpp
   types/lisp_symbol.cpp
+  types/lisp_function.cpp
   lisp_cell.cpp
   lisp_object.cpp
   lisp_cons_factory.cpp

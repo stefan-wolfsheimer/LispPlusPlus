@@ -28,7 +28,11 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
+#include <assert.h>
 #include "lisp_vm.h"
+#include "types/lisp_function.h"
+#include "lisp_config.h"
+#include "lisp_opcode.h"
 
 #ifdef NDEBUG
 const bool Lisp::Vm::withDebug = false;
@@ -42,6 +46,28 @@ Lisp::Vm::Vm(std::shared_ptr<ConsFactory> _consFactory)
                  std::make_shared<ConsFactory>())
 {
   dataStack.reserve(1024);
+  values.reserve(1024);
+  values.push_back(Lisp::nil);
+}
+
+void Lisp::Vm::eval(const Function * func)
+{
+  Function::ProgramType::const_iterator itr = func->instr.begin();
+  while(itr != func->instr.end())
+  {
+    switch(itr->first)
+    {
+    case Lisp::SETV:
+      assert(itr->second < func->data.size());
+      values.resize(1);
+      values[0] = func->data[itr->second];
+      break;
+    default:
+      //@todo error handling
+      break;
+    }
+    ++itr;
+  }
 }
 
 

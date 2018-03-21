@@ -31,22 +31,22 @@ either expressed or implied, of the FreeBSD Project.
 #pragma once
 #include <cstdint>
 #include <vector>
-#include "lisp_type_id.h"
+#include "core/lisp_object.h"
+#include "core/types/lisp_type_id.h"
 
 namespace Lisp
 {
   class Object;
   class Vm;
-
   class Function : public ManagedType
   {
   public:
     typedef std::size_t InstructionType;
-    static std::size_t SETV;
   private:
     friend class Vm;
     Function(std::size_t reserveInstr, std::size_t reserveData);
-    std::vector<std::pair<InstructionType, std::size_t> > instr;
+    typedef std::vector<std::pair<InstructionType, std::size_t> > ProgramType;
+    ProgramType instr;
     std::vector<Object> data;
   };
 }

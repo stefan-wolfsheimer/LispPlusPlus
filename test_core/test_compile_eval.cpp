@@ -28,26 +28,21 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#pragma once
-#include <cstdint>
-#include <memory>
-#include "lisp_type_id.h"
+#include <catch.hpp>
+#include <core/lisp_vm.h>
+#include <core/types/lisp_string.h>
+#include <core/types/lisp_function.h>
 
-namespace Lisp
-{
-  class String : public ManagedType
-  {
-  public:
-    String(const std::string & str) {}
-    inline std::string getCString() const;
-  private:
-    std::shared_ptr<std::string> shared_string;
-    std::string::iterator begin;
-    std::string::iterator end;
-  };
-}
+using Vm = Lisp::Vm;
+using Object = Lisp::Object;
+using String = Lisp::String;
+using Function = Lisp::Function;
 
-inline std::string Lisp::String::getCString() const
+TEST_CASE("compile_eval_atom", "[Vm]")
 {
-  return std::string(begin, end);
+  Vm vm;
+  Object func = vm.compile(new String("abc"));
+  vm.eval(func.as<Function>());
+  REQUIRE(vm.getValue().isA<String>());
+  REQUIRE(vm.getValue().as<String>()->getCString() == "abc");
 }
