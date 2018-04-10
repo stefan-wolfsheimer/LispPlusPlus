@@ -41,4 +41,5 @@ TEST_CASE("cons", "[String]")
   Cell cell(new String("abc"));
   REQUIRE(cell.isA<ManagedType>());
   REQUIRE(cell.isA<String>());
+  REQUIRE(cell.as<String>()->getCString() == "abc");
 }

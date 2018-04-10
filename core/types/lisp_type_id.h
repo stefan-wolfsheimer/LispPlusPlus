@@ -36,10 +36,10 @@ namespace Lisp
 {
   /** typeId
    *  largest bit flags managed types
-   *  00: cons, nil
-   *  01: value types (0x4000)
+   *  00: cons, nil     (0x0000)
+   *  01: value types   (0x4000)
    *  10: managed types (0x8000)
-   *  11: atom types    (0xc000)
+   *  11: special types (0xc000)
    */
 
   typedef ::std::uint_least16_t TypeId;
@@ -208,6 +208,10 @@ namespace Lisp
   {
     static inline bool isA(TypeId tid)
     {
+      // 00 ^ 11 = 11 -> false (cons, nil)
+      // 01 ^ 11 = 10 -> false (value type)
+      // 10 ^ 11 = 01 -> false (managed type)
+      // 11 ^ 11 = 00 -> true (atom type)
       return !(tid ^ 0xc000);
     }
   };

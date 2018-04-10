@@ -53,6 +53,11 @@ namespace Lisp
     template<typename... ARGS>
     Object list(Object && a, ARGS... rest);
 
+    Object symbol(const std::string & name);
+    void setq(const std::string & name, const Object & obj);
+    void setq(const Object & obj, const Object & rhs);
+    void setq(Symbol * obj, const Object & rhs);
+
     inline void push(const Object & rhs);
     inline void push(Object && rhs);
 

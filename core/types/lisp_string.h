@@ -38,13 +38,20 @@ namespace Lisp
   class String : public ManagedType
   {
   public:
-    String(const std::string & str) {}
+    String(const std::string & str);
     inline std::string getCString() const;
   private:
     std::shared_ptr<std::string> shared_string;
     std::string::iterator begin;
     std::string::iterator end;
   };
+}
+
+inline Lisp::String::String(const std::string & str)
+  : shared_string(std::make_shared<std::string>(str))
+{
+  begin = shared_string->begin();
+  end = shared_string->end();
 }
 
 inline std::string Lisp::String::getCString() const
