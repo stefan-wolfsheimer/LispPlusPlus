@@ -45,6 +45,8 @@ namespace Lisp
 
     template<typename T>
     Object(T * obj);
+    static Object nil();
+    static Object undefined();
 
     Object & operator=(const Object & rhs);
     Object & operator=(Object && rhs);
@@ -59,6 +61,7 @@ namespace Lisp
   };
 
   extern Object nil;
+  extern Object undefined;
 }
 
 inline Lisp::Object::Object() : Lisp::Cell()
@@ -76,6 +79,22 @@ template<typename T>
 inline Lisp::Object::Object(T * obj)
 {
   init(obj, TypeTraits<T>::typeId);
+}
+
+inline Lisp::Object Lisp::Object::nil()
+{
+  Object ret;
+  ret.typeId = TypeTraits<Nil>::typeId;
+  ret.data.ptr = nullptr;
+  return ret;
+}
+
+inline Lisp::Object Lisp::Object::undefined()
+{
+  Object ret;
+  ret.typeId = TypeTraits<Undefined>::typeId;
+  ret.data.ptr = nullptr;
+  return ret;
 }
 
 inline void Lisp::Object::init(ManagedType * managedType, TypeId _typeId)

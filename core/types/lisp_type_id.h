@@ -53,6 +53,7 @@ namespace Lisp
   struct SpecialType : BasicType {};
   struct ValueType : BasicType {};
   struct Nil : SpecialType {};
+  struct Undefined : SpecialType {};
 
   class ManagedType : public BasicType
   {
@@ -115,6 +116,11 @@ namespace Lisp
   };
 
   template<>
+  struct TypeTraits<Undefined> : public TypeIdTraits<0x0001>
+  {
+  };
+
+  template<>
   struct TypeTraits<IntegerType> : TypeIdTraits<0x4001u>
   {
     typedef IntegerType Type;
@@ -153,12 +159,12 @@ namespace Lisp
   };
 
   template<>
-  struct TypeTraits<Cons> : PointerTypeTraits<0x0001u, Cons>
+  struct TypeTraits<Cons> : PointerTypeTraits<0x0002u, Cons>
   {
   };
 
   template<>
-  struct TypeTraits<const Cons> : PointerTypeTraits<0x0001u, const Cons>
+  struct TypeTraits<const Cons> : PointerTypeTraits<0x0002u, const Cons>
   {
   };
 
