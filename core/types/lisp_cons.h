@@ -40,6 +40,7 @@ namespace Lisp
   {
   public:
     friend class ConsFactory;
+    friend class ConsContainer;
     friend class Object;
     using Color = ConsFactory::Color;
     inline std::size_t getRefCount() const;

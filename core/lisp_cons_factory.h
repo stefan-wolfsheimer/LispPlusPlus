@@ -41,7 +41,7 @@ namespace Lisp
   class Object;
   class Cell;
   class Cons;
-  
+  class ConsContainer;
   class ConsFactory
   {
   public:
@@ -58,6 +58,11 @@ namespace Lisp
                 unsigned short _recycleSteps=1);
     ~ConsFactory();
 
+    void disableGarbageCollector();
+    void disableGarbageRecycling();
+    void enableGarbageCollector();
+    void enableGarbageRecycling();
+
     Color getFromColor() const;
     Color getToColor() const;
     Color getFromRootColor() const;
@@ -71,6 +76,12 @@ namespace Lisp
     Cons * make(Object && car, const Object & cdr);
     Cons * make(const Object & car, Object && cdr);
     Cons * make(Object && car, Object && cdr);
+
+    /**
+     * Allocate and initialize a new ConsContainer object in the root set.
+     * Reference count is 0.
+     */
+    ConsContainer * makeContainer();
 
     /**
      * Move cons to root set and set the color to getFromRootColor()
@@ -115,7 +126,8 @@ namespace Lisp
     std::unordered_set<const Cons*> getReachableConsesAsConstSet() const;
     std::unordered_set<Cons*> getReachableConsesAsSet() const;
     void cycleGarbageCollector();
-    void stepGargabeCollector();
+    bool stepGarbageCollector(ConsContainer * container);
+    void stepGarbageCollector();
     void stepRecycle();
 
   private:
@@ -129,6 +141,8 @@ namespace Lisp
     inline std::unordered_set<T*> getReachableConsesAsSetIntneral() const;
     unsigned short int garbageSteps;
     unsigned short int recycleSteps;
+    unsigned short int backGarbageSteps;
+    unsigned short int backRecycleSteps;
     std::size_t pageSize;
     Color fromColor;
     Color toColor;
@@ -137,6 +151,7 @@ namespace Lisp
     std::vector<Cons*> pages;
     std::vector<Cons*> conses[7];
     std::vector<std::vector<Cons*> > freeConses;
+    std::vector<ConsContainer*> consContainers[7];
   };
 }
 

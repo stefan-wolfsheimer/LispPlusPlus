@@ -35,6 +35,7 @@ either expressed or implied, of the FreeBSD Project.
 
 #include "core/lisp_cons_factory.h"
 #include "core/types/lisp_cons.h"
+#include "core/types/lisp_cons_container.h"
 #include "core/lisp_object.h"
 #include "simul/lisp_cons_graph.h"
 #include "simul/lisp_cons_graph_edge.h"
@@ -542,7 +543,68 @@ SCENARIO("copy cons object with object assignement operator", "[ConsFactory]")
         factory->cycleGarbageCollector();
         THEN("there is no root and 3 leaf conses")
         {
-          REQUIRE(checkConses(factory, 8u, { factory->getFromRootColor()==1u, factory->getToColor() == 2u, Color::Void == 5u}));
+          REQUIRE(checkConses(factory,
+                              8u,
+                              { factory->getFromRootColor()==1u,
+                                factory->getToColor() == 2u,
+                                Color::Void == 5u}));
+        }
+      }
+    }
+  }
+}
+
+SCENARIO("recycle ConsContainer", "[ConsFactory]")
+{
+  auto factory = std::make_shared<ConsFactory>(8, 1);
+  auto container = factory->makeContainer();
+  GIVEN("a container")
+  {
+    Color color = factory->getFromRootColor();
+    REQUIRE(container->getColor() ==  color);
+    factory->stepGarbageCollector();
+    factory->stepGarbageCollector();
+    REQUIRE(factory->getFromRootColor() !=  color);
+    REQUIRE(container->getColor() ==  factory->getFromRootColor());
+    WHEN("adding 3 conses to the container")
+    {
+      factory->disableGarbageCollector();
+      THEN("they are in the root set and from color")
+      {
+        container->pushCons(factory->make(Lisp::nil, Lisp::nil));
+        container->pushCons(factory->make(Lisp::nil, Lisp::nil));
+        container->pushCons(factory->make(Lisp::nil, Lisp::nil));
+        REQUIRE((*container)[0]->getColor() ==  factory->getFromRootColor());
+        REQUIRE((*container)[1]->getColor() ==  factory->getFromRootColor());
+        REQUIRE((*container)[2]->getColor() ==  factory->getFromRootColor());
+        REQUIRE((*container)[0]->getIndex() ==  0);
+        REQUIRE((*container)[1]->getIndex() ==  1);
+        REQUIRE((*container)[2]->getIndex() ==  2);
+        WHEN("garbage collected")
+        {
+          factory->enableGarbageCollector();
+          REQUIRE((*container)[0]->getColor() ==  factory->getFromRootColor());
+          REQUIRE((*container)[1]->getColor() ==  factory->getFromRootColor());
+          REQUIRE((*container)[2]->getColor() ==  factory->getFromRootColor());
+          factory->stepGarbageCollector();
+          REQUIRE((*container)[0]->getColor() ==  factory->getToRootColor());
+          REQUIRE((*container)[1]->getColor() ==  factory->getFromRootColor());
+          REQUIRE((*container)[2]->getColor() ==  factory->getFromRootColor());
+          factory->stepGarbageCollector();
+          REQUIRE((*container)[0]->getColor() ==  factory->getToRootColor());
+          REQUIRE((*container)[1]->getColor() ==  factory->getToRootColor());
+          REQUIRE((*container)[2]->getColor() ==  factory->getFromRootColor());
+          factory->stepGarbageCollector();
+          REQUIRE((*container)[0]->getColor() ==  factory->getToRootColor());
+          REQUIRE((*container)[1]->getColor() ==  factory->getToRootColor());
+          REQUIRE((*container)[2]->getColor() ==  factory->getToRootColor());
+          color = factory->getFromRootColor();
+          factory->stepGarbageCollector();
+          factory->stepGarbageCollector();
+          REQUIRE(factory->getToRootColor() == color);
+          REQUIRE((*container)[0]->getColor() == factory->getFromRootColor());
+          REQUIRE((*container)[1]->getColor() == factory->getFromRootColor());
+          REQUIRE((*container)[2]->getColor() == factory->getFromRootColor());
         }
       }
     }

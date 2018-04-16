@@ -32,15 +32,19 @@ either expressed or implied, of the FreeBSD Project.
 #include <unordered_set>
 #include "lisp_cons_factory.h"
 #include "types/lisp_cons.h"
+#include "types/lisp_cons_container.h"
 
 using Cons = Lisp::Cons;
 using ConsFactory = Lisp::ConsFactory;
+using ConsContainer = Lisp::ConsContainer;
 
 Lisp::ConsFactory::ConsFactory(std::size_t _pageSize,
                                unsigned short _garbageSteps,
                                unsigned short _recycleSteps) :
    garbageSteps(_garbageSteps),
    recycleSteps(_recycleSteps),
+   backGarbageSteps(_garbageSteps),
+   backRecycleSteps(_recycleSteps),
    pageSize(_pageSize),
    fromColor(Color::White),
    toColor(Color::Black),
@@ -60,6 +64,28 @@ Lisp::ConsFactory::~ConsFactory()
     }
     delete [] ptr;
   }
+}
+
+void ConsFactory::disableGarbageCollector()
+{
+  backGarbageSteps = garbageSteps;
+  garbageSteps = 0;
+}
+
+void ConsFactory::disableGarbageRecycling()
+{
+  backRecycleSteps = recycleSteps;
+  recycleSteps = 0;
+}
+
+void ConsFactory::enableGarbageCollector()
+{
+  garbageSteps = backGarbageSteps;
+}
+
+void ConsFactory::enableGarbageRecycling()
+{
+  recycleSteps = backRecycleSteps;
 }
 
 Lisp::ConsFactory::Color Lisp::ConsFactory::getFromColor() const
@@ -154,7 +180,7 @@ inline void Lisp::ConsFactory::greyChildInternal(Cons * cons)
 
 inline Cons * ConsFactory::make()
 {
-  stepGargabeCollector();
+  stepGarbageCollector();
   stepRecycle();
   Cons * ret;
   std::vector<Cons*> & _conses(conses[(unsigned char)Color::Void]);
@@ -212,6 +238,15 @@ Cons * ConsFactory::make(Object && car, Object && cdr)
   return ret;
 }
 
+ConsContainer * ConsFactory::makeContainer()
+{
+  Color color = toColor == Color::Black ? Color::WhiteRoot : Color::BlackRoot;
+  auto ret = new ConsContainer(this,
+                               color,
+                               consContainers[(unsigned char)color].size());
+  consContainers[(unsigned char)color].push_back(ret);
+  return ret;
+}
 
 void Lisp::ConsFactory::root(Cons * cons)
 {
@@ -224,7 +259,7 @@ void Lisp::ConsFactory::root(Cons * cons)
   // new root with from-color
   addToVector((toColor == Cons::Color::Black ? Cons::Color::WhiteRoot : Cons::Color::BlackRoot),
               cons);
-  stepGargabeCollector();
+  stepGarbageCollector();
   stepRecycle();
 }
 
@@ -234,7 +269,7 @@ void Lisp::ConsFactory::unroot(Cons * cons)
   assert(cons == &*conses[(unsigned char)cons->color][cons->index]);
   removeFromVector(cons);
   addToVector(Color((unsigned char)cons->color - 3), cons);
-  stepGargabeCollector();
+  stepGarbageCollector();
   stepRecycle();
 }
 
@@ -403,12 +438,44 @@ void Lisp::ConsFactory::cycleGarbageCollector()
   }
 }
 
-void Lisp::ConsFactory::stepGargabeCollector()
+bool Lisp::ConsFactory::stepGarbageCollector(ConsContainer* container)
+{
+  if(container->gcTop < container->conses.size())
+  {
+    auto cons = container->conses[container->gcTop];
+    assert(cons->color == fromRootColor);
+    removeFromVector(cons);
+    addToVector(toRootColor, cons);
+    greyChildInternal(cons->getCarCell());
+    greyChildInternal(cons->getCdrCell());
+    container->gcTop++;
+    return false;
+  }
+  else
+  {
+    return true;
+  }
+}
+
+void Lisp::ConsFactory::stepGarbageCollector()
 {
   //Todo lock
   for(unsigned short i=0; i < garbageSteps; i++)
   {
-    if(!conses[(unsigned char)(fromRootColor)].empty())
+    if(!consContainers[(unsigned char)(fromRootColor)].empty())
+    {
+      auto container = consContainers[(unsigned char)fromRootColor].back();
+      assert(container->color == fromRootColor);
+      assert(container->index == consContainers[(unsigned char)fromRootColor].size()-1);
+      if(stepGarbageCollector(container))
+      {
+        consContainers[(unsigned char)fromRootColor].pop_back();
+        container->index = consContainers[(unsigned char)toRootColor].size();
+        container->color = toRootColor;
+        consContainers[(unsigned char)toRootColor].push_back(container);
+      }
+    }
+    else if(!conses[(unsigned char)(fromRootColor)].empty())
     {
       // Todo: check edge case: cons == car or cons == cdr !
       auto cons = conses[(unsigned char)fromRootColor].back();
