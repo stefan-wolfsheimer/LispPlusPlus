@@ -31,7 +31,7 @@ either expressed or implied, of the FreeBSD Project.
 #pragma once
 #include <cstdint>
 #include <vector>
-//#include "core/lisp_object.h"
+#include <assert.h>
 #include "core/lisp_cons_factory.h"
 
 
@@ -43,8 +43,6 @@ namespace Lisp
   {
   public:
     using Color = ConsFactory::Color;
-    using iterator = std::vector<Cons*>::iterator;
-    using reverse_iterator = std::vector<Cons*>::reverse_iterator;
     using const_iterator = std::vector<Cons*>::const_iterator;
     using const_reverse_iterator = std::vector<Cons*>::const_reverse_iterator;
     using size_type = std::vector<Cons*>::size_type;
@@ -56,18 +54,14 @@ namespace Lisp
     inline void pushCons(Cons *);
     inline void removeCons(Cons *);
     inline Color getColor() const;
-    inline iterator begin();
-    inline iterator end();
     inline const_iterator cbegin() const;
     inline const_iterator cend() const;
-    inline reverse_iterator rbegin();
-    inline reverse_iterator rend();
     inline const_reverse_iterator crbegin() const;
     inline const_reverse_iterator crend() const;
-    inline reference at(size_type pos);
     inline const_reference at(size_type pos) const;
-    //inline reference operator[](size_type pos);
     inline const_reference operator[](size_type pos) const;
+    inline void setCons(size_type pos, Cons*);
+    inline std::size_t getGcTop() const;
   private:
     friend class ConsFactory;
     ConsContainer(ConsFactory * _consFactory,
@@ -95,6 +89,10 @@ inline Lisp::ConsContainer::ConsContainer(ConsFactory * _consFactory,
 inline void Lisp::ConsContainer::pushCons(Cons * cons)
 {
   cons->root();
+  if(color == consFactory->getToRootColor())
+  {
+    consFactory->gcStep(cons);
+  }
   conses.push_back(cons);
 }
 
@@ -107,40 +105,14 @@ inline Lisp::ConsFactory::Color Lisp::ConsContainer::getColor() const
   return color;
 }
 
-inline Lisp::ConsContainer::iterator
-Lisp::ConsContainer::begin()
-{
-  return conses.begin();
-}
-
-inline Lisp::ConsContainer::iterator
-Lisp::ConsContainer::end()
-{
-  return conses.end();
-}
-
-inline Lisp::ConsContainer::const_iterator
-Lisp::ConsContainer::cbegin() const
+inline Lisp::ConsContainer::const_iterator Lisp::ConsContainer::cbegin() const
 {
   return conses.cbegin();
 }
 
-inline Lisp::ConsContainer::const_iterator
-Lisp::ConsContainer::cend() const
+inline Lisp::ConsContainer::const_iterator Lisp::ConsContainer::cend() const
 {
   return conses.cend();
-}
-
-inline Lisp::ConsContainer::reverse_iterator
-Lisp::ConsContainer::rbegin()
-{
-    return conses.rbegin();
-}
-
-inline Lisp::ConsContainer::reverse_iterator
-Lisp::ConsContainer::rend()
-{
-  return conses.rend();
 }
 
 inline Lisp::ConsContainer::const_reverse_iterator
@@ -155,12 +127,6 @@ Lisp::ConsContainer::crend() const
   return conses.crend();
 }
 
-inline Lisp::ConsContainer::reference
-Lisp::ConsContainer::at(size_type pos)
-{
-  return conses.at(pos);
-}
-
 inline Lisp::ConsContainer::const_reference
 Lisp::ConsContainer::at(size_type pos) const
 {
@@ -171,5 +137,20 @@ inline Lisp::ConsContainer::const_reference
 Lisp::ConsContainer::operator[]( size_type pos ) const
 {
   return conses[pos];
+}
+
+inline void Lisp::ConsContainer::setCons(size_type pos, Cons* cons)
+{
+  assert(pos < conses.size());
+  conses[pos]->unroot();
+  cons->root();
+  // make sure that cons has ToColor
+  consFactory->gcStep(cons);
+  conses[pos] = cons;
+}
+
+inline std::size_t Lisp::ConsContainer::getGcTop() const
+{
+  return gcTop;
 }
 

@@ -443,11 +443,17 @@ bool Lisp::ConsFactory::stepGarbageCollector(ConsContainer* container)
   if(container->gcTop < container->conses.size())
   {
     auto cons = container->conses[container->gcTop];
-    assert(cons->color == fromRootColor);
-    removeFromVector(cons);
-    addToVector(toRootColor, cons);
-    greyChildInternal(cons->getCarCell());
-    greyChildInternal(cons->getCdrCell());
+    if(cons->color == fromRootColor)
+    {
+      removeFromVector(cons);
+      addToVector(toRootColor, cons);
+      greyChildInternal(cons->getCarCell());
+      greyChildInternal(cons->getCdrCell());
+    }
+    else
+    {
+      assert(cons->color == toRootColor);
+    }
     container->gcTop++;
     return false;
   }
@@ -473,6 +479,7 @@ void Lisp::ConsFactory::stepGarbageCollector()
         container->index = consContainers[(unsigned char)toRootColor].size();
         container->color = toRootColor;
         consContainers[(unsigned char)toRootColor].push_back(container);
+        container->gcTop = 0;
       }
     }
     else if(!conses[(unsigned char)(fromRootColor)].empty())

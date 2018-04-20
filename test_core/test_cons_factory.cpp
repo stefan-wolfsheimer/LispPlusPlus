@@ -558,54 +558,123 @@ SCENARIO("recycle ConsContainer", "[ConsFactory]")
 {
   auto factory = std::make_shared<ConsFactory>(8, 1);
   auto container = factory->makeContainer();
-  GIVEN("a container")
+  GIVEN("a container with 3 conses")
   {
     Color color = factory->getFromRootColor();
-    REQUIRE(container->getColor() ==  color);
+    REQUIRE(container->getColor() == color);
     factory->stepGarbageCollector();
     factory->stepGarbageCollector();
     REQUIRE(factory->getFromRootColor() !=  color);
-    REQUIRE(container->getColor() ==  factory->getFromRootColor());
-    WHEN("adding 3 conses to the container")
+    REQUIRE(container->getColor() == factory->getFromRootColor());
+    factory->disableGarbageCollector();
+    container->pushCons(factory->make(Lisp::nil, Lisp::nil));
+    container->pushCons(factory->make(Lisp::nil, Lisp::nil));
+    container->pushCons(factory->make(Lisp::nil, Lisp::nil));
+    REQUIRE((*container)[0]->getColor() == factory->getFromRootColor());
+    REQUIRE((*container)[1]->getColor() == factory->getFromRootColor());
+    REQUIRE((*container)[2]->getColor() == factory->getFromRootColor());
+    REQUIRE((*container)[0]->getIndex() == 0);
+    REQUIRE((*container)[1]->getIndex() == 1);
+    REQUIRE((*container)[2]->getIndex() == 2);
+    WHEN("all conses have been marked")
     {
-      factory->disableGarbageCollector();
-      THEN("they are in the root set and from color")
+      factory->enableGarbageCollector();
+      REQUIRE((*container)[0]->getColor() == factory->getFromRootColor());
+      REQUIRE((*container)[1]->getColor() == factory->getFromRootColor());
+      REQUIRE((*container)[2]->getColor() == factory->getFromRootColor());
+      REQUIRE(container->getGcTop() == 0);
+      factory->stepGarbageCollector();
+      REQUIRE((*container)[0]->getColor() == factory->getToRootColor());
+      REQUIRE((*container)[1]->getColor() == factory->getFromRootColor());
+      REQUIRE((*container)[2]->getColor() == factory->getFromRootColor());
+      REQUIRE(container->getGcTop() == 1);
+      factory->stepGarbageCollector();
+      REQUIRE((*container)[0]->getColor() == factory->getToRootColor());
+      REQUIRE((*container)[1]->getColor() == factory->getToRootColor());
+      REQUIRE((*container)[2]->getColor() == factory->getFromRootColor());
+      REQUIRE(container->getGcTop() == 2);
+      factory->stepGarbageCollector();
+      REQUIRE((*container)[0]->getColor() == factory->getToRootColor());
+      REQUIRE((*container)[1]->getColor() == factory->getToRootColor());
+      REQUIRE((*container)[2]->getColor() == factory->getToRootColor());
+      REQUIRE(container->getGcTop() == 3);
+      color = factory->getFromRootColor();
+      THEN("container is marked")
       {
-        container->pushCons(factory->make(Lisp::nil, Lisp::nil));
-        container->pushCons(factory->make(Lisp::nil, Lisp::nil));
-        container->pushCons(factory->make(Lisp::nil, Lisp::nil));
-        REQUIRE((*container)[0]->getColor() ==  factory->getFromRootColor());
-        REQUIRE((*container)[1]->getColor() ==  factory->getFromRootColor());
-        REQUIRE((*container)[2]->getColor() ==  factory->getFromRootColor());
-        REQUIRE((*container)[0]->getIndex() ==  0);
-        REQUIRE((*container)[1]->getIndex() ==  1);
-        REQUIRE((*container)[2]->getIndex() ==  2);
-        WHEN("garbage collected")
-        {
-          factory->enableGarbageCollector();
-          REQUIRE((*container)[0]->getColor() ==  factory->getFromRootColor());
-          REQUIRE((*container)[1]->getColor() ==  factory->getFromRootColor());
-          REQUIRE((*container)[2]->getColor() ==  factory->getFromRootColor());
-          factory->stepGarbageCollector();
-          REQUIRE((*container)[0]->getColor() ==  factory->getToRootColor());
-          REQUIRE((*container)[1]->getColor() ==  factory->getFromRootColor());
-          REQUIRE((*container)[2]->getColor() ==  factory->getFromRootColor());
-          factory->stepGarbageCollector();
-          REQUIRE((*container)[0]->getColor() ==  factory->getToRootColor());
-          REQUIRE((*container)[1]->getColor() ==  factory->getToRootColor());
-          REQUIRE((*container)[2]->getColor() ==  factory->getFromRootColor());
-          factory->stepGarbageCollector();
-          REQUIRE((*container)[0]->getColor() ==  factory->getToRootColor());
-          REQUIRE((*container)[1]->getColor() ==  factory->getToRootColor());
-          REQUIRE((*container)[2]->getColor() ==  factory->getToRootColor());
-          color = factory->getFromRootColor();
-          factory->stepGarbageCollector();
-          factory->stepGarbageCollector();
-          REQUIRE(factory->getToRootColor() == color);
-          REQUIRE((*container)[0]->getColor() == factory->getFromRootColor());
-          REQUIRE((*container)[1]->getColor() == factory->getFromRootColor());
-          REQUIRE((*container)[2]->getColor() == factory->getFromRootColor());
-        }
+	REQUIRE(container->getColor() == color);
+	factory->stepGarbageCollector(); // mark container
+	REQUIRE(container->getColor() != color);
+	REQUIRE(container->getGcTop() == 0);
+	factory->stepGarbageCollector(); // swap colors
+	REQUIRE(container->getGcTop() == 0);
+	REQUIRE(factory->getToRootColor() == color);
+	REQUIRE((*container)[0]->getColor() == factory->getFromRootColor());
+	REQUIRE((*container)[1]->getColor() == factory->getFromRootColor());
+	REQUIRE((*container)[2]->getColor() == factory->getFromRootColor());
+      }
+      THEN("adding conses to marked container")
+      {
+	REQUIRE(container->getColor() == color);
+	factory->stepGarbageCollector(); // mark container
+	REQUIRE(container->getColor() != color);
+	REQUIRE(container->getColor() == factory->getToRootColor());
+	factory->disableGarbageCollector();
+	container->pushCons(factory->make(Lisp::nil, Lisp::nil));
+	REQUIRE((*container)[0]->getColor() == factory->getToRootColor());
+	REQUIRE((*container)[1]->getColor() == factory->getToRootColor());
+	REQUIRE((*container)[2]->getColor() == factory->getToRootColor());
+	REQUIRE((*container)[3]->getColor() == factory->getToRootColor());
+	REQUIRE(container->getGcTop() == 0);
+	factory->enableGarbageCollector();
+	factory->stepGarbageCollector(); // swap colors
+	REQUIRE(container->getGcTop() == 0);
+	REQUIRE(factory->getToRootColor() == color);
+	REQUIRE((*container)[0]->getColor() == factory->getFromRootColor());
+	REQUIRE((*container)[1]->getColor() == factory->getFromRootColor());
+	REQUIRE((*container)[2]->getColor() == factory->getFromRootColor());
+	REQUIRE((*container)[3]->getColor() == factory->getFromRootColor());
+      }
+    }
+    WHEN("part of conses have been marked")
+    {
+      factory->enableGarbageCollector();
+      factory->stepGarbageCollector();
+      factory->stepGarbageCollector();
+      REQUIRE((*container)[0]->getColor() == factory->getToRootColor());
+      REQUIRE((*container)[1]->getColor() == factory->getToRootColor());
+      REQUIRE((*container)[2]->getColor() == factory->getFromRootColor());
+      REQUIRE(container->getGcTop() == 2);
+      REQUIRE(container->getColor() == factory->getFromRootColor());
+      THEN("adding cons at the end has from color")
+      {
+	factory->disableGarbageCollector();
+	container->pushCons(factory->make(Lisp::nil, Lisp::nil));
+	REQUIRE((*container)[3]->getColor() == factory->getFromRootColor());
+	REQUIRE((*container)[1]->getColor() == factory->getToRootColor());
+	container->setCons(1, factory->make(Lisp::nil, Lisp::nil));
+	container->setCons(3, factory->make(Lisp::nil, Lisp::nil));
+	REQUIRE((*container)[0]->getColor() == factory->getToRootColor());
+	REQUIRE((*container)[1]->getColor() == factory->getToRootColor());
+	REQUIRE((*container)[2]->getColor() == factory->getFromRootColor());
+	REQUIRE((*container)[3]->getColor() == factory->getToRootColor());
+        factory->enableGarbageCollector();
+        factory->stepGarbageCollector();
+        REQUIRE(container->getGcTop() == 3);
+        REQUIRE((*container)[2]->getColor() == factory->getToRootColor());
+        REQUIRE(container->getColor() == factory->getFromRootColor());
+        color = container->getColor();
+        factory->stepGarbageCollector();
+        REQUIRE(container->getGcTop() == 4);
+        REQUIRE(container->getColor() == color);
+        factory->stepGarbageCollector();
+        REQUIRE(container->getColor() != color);
+        REQUIRE(container->getColor() == factory->getToRootColor());
+        factory->stepGarbageCollector();
+        REQUIRE(container->getColor() == factory->getFromRootColor());
+	REQUIRE((*container)[0]->getColor() == factory->getFromRootColor());
+	REQUIRE((*container)[1]->getColor() == factory->getFromRootColor());
+	REQUIRE((*container)[2]->getColor() == factory->getFromRootColor());
+	REQUIRE((*container)[3]->getColor() == factory->getFromRootColor());
       }
     }
   }
