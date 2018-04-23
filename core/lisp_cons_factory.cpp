@@ -32,11 +32,15 @@ either expressed or implied, of the FreeBSD Project.
 #include <unordered_set>
 #include "lisp_cons_factory.h"
 #include "types/lisp_cons.h"
+#include "types/lisp_array.h"
+
+// todo: remove cons_container
 #include "types/lisp_cons_container.h"
 
 using Cons = Lisp::Cons;
 using ConsFactory = Lisp::ConsFactory;
 using ConsContainer = Lisp::ConsContainer;
+using Array = Lisp::Array;
 
 Lisp::ConsFactory::ConsFactory(std::size_t _pageSize,
                                unsigned short _garbageSteps,
@@ -238,6 +242,14 @@ Cons * ConsFactory::make(Object && car, Object && cdr)
   return ret;
 }
 
+Array * ConsFactory::makeArray()
+{
+  Color color = (toColor == Color::Black ? Color::WhiteRoot : Color::BlackRoot);
+  auto ret = new Array(this, color, arrays[(unsigned char)color].size());
+  arrays[(unsigned char)color].push_back(ret);
+  return ret;
+}
+
 ConsContainer * ConsFactory::makeContainer()
 {
   Color color = toColor == Color::Black ? Color::WhiteRoot : Color::BlackRoot;
@@ -342,7 +354,6 @@ template<typename T> std::unordered_set<T*>
 Lisp::ConsFactory::getReachableConsesAsSetIntneral() const
 {
   typedef T ConsType;
-  
   std::unordered_set<ConsType*> todo;
   std::unordered_set<ConsType*> root;
   todo.insert(conses[(unsigned char)Color::BlackRoot].begin(),

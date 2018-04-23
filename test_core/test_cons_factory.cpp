@@ -36,6 +36,7 @@ either expressed or implied, of the FreeBSD Project.
 #include "core/lisp_cons_factory.h"
 #include "core/types/lisp_cons.h"
 #include "core/types/lisp_cons_container.h"
+#include "core/types/lisp_array.h"
 #include "core/lisp_object.h"
 #include "simul/lisp_cons_graph.h"
 #include "simul/lisp_cons_graph_edge.h"
@@ -49,6 +50,7 @@ using Color = ConsFactory::Color;
 using Object = Lisp::Object;
 using Nil = Lisp::Nil;
 using ConsGraph = Lisp::ConsGraph;
+using Array = Lisp::Array;
 
 // helper constants
 static const std::size_t undef = std::numeric_limits<std::size_t>::max();
@@ -553,6 +555,60 @@ SCENARIO("copy cons object with object assignement operator", "[ConsFactory]")
     }
   }
 }
+
+#if 0
+SCENARIO("one array without elements", "[ConsFactory]")
+{
+  GIVEN("A root array")
+  {
+    auto factory = makeFactory(8);
+    auto obj = std::make_shared<Object>(factory->makeArray());
+    auto array = obj->as<Array>();
+    ConsGraph graph(*factory);
+    THEN("it is in root set, has from-color and ref count 1")
+    {
+      REQUIRE(array);
+      REQUIRE(array->isRoot());
+      REQUIRE(array->getColor() == factory->getFromRootColor());
+      REQUIRE(array->getRefCount() == 1u);
+    }
+    THEN("its weight from root is 1")
+    {
+      REQUIRE(getWeight(graph, nullptr, array) == 1u);
+    }
+    THEN("it has no parents")
+    {
+      arrayHasParents(graph, array);
+    }
+    THEN("it is reachable")
+    {
+      REQUIRE(factory->getReachableArraysAsSet() == setOfArrays(array));
+    }
+    WHEN("the cons is unrooted")
+    {
+      obj.reset();
+      ConsGraph graph(*factory);
+      THEN("it is a leaf cons with from-color, ref-count 0")
+      {
+        REQUIRE_FALSE(array->isRoot());
+        REQUIRE(array->getColor() == factory->getFromColor());
+      }
+      THEN("there is no edge from root to cons")
+      {
+        REQUIRE(getWeight(graph, nullptr, array) == undef);
+      }
+      THEN("there is no self-ref")
+      {
+        REQUIRE(getWeight(graph, array, array) == undef);
+      }
+      THEN("there is no reachable array")
+      {
+        REQUIRE(factory->getReachableArraysAsSet() == setOfArrays());
+      }
+    }
+  }
+}
+#endif
 
 SCENARIO("recycle ConsContainer", "[ConsFactory]")
 {

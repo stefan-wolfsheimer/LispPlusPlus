@@ -42,6 +42,7 @@ namespace Lisp
   class Cell;
   class Cons;
   class ConsContainer;
+  class Array;
   class ConsFactory
   {
   public:
@@ -76,6 +77,12 @@ namespace Lisp
     Cons * make(Object && car, const Object & cdr);
     Cons * make(const Object & car, Object && cdr);
     Cons * make(Object && car, Object && cdr);
+
+    /**
+     * Allocate and initialize a new Arry object in the root set.
+     * Reference count is 0, color is FromRootColor
+     */
+    Array * makeArray();
 
     /**
      * Allocate and initialize a new ConsContainer object in the root set.
@@ -125,6 +132,7 @@ namespace Lisp
     std::vector<Cons*> getReachableConses() const;
     std::unordered_set<const Cons*> getReachableConsesAsConstSet() const;
     std::unordered_set<Cons*> getReachableConsesAsSet() const;
+
     void cycleGarbageCollector();
     bool stepGarbageCollector(ConsContainer * container);
     void stepGarbageCollector();
@@ -137,6 +145,7 @@ namespace Lisp
     inline void moveAllFromVectorToOther(Color colorFrom, Color colorTo);
     inline void greyChildInternal(Cons * cons);
     inline void greyChildInternal(const Cell & cell);
+
     template<typename T>
     inline std::unordered_set<T*> getReachableConsesAsSetIntneral() const;
     unsigned short int garbageSteps;
@@ -152,6 +161,7 @@ namespace Lisp
     std::vector<Cons*> conses[7];
     std::vector<std::vector<Cons*> > freeConses;
     std::vector<ConsContainer*> consContainers[7];
+    std::vector<Array*> arrays[7];
   };
 }
 
