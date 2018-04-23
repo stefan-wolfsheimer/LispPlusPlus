@@ -29,7 +29,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include "core/lisp_cons_factory.h"
-#include "core/types/lisp_cons.h"
+#include "core/types/cons.h"
 #include "lisp_cons_graph.h"
 #include "lisp_cons_graph_edge.h"
 #include "lisp_cons_graph_node.h"

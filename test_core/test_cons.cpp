@@ -30,7 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include <catch.hpp>
 #include "core/lisp_vm.h"
-#include "core/types/lisp_cons.h"
+#include "core/types/cons.h"
 
 TEST_CASE("cons_allocator_color_has_size_1", "[Cons]")
 {

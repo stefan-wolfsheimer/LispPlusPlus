@@ -31,7 +31,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <assert.h>
 #include <unordered_set>
 #include "lisp_cons_factory.h"
-#include "types/lisp_cons.h"
+#include "types/cons.h"
 #include "types/lisp_array.h"
 
 // todo: remove cons_container
