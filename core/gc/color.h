@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2017, Stefan Wolfsheimer
+Copyright (c) 2018, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -28,83 +28,16 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#include <assert.h>
-#include "lisp_object.h"
-#include "types/cons.h"
+#pragma once
 
-using Object = Lisp::Object;
-using Nil = Lisp::Nil;
-
-Object::Object(const Object & rhs) : Cell(rhs)
+namespace Lisp
 {
-  if(rhs.isA<Lisp::Cons>())
-  {
-    ((Cons*)data.ptr)->root();
-  }
+    enum class Color : unsigned char { Void=0u,
+                                       White=1u,
+                                       Grey=2u,
+                                       Black=3u,
+                                       WhiteRoot=4u,
+                                       GreyRoot=5u,
+                                       BlackRoot=6u,
+                                       Free=7u };
 }
-
-Object::Object(const Cell & rhs) : Cell(rhs)
-{
-  if(rhs.isA<Lisp::Cons>())
-  {
-    ((Cons*)data.ptr)->root();
-  }
-}
-
-Object::~Object()
-{
-  unsetCons();
-}
-
-
-Object & Lisp::Object::operator=(const Object & rhs)
-{
-  Cell::unset();
-  unsetCons();
-  typeId = rhs.typeId;
-  if(rhs.isA<Lisp::Cons>())
-  {
-    assert(rhs.as<Cons>()->isRoot());
-    assert(rhs.as<Cons>()->getRefCount() > 0u);
-    data.ptr = rhs.as<Cons>();
-    // todo make more efficient
-    // rhs is by definition already rooted: only need to change reference count
-    ((Cons*)data.ptr)->root(); 
-  }
-  if(rhs.isA<Lisp::ManagedType>())
-  {
-    Cell::init(rhs.as<ManagedType>(), rhs.getTypeId());
-  }
-  return *this;
-}
-
-Lisp::Object & Lisp::Object::operator=(Object && rhs)
-{
-  Cell::unset();
-  unsetCons();
-  typeId = rhs.typeId;
-  data = rhs.data;
-  rhs.typeId = TypeTraits<Nil>::typeId;
-  return *this;
-}
-
-void Object::unsetCons()
-{
-  if(isA<Cons>())
-  {
-    assert(as<Cons>()->isRoot());
-    assert(as<Cons>()->getRefCount() > 0u);
-    ((Cons*)data.ptr)->unroot();
-  }
-}
-
-void Object::init(Cons * cons, TypeId _typeId)
-{
-  Cell::init(cons, _typeId);
-  assert(cons->isRoot());
-  cons->refCount++;
-}
-
-Object Lisp::nil(Object::nil());
-Object Lisp::undefined(Object::undefined());
-

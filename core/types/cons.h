@@ -36,12 +36,16 @@ either expressed or implied, of the FreeBSD Project.
 
 namespace Lisp
 {
+  template<typename T> class CollectibleContainer;
   class Cons : public BasicType
   {
+    // todo: derive from GarbageCollectable
   public:
     friend class ConsFactory;
     friend class ConsContainer;
     friend class Object;
+    friend class CollectibleContainer<Cons>;
+
     using Color = ConsFactory::Color;
     inline std::size_t getRefCount() const;
     inline Color getColor() const;
@@ -60,6 +64,8 @@ namespace Lisp
                        TypeId typeId=TypeTraits<Cons>::typeId);
     inline std::size_t getIndex() const;
   private:
+    // todo reduce memory footprint
+    // reference to color vector
     ConsFactory * consFactory;
     Color color;
     std::size_t refCount;

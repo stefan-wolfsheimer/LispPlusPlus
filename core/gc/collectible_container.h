@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2017, Stefan Wolfsheimer
+Copyright (c) 2018, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -28,83 +28,77 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
+#pragma once
+#include <vector>
 #include <assert.h>
-#include "lisp_object.h"
-#include "types/cons.h"
+#include "core/gc/color.h"
 
-using Object = Lisp::Object;
-using Nil = Lisp::Nil;
-
-Object::Object(const Object & rhs) : Cell(rhs)
+namespace Lisp
 {
-  if(rhs.isA<Lisp::Cons>())
+  class ConsFactory; //todo rename to GarbageCollector
+
+  template<typename T>
+  class CollectibleContainer
   {
-    ((Cons*)data.ptr)->root();
-  }
+  public:
+    friend class ConsFactory; // todo remove friendship
+    CollectibleContainer(Color _color, ConsFactory * _collector);
+    inline Color getColor() const;
+    inline ConsFactory * getCollector() const;
+    inline void remove(T * obj);
+    inline void add(T * obj);
+    inline T * popBack();
+    inline bool empty() const;
+    inline std::size_t size() const;
+  private:
+    std::vector<T*> elements;
+    ConsFactory * collector;
+    Color color;
+  };
 }
 
-Object::Object(const Cell & rhs) : Cell(rhs)
+template<typename T>
+inline Lisp::CollectibleContainer<T>::CollectibleContainer(Color _color,
+                                                           ConsFactory * coll) :
+  color(_color), collector(coll)
 {
-  if(rhs.isA<Lisp::Cons>())
-  {
-    ((Cons*)data.ptr)->root();
-  }
 }
 
-Object::~Object()
+template<typename T>
+inline void Lisp::CollectibleContainer<T>::remove(T * obj)
 {
-  unsetCons();
+  assert(elements.size() > 0);
+  assert(elements[obj->index] == obj);
+  std::size_t index = obj->index;
+  elements[obj->index] = elements.back();
+  elements[obj->index]->index = index;
+  elements.pop_back();
 }
 
-
-Object & Lisp::Object::operator=(const Object & rhs)
+template<typename T>
+inline void Lisp::CollectibleContainer<T>::add(T * obj)
 {
-  Cell::unset();
-  unsetCons();
-  typeId = rhs.typeId;
-  if(rhs.isA<Lisp::Cons>())
-  {
-    assert(rhs.as<Cons>()->isRoot());
-    assert(rhs.as<Cons>()->getRefCount() > 0u);
-    data.ptr = rhs.as<Cons>();
-    // todo make more efficient
-    // rhs is by definition already rooted: only need to change reference count
-    ((Cons*)data.ptr)->root(); 
-  }
-  if(rhs.isA<Lisp::ManagedType>())
-  {
-    Cell::init(rhs.as<ManagedType>(), rhs.getTypeId());
-  }
-  return *this;
+  obj->color = color;
+  obj->index = elements.size();
+  elements.push_back(obj);
 }
 
-Lisp::Object & Lisp::Object::operator=(Object && rhs)
+template<typename T>
+inline T * Lisp::CollectibleContainer<T>::popBack()
 {
-  Cell::unset();
-  unsetCons();
-  typeId = rhs.typeId;
-  data = rhs.data;
-  rhs.typeId = TypeTraits<Nil>::typeId;
-  return *this;
+  T * ret = elements.back();
+  elements.pop_back();
+  return ret;
 }
 
-void Object::unsetCons()
+template<typename T>
+inline bool Lisp::CollectibleContainer<T>::empty() const
 {
-  if(isA<Cons>())
-  {
-    assert(as<Cons>()->isRoot());
-    assert(as<Cons>()->getRefCount() > 0u);
-    ((Cons*)data.ptr)->unroot();
-  }
+  return elements.empty();
 }
 
-void Object::init(Cons * cons, TypeId _typeId)
+template<typename T>
+inline std::size_t Lisp::CollectibleContainer<T>::size() const
 {
-  Cell::init(cons, _typeId);
-  assert(cons->isRoot());
-  cons->refCount++;
+  return elements.size();
 }
-
-Object Lisp::nil(Object::nil());
-Object Lisp::undefined(Object::undefined());
-

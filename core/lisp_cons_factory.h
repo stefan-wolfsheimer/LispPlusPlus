@@ -33,6 +33,9 @@ either expressed or implied, of the FreeBSD Project.
 #include <unordered_set>
 #include <unordered_map>
 #include <memory>
+#include "core/gc/collectible_container.h"
+#include "core/gc/color.h"
+
 // @todo move to config.h
 #define CONS_PAGE_SIZE 512
 
@@ -41,19 +44,13 @@ namespace Lisp
   class Object;
   class Cell;
   class Cons;
+  //todo: remove
   class ConsContainer;
   class Array;
   class ConsFactory
   {
   public:
-    enum class Color : unsigned char { Void=0u,
-                                       White=1u,
-                                       Grey=2u,
-                                       Black=3u,
-                                       WhiteRoot=4u,
-                                       GreyRoot=5u,
-                                       BlackRoot=6u,
-                                       Free=7u };
+    using Color = Lisp::Color;
     ConsFactory(std::size_t _pageSize=CONS_PAGE_SIZE,
                 unsigned short _garbageSteps=1,
                 unsigned short _recycleSteps=1);
@@ -140,9 +137,6 @@ namespace Lisp
 
   private:
     inline Cons * make();
-    inline void removeFromVector(Cons * cons);
-    inline void addToVector(Color color, Lisp::Cons * cons);
-    inline void moveAllFromVectorToOther(Color colorFrom, Color colorTo);
     inline void greyChildInternal(Cons * cons);
     inline void greyChildInternal(const Cell & cell);
 
@@ -158,9 +152,11 @@ namespace Lisp
     Color fromRootColor;
     Color toRootColor;
     std::vector<Cons*> pages;
-    std::vector<Cons*> conses[7];
+    CollectibleContainer<Cons> conses[7];
     std::vector<std::vector<Cons*> > freeConses;
+
     std::vector<ConsContainer*> consContainers[7];
+
     std::vector<Array*> arrays[7];
   };
 }
