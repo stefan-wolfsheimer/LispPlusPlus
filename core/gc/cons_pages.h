@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2017, Stefan Wolfsheimer
+Copyright (c) 2018, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -28,54 +28,87 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#include <assert.h>
-#include <core/lisp_cons_factory.h>
-#include "cons.h"
+#include <vector>
+#include <unordered_set>
+#include <core/types/cons.h>
 
-using Cons = Lisp::Cons;
+namespace Lisp
+{
+  class ConsPages
+  {
+  public:
+    ConsPages(std::size_t _pageSize);
+    //todo: remove virtual
+    virtual ~ConsPages();
+    inline std::size_t getPageSize() const;
+    inline std::size_t getNumAllocated() const;
+    inline std::size_t getNumVoid() const;
+    inline std::size_t getNumRecycled() const;
+    inline Cons * next();
+    inline void recycle(Cons * cons);
+    void recycleAll(const std::unordered_set<Cons*> & reachable,
+                    CollectibleContainer<Cons> & target,
+                    Color ignoreColor);
+  private:
+    std::size_t pageSize;
+    std::size_t pos;
+    std::vector<Cons*> pages;
+    std::vector<Cons*> recycled;
+  };
+}
 
-Lisp::Cons::Cons() :
-   color(Color::Void),
-   refCount(0),
-   car(Lisp::nil),
-   cdr(Lisp::nil)
+
+inline Lisp::ConsPages::ConsPages(std::size_t _page_size) : pageSize(_page_size), pos(_page_size)
 {
 }
 
-void Lisp::Cons::unroot()
+inline std::size_t Lisp::ConsPages::getPageSize() const
 {
-  if(!--refCount)
-  {
-    consFactory->unroot(this);
-  }
+  return pageSize;
 }
 
-void Lisp::Cons::root()
+inline std::size_t Lisp::ConsPages::getNumAllocated() const
 {
-  if(isRoot())
+  return pages.size() * pageSize;
+}
+
+inline std::size_t Lisp::ConsPages::getNumVoid() const
+{
+  if(pages.empty())
   {
-    ++refCount;
+    return 0u;
   }
   else
   {
-    consFactory->root(this);
+    return pageSize - pos + getNumRecycled();
   }
 }
 
-
-void Lisp::Cons::setCar(Cons * cons, TypeId _typeId)
+inline std::size_t Lisp::ConsPages::getNumRecycled() const
 {
-  car = Lisp::nil;
-  car.typeId = _typeId; 
-  car.data.ptr = cons;
-  consFactory->gcStep(this);
+  return recycled.size();
 }
 
-void Lisp::Cons::setCdr(Cons * cons, TypeId _typeId)
+inline Lisp::Cons * Lisp::ConsPages::next()
 {
-  cdr = Lisp::nil;
-  cdr.typeId = _typeId;
-  cdr.data.ptr = cons;
-  consFactory->gcStep(this);
+  if(recycled.empty())
+  {
+    if(pos == pageSize)
+    {
+      pages.push_back(new Cons[pageSize]);
+      pos = 0;
+    }
+    return pages.back() + pos++;
+  }
+  else
+  {
+    Cons * ret = recycled.back();
+    recycled.pop_back();
+    return ret;
+  }
 }
 
+inline void Lisp::ConsPages::recycle(Cons * cons)
+{
+  recycled.push_back(cons);
+}

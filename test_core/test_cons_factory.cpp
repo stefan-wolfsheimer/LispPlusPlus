@@ -771,12 +771,19 @@ static std::size_t getNumConses(SharedConsFactory factory)
 
 static std::size_t getNumConses(SharedConsFactory factory, Color color)
 {
-  auto conses = factory->getConses(color);
   auto nConses = factory->numConses(color);
-  bool colorOfConsesEqual = Lisp::checkColorOfConses(*factory, color);
-  CHECK(colorOfConsesEqual);
-  CHECK(nConses == conses.size());
-  return (nConses == conses.size() && colorOfConsesEqual) ? nConses : error;
+  if(color != Color::Void)
+  {
+    auto conses = factory->getConses(color);
+    bool colorOfConsesEqual = Lisp::checkColorOfConses(*factory, color);
+    CHECK(colorOfConsesEqual);
+    CHECK(nConses == conses.size());
+    return (nConses == conses.size() && colorOfConsesEqual) ? nConses : error;
+  }
+  else
+  {
+    return nConses;
+  }
 }
 
 std::pair<Color, std::size_t> operator==(Color color, std::size_t n)

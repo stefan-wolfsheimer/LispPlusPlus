@@ -31,18 +31,23 @@ either expressed or implied, of the FreeBSD Project.
 #pragma once
 #include <vector>
 #include <assert.h>
-#include "core/gc/color.h"
+#include <core/gc/color.h>
+#include <core/lisp_cell.h>
 
 namespace Lisp
 {
-  class ConsFactory; //todo rename to GarbageCollector
+  template<typename T>
+  class UnmanagedCollectibleContainer;
 
+  class ConsFactory; //todo rename to GarbageCollector
+  
   template<typename T>
   class CollectibleContainer
   {
   public:
-    friend class ConsFactory; // todo remove friendship
-    CollectibleContainer(Color _color, ConsFactory * _collector);
+    friend class ConsFactory; //todo rename to GarbageCollector
+    friend class UnmanagedCollectibleContainer<T>;
+    CollectibleContainer(Color _color, ConsFactory * _gc);
     inline Color getColor() const;
     inline ConsFactory * getCollector() const;
     inline void remove(T * obj);
@@ -50,18 +55,31 @@ namespace Lisp
     inline T * popBack();
     inline bool empty() const;
     inline std::size_t size() const;
+    inline void addTo(std::vector<Cell> & cells) const;
   private:
     std::vector<T*> elements;
-    ConsFactory * collector;
+    ConsFactory * gc;
     Color color;
   };
 }
 
 template<typename T>
 inline Lisp::CollectibleContainer<T>::CollectibleContainer(Color _color,
-                                                           ConsFactory * coll) :
-  color(_color), collector(coll)
+                                                           ConsFactory * _gc)
+  : gc(_gc), color(_color)
 {
+}
+
+template<typename T>
+inline Lisp::Color Lisp::CollectibleContainer<T>::getColor() const
+{
+  return color; 
+}
+
+template<typename T>
+inline Lisp::ConsFactory * Lisp::CollectibleContainer<T>::getCollector() const
+{
+  return gc;
 }
 
 template<typename T>
@@ -101,4 +119,13 @@ template<typename T>
 inline std::size_t Lisp::CollectibleContainer<T>::size() const
 {
   return elements.size();
+}
+
+template<typename T>
+void Lisp::CollectibleContainer<T>::addTo(std::vector<Cell> & cells) const
+{
+  for(auto p : elements)
+  {
+    cells.push_back(p);
+  }
 }

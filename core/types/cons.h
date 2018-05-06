@@ -30,23 +30,26 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
 #include <cstdint>
+#include <core/gc/color.h>
 #include "lisp_type_id.h"
 #include "core/lisp_object.h"
-#include "core/lisp_cons_factory.h"
+ //#include "core/lisp_cons_factory.h"
 
 namespace Lisp
 {
+  class ConsFactory;
   template<typename T> class CollectibleContainer;
   class Cons : public BasicType
   {
     // todo: derive from GarbageCollectable
   public:
-    friend class ConsFactory;
+    friend class ConsFactory;// todo: remove this friendship
+    friend class ConsPages;
     friend class ConsContainer;
     friend class Object;
     friend class CollectibleContainer<Cons>;
 
-    using Color = ConsFactory::Color;
+    using Color = Lisp::Color;
     inline std::size_t getRefCount() const;
     inline Color getColor() const;
     inline bool isRoot() const;
@@ -58,10 +61,10 @@ namespace Lisp
     inline void unsetCdr();
     inline void setCar(const Object & rhs);
     inline void setCdr(const Object & rhs);
-    inline void setCar(Cons * cons,
-                       TypeId typeId=TypeTraits<Cons>::typeId);
-    inline void setCdr(Cons * cons,
-                       TypeId typeId=TypeTraits<Cons>::typeId);
+    void setCar(Cons * cons,
+                TypeId typeId=TypeTraits<Cons>::typeId);
+    void setCdr(Cons * cons,
+                TypeId typeId=TypeTraits<Cons>::typeId);
     inline std::size_t getIndex() const;
   private:
     // todo reduce memory footprint
@@ -72,8 +75,8 @@ namespace Lisp
     std::size_t index;
     Cell car;
     Cell cdr;
-    inline void unroot();
-    inline void root();
+    void unroot();
+    void root();
     Cons();
   };
 }
@@ -104,25 +107,6 @@ std::size_t Lisp::Cons::getIndex() const
   return index;
 }
 
-void Lisp::Cons::unroot()
-{
-  if(!--refCount)
-  {
-    consFactory->unroot(this);
-  }
-}
-
-void Lisp::Cons::root()
-{
-  if(isRoot())
-  {
-    ++refCount;
-  }
-  else
-  {
-    consFactory->root(this);
-  }
-}
 
 Lisp::Object Lisp::Cons::getCar() const
 {
@@ -180,20 +164,4 @@ void Lisp::Cons::setCdr(const Object & rhs)
     // set non-cons
     cdr = rhs;
   }
-}
-
-void Lisp::Cons::setCar(Cons * cons, TypeId _typeId)
-{
-  car = Lisp::nil;
-  car.typeId = _typeId; 
-  car.data.ptr = cons;
-  consFactory->gcStep(this);
-}
-
-void Lisp::Cons::setCdr(Cons * cons, TypeId _typeId)
-{
-  cdr = Lisp::nil;
-  cdr.typeId = _typeId;
-  cdr.data.ptr = cons;
-  consFactory->gcStep(this);
 }

@@ -31,6 +31,7 @@ either expressed or implied, of the FreeBSD Project.
 #pragma once
 #include <cstdint>
 #include <memory>
+#include <vector>
 
 namespace Lisp
 {
@@ -39,7 +40,7 @@ namespace Lisp
    *  00: cons, nil     (0x0000)
    *  01: value types   (0x4000)
    *  10: managed types (0x8000)
-   *  11: special types (0xc000)
+   *  11: container     (0xc000)
    */
 
   typedef ::std::uint_least16_t TypeId;
@@ -47,14 +48,23 @@ namespace Lisp
   class Symbol;
   class String;
   class Cons;
+  class Cell;
+  class ConsFactory;
   class BuiltinFunction;
   class Function;
   struct BasicType {};
-  struct SpecialType : BasicType {};
   struct ValueType : BasicType {};
-  struct Nil : SpecialType {};
-  struct Undefined : SpecialType {};
+  struct Nil : BasicType {};
+  struct Undefined : BasicType {};
 
+
+  struct ContainerType : BasicType
+  {
+    //virtual ~ContainerType() {}
+    //virtual bool stepGarbageCollector(ConsFactory * factory) = 0;
+    //virtual std::vector<Cell> getChildren() const = 0;
+  };
+  
   class ManagedType : public BasicType
   {
   public:
@@ -205,12 +215,14 @@ namespace Lisp
   {
     static inline bool isA(TypeId tid)
     {
+      // todo container type is not an atom
+      // check differnt predicates in std scheme
       return tid & 0xc000;
     }
   };
 
   template<>
-  struct TypeTraits<SpecialType>
+  struct TypeTraits<ContainerType>
   {
     static inline bool isA(TypeId tid)
     {

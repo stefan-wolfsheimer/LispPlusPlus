@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2017, Stefan Wolfsheimer
+Copyright (c) 2018, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -28,54 +28,85 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
+#pragma once
+#include <vector>
 #include <assert.h>
-#include <core/lisp_cons_factory.h>
-#include "cons.h"
+#include <core/gc/color.h>
+#include <core/gc/collectible_container.h>
+#include <core/lisp_cell.h>
 
-using Cons = Lisp::Cons;
-
-Lisp::Cons::Cons() :
-   color(Color::Void),
-   refCount(0),
-   car(Lisp::nil),
-   cdr(Lisp::nil)
+namespace Lisp
 {
+  template<typename T>
+  class UnmanagedCollectibleContainer
+  {
+  public:
+    inline void move(Lisp::CollectibleContainer<T> & rhs);
+    inline bool empty() const;
+    inline std::size_t size() const;
+    inline void addTo(std::vector<Cell> & cells) const;
+    T * popBack();
+  private:
+    std::vector<std::vector<T*> > elements;
+  };
 }
 
-void Lisp::Cons::unroot()
+template<typename T>
+inline void Lisp::UnmanagedCollectibleContainer<T>
+::move(Lisp::CollectibleContainer<T> & rhs)
 {
-  if(!--refCount)
+  if(!rhs.elements.empty())
   {
-    consFactory->unroot(this);
+    elements.push_back(std::vector<T*>());
+    rhs.elements.swap(elements.back());
   }
 }
 
-void Lisp::Cons::root()
+template<typename T>
+inline bool Lisp::UnmanagedCollectibleContainer<T>::empty() const
 {
-  if(isRoot())
+  return elements.empty();
+}
+
+template<typename T>
+inline std::size_t Lisp::UnmanagedCollectibleContainer<T>::size() const
+{
+  std::size_t n = 0;
+  for(auto & v : elements)
   {
-    ++refCount;
+    n+= v.size();
+  }
+  return n;
+}
+
+template<typename T>
+inline void
+Lisp::UnmanagedCollectibleContainer<T>::addTo(std::vector<Cell> & cells) const
+{
+  for(auto & v : elements)
+  {
+    for(auto & c : v)
+    {
+      cells.push_back(Cell(c));
+    }
+  }
+}
+
+template<typename T>
+T * Lisp::UnmanagedCollectibleContainer<T>::popBack()
+{
+  if(elements.empty())
+  {
+    return nullptr;
   }
   else
   {
-    consFactory->root(this);
+    T * ret = elements.back().back();
+    elements.back().pop_back();
+    if(elements.back().empty())
+    {
+      elements.pop_back();
+    }
+    return ret;
   }
 }
-
-
-void Lisp::Cons::setCar(Cons * cons, TypeId _typeId)
-{
-  car = Lisp::nil;
-  car.typeId = _typeId; 
-  car.data.ptr = cons;
-  consFactory->gcStep(this);
-}
-
-void Lisp::Cons::setCdr(Cons * cons, TypeId _typeId)
-{
-  cdr = Lisp::nil;
-  cdr.typeId = _typeId;
-  cdr.data.ptr = cons;
-  consFactory->gcStep(this);
-}
-

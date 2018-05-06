@@ -51,6 +51,7 @@ Cell::~Cell()
 void Lisp::Cell::init(Lisp::Cons * cons,
                       Lisp::TypeId _typeId)
 {
+  //todo replace Cons with Collectible
   typeId = _typeId;
   data.ptr = static_cast<BasicType*>(cons);
 }

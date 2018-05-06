@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2017, Stefan Wolfsheimer
+Copyright (c) 2018, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -28,54 +28,44 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#include <assert.h>
-#include <core/lisp_cons_factory.h>
-#include "cons.h"
 
-using Cons = Lisp::Cons;
+#include <core/gc/cons_pages.h>
+#include <core/gc/collectible_container.h>
 
-Lisp::Cons::Cons() :
-   color(Color::Void),
-   refCount(0),
-   car(Lisp::nil),
-   cdr(Lisp::nil)
+using ConsPages = Lisp::ConsPages;
+
+ConsPages::~ConsPages()
 {
-}
-
-void Lisp::Cons::unroot()
-{
-  if(!--refCount)
+  for(Cons * cons : pages)
   {
-    consFactory->unroot(this);
+    delete[] cons;
   }
 }
 
-void Lisp::Cons::root()
+void ConsPages::recycleAll(const std::unordered_set<Cons*> & reachable,
+                           CollectibleContainer<Cons> & target,
+                           Color ignoreColor)
 {
-  if(isRoot())
+  recycled.clear();
+  for(std::size_t p = 0; p < pages.size(); p++)
   {
-    ++refCount;
+    // todo use iterators when friendship is removed
+    std::size_t s = (p + 1) == pages.size() ? pos : pageSize;
+    auto & page(pages[p]);
+    for(std::size_t i = 0; i < s; i++)
+    {
+      if(reachable.find(&page[i]) == reachable.end())
+      {
+        recycle(&page[i]);
+      }
+      else
+      {
+        if(page[i].getColor() != ignoreColor)
+        {
+          target.add(&page[i]);
+        }
+      }
+    }
   }
-  else
-  {
-    consFactory->root(this);
-  }
-}
-
-
-void Lisp::Cons::setCar(Cons * cons, TypeId _typeId)
-{
-  car = Lisp::nil;
-  car.typeId = _typeId; 
-  car.data.ptr = cons;
-  consFactory->gcStep(this);
-}
-
-void Lisp::Cons::setCdr(Cons * cons, TypeId _typeId)
-{
-  cdr = Lisp::nil;
-  cdr.typeId = _typeId;
-  cdr.data.ptr = cons;
-  consFactory->gcStep(this);
 }
 

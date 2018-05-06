@@ -37,6 +37,7 @@ either expressed or implied, of the FreeBSD Project.
 // todo: remove cons_container
 #include "types/lisp_cons_container.h"
 
+using Cell = Lisp::Cell;
 using Cons = Lisp::Cons;
 using ConsFactory = Lisp::ConsFactory;
 using ConsContainer = Lisp::ConsContainer;
@@ -45,6 +46,7 @@ using Array = Lisp::Array;
 Lisp::ConsFactory::ConsFactory(std::size_t _pageSize,
                                unsigned short _garbageSteps,
                                unsigned short _recycleSteps) :
+   GarbageCollector(_pageSize),
    garbageSteps(_garbageSteps),
    recycleSteps(_recycleSteps),
    backGarbageSteps(_garbageSteps),
@@ -163,22 +165,7 @@ inline Cons * ConsFactory::make()
 {
   stepGarbageCollector();
   stepRecycle();
-  Cons * ret;
-  CollectibleContainer<Cons> & _conses(conses[(unsigned char)Color::Void]);
-  if(_conses.empty())
-  {
-    ret = new Cons[pageSize];
-    pages.push_back(ret);
-    _conses.elements.reserve(_conses.size() + pageSize);
-    for(std::size_t i = 1; i < pageSize; i++)
-    {
-      _conses.add(ret + i);
-    }
-  }
-  else
-  {
-    ret = _conses.popBack();
-  }
+  Cons * ret = consPages.next();
   ret->refCount = 0;
   ret->consFactory = this;
   // new cons is root with from-color
@@ -266,16 +253,16 @@ void Lisp::ConsFactory::unroot(Cons * cons)
   stepRecycle();
 }
 
+#include <iostream>
 std::size_t Lisp::ConsFactory::numConses(Color color) const
 {
   if(color == Color::Free)
   {
-    std::size_t n = 0;
-    for(auto & v : freeConses)
-    {
-      n+= v.size();
-    }
-    return n;
+    return freeConses.size();
+  }
+  else if(color == Color::Void)
+  {
+    return consPages.getNumVoid();
   }
   else
   {
@@ -296,14 +283,31 @@ std::size_t Lisp::ConsFactory::numReachableConses() const
   return getReachableConsesAsConstSet().size();
 }
 
+std::vector<Cell> Lisp::ConsFactory::getCollectible(Color color) const
+{
+  std::vector<Cell> ret;
+  if(color == Color::Free)
+  {
+    // todo create abstract data structure for free collectible objects
+    freeConses.addTo(ret);
+  }
+  else
+  {
+    conses[(unsigned char)color].addTo(ret);
+  }
+  return ret;
+}
+
 std::vector<Cons*> Lisp::ConsFactory::getConses(Color color) const
 {
+  // todo: replace get cells
   std::vector<Cons*> ret;
   if(color == Color::Free)
   {
-    for(auto & v : freeConses)
+    std::vector<Cell> tmp;
+    for(auto & c : tmp)
     {
-      ret.insert(ret.end(), v.begin(), v.end());
+      ret.push_back(c.as<Cons>());
     }
   }
   else
@@ -399,40 +403,25 @@ void Lisp::ConsFactory::cycleGarbageCollector()
     }
   }
   assert(root.size() >= nRoot);
-  assert(pages.size() * pageSize > root.size());
+  //assert(pages.size() * pageSize > root.size());
   fromColor = Color::White;
   toColor = Color::Black;
   fromRootColor = Color::WhiteRoot;
   toRootColor = Color::BlackRoot;
   conses[(unsigned char)toColor].elements.clear();
   conses[(unsigned char)toColor].elements.reserve(root.size() - nRoot);
-  conses[(unsigned char)Color::Void].elements.clear();
-  conses[(unsigned char)Color::Void].elements.reserve(pages.size() * pageSize - root.size());
+  //conses[(unsigned char)Color::Void].elements.clear();
+  //conses[(unsigned char)Color::Void].elements.reserve(pages.size() * pageSize - root.size());
   conses[(unsigned char)Color::Grey].elements.clear();
   conses[(unsigned char)fromRootColor].elements.reserve(conses[(unsigned char)fromRootColor].size() + conses[(unsigned char)toRootColor].size());
   for(auto obj : conses[(unsigned char)toRootColor].elements)
   {
+    assert(root.find(obj) != root.end());
     conses[(unsigned char)fromRootColor].add(obj);
   }
   conses[(unsigned char)toRootColor].elements.clear();
   conses[(unsigned char)fromColor].elements.clear();
-  for(auto & page : pages)
-  {
-    for(std::size_t i = 0; i < pageSize; i++)
-    {
-      if(page[i].getColor() != fromRootColor)
-      {
-        if(root.find(&page[i]) == root.end())
-        {
-          conses[(unsigned char)Color::Void].add(&page[i]);
-        }
-        else
-        {
-          conses[(unsigned char)toColor].add(&page[i]);
-        }
-      }
-    }
-  }
+  consPages.recycleAll(root, conses[(unsigned char)toColor], fromRootColor);
 }
 
 bool Lisp::ConsFactory::stepGarbageCollector(ConsContainer* container)
@@ -515,8 +504,7 @@ void Lisp::ConsFactory::stepGarbageCollector()
       assert(conses[(unsigned char)Color::Grey].empty());
       assert(conses[(unsigned char)Color::GreyRoot].empty());
       assert(conses[(unsigned char)fromRootColor].empty());
-      freeConses.push_back(std::vector<Cons*>());
-      conses[(unsigned char)fromColor].elements.swap(freeConses.back());
+      freeConses.move(conses[(unsigned char)fromColor]);
       if(toColor == Color::White)
       {
         toColor = Color::Black;
@@ -538,30 +526,20 @@ void Lisp::ConsFactory::stepGarbageCollector()
 void Lisp::ConsFactory::stepRecycle()
 {
   std::size_t i = recycleSteps;
-  while(i && !freeConses.empty())
+  Cons * cons;
+  while(i && (cons = freeConses.popBack()))
   {
-    if(freeConses.back().empty())
+    if(!cons->getCarCell().isA<Cons>())
     {
-      freeConses.pop_back();
+      cons->unsetCar();
     }
-    else
+    if(!cons->getCdrCell().isA<Cons>())
     {
-      auto cons = freeConses.back().back();
-      freeConses.back().pop_back();
-      if(freeConses.back().empty())
-      {
-        freeConses.pop_back();
-      }
-      if(!cons->getCarCell().isA<Cons>())
-      {
-        cons->unsetCar();
-      }
-      if(!cons->getCdrCell().isA<Cons>())
-      {
-        cons->unsetCdr();
-      }
-      conses[(unsigned char)Color::Void].elements.push_back(cons);
+      cons->unsetCdr();
     }
+    //todo move to another unmanged container (because we don't need
+    // index and color managedment overhead
+    consPages.recycle(cons);
     i--;
   }
 }

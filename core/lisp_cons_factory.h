@@ -33,8 +33,10 @@ either expressed or implied, of the FreeBSD Project.
 #include <unordered_set>
 #include <unordered_map>
 #include <memory>
-#include "core/gc/collectible_container.h"
-#include "core/gc/color.h"
+#include <core/gc/collectible_container.h>
+#include <core/gc/unmanaged_collectible_container.h>
+#include <core/gc/color.h>
+#include <core/gc/garbage_collector.h>
 
 // @todo move to config.h
 #define CONS_PAGE_SIZE 512
@@ -47,7 +49,8 @@ namespace Lisp
   //todo: remove
   class ConsContainer;
   class Array;
-  class ConsFactory
+  // todo: eventually replace by GC
+  class ConsFactory : public GarbageCollector
   {
   public:
     using Color = Lisp::Color;
@@ -124,8 +127,16 @@ namespace Lisp
      */
     std::size_t numReachableConses() const;
 
+    std::vector<Cell> getCollectible() const;
+    std::vector<Cell> getCollectible(Color color) const;
+    std::vector<Cell> getRootCollectible() const;
+    std::vector<Cell> getReachable() const;
+
+    // todo replace with getCollectible
     std::vector<Cons*> getConses(Color color) const;
+    // todo replace with getRootCollectible
     std::vector<Cons*> getRootConses() const;
+    // todo replace with reachable 
     std::vector<Cons*> getReachableConses() const;
     std::unordered_set<const Cons*> getReachableConsesAsConstSet() const;
     std::unordered_set<Cons*> getReachableConsesAsSet() const;
@@ -153,7 +164,7 @@ namespace Lisp
     Color toRootColor;
     std::vector<Cons*> pages;
     CollectibleContainer<Cons> conses[7];
-    std::vector<std::vector<Cons*> > freeConses;
+    UnmanagedCollectibleContainer<Cons> freeConses;
 
     std::vector<ConsContainer*> consContainers[7];
 

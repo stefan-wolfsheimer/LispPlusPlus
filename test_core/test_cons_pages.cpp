@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2017, Stefan Wolfsheimer
+Copyright (c) 2018, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -28,54 +28,53 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#include <assert.h>
-#include <core/lisp_cons_factory.h>
-#include "cons.h"
+#include <catch.hpp>
+#include <core/gc/cons_pages.h>
+#include <core/types/cons.h>
 
+using ConsPages = Lisp::ConsPages;
 using Cons = Lisp::Cons;
 
-Lisp::Cons::Cons() :
-   color(Color::Void),
-   refCount(0),
-   car(Lisp::nil),
-   cdr(Lisp::nil)
+TEST_CASE("cons_pages_life_time", "[ConsPages]")
 {
-}
-
-void Lisp::Cons::unroot()
-{
-  if(!--refCount)
-  {
-    consFactory->unroot(this);
-  }
-}
-
-void Lisp::Cons::root()
-{
-  if(isRoot())
-  {
-    ++refCount;
-  }
-  else
-  {
-    consFactory->root(this);
-  }
-}
-
-
-void Lisp::Cons::setCar(Cons * cons, TypeId _typeId)
-{
-  car = Lisp::nil;
-  car.typeId = _typeId; 
-  car.data.ptr = cons;
-  consFactory->gcStep(this);
-}
-
-void Lisp::Cons::setCdr(Cons * cons, TypeId _typeId)
-{
-  cdr = Lisp::nil;
-  cdr.typeId = _typeId;
-  cdr.data.ptr = cons;
-  consFactory->gcStep(this);
+  ConsPages pages(4);
+  REQUIRE(pages.getPageSize() == 4u);
+  REQUIRE(pages.getNumAllocated() == 0u);
+  REQUIRE(pages.getNumVoid() == 0u);
+  Cons * cons1 = pages.next();
+  REQUIRE(pages.getNumAllocated() == 4u);
+  REQUIRE(pages.getNumVoid() == 3u);
+  Cons * cons2 = pages.next();
+  REQUIRE(pages.getNumAllocated() == 4u);
+  REQUIRE(pages.getNumVoid() == 2u);
+  Cons * cons3 = pages.next();
+  REQUIRE(pages.getNumAllocated() == 4u);
+  REQUIRE(pages.getNumVoid() == 1u);
+  Cons * cons4 = pages.next();
+  REQUIRE(pages.getNumAllocated() == 4u);
+  REQUIRE(pages.getNumVoid() == 0u);
+  Cons * cons5 = pages.next();
+  REQUIRE(pages.getNumAllocated() == 8u);
+  REQUIRE(pages.getNumVoid() == 3u);
+  pages.recycle(cons1);
+  REQUIRE(pages.getNumRecycled() == 1u);
+  REQUIRE(pages.getNumVoid() == 4u);
+  REQUIRE(pages.next() == cons1);
+  REQUIRE(pages.getNumRecycled() == 0u);
+  REQUIRE(pages.getNumAllocated() == 8u);
+  pages.recycle(cons2);
+  pages.recycle(cons3);
+  pages.recycle(cons4);
+  pages.recycle(cons5);
+  REQUIRE(pages.getNumVoid() == 7u);
+  REQUIRE(pages.getNumRecycled() == 4u);
+  REQUIRE(pages.getNumAllocated() == 8u);
+  REQUIRE(pages.next() == cons5);
+  REQUIRE(pages.next() == cons4);
+  REQUIRE(pages.next() == cons3);
+  REQUIRE(pages.next() == cons2);
+  REQUIRE(pages.getNumRecycled() == 0u);
+  REQUIRE(pages.getNumAllocated() == 8u);
+  REQUIRE(pages.getNumVoid() == 3u);
 }
 
