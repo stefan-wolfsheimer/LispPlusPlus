@@ -36,9 +36,16 @@ using ConsPages = Lisp::ConsPages;
 
 ConsPages::~ConsPages()
 {
-  for(Cons * cons : pages)
+  for(std::size_t p = 0; p < pages.size(); p++)
   {
-    delete[] cons;
+    std::size_t s = (p + 1) == pages.size() ? pos : pageSize;
+    auto & page(pages[p]);
+    for(std::size_t i = 0; i < s; i++)
+    {
+      page[i].unsetCar();
+      page[i].unsetCdr();
+    }
+    delete [] pages[p];
   }
 }
 

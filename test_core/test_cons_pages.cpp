@@ -28,6 +28,8 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
+#include "test_random_access_iterator.h"
+
 #include <catch.hpp>
 #include <core/gc/cons_pages.h>
 #include <core/types/cons.h>
@@ -38,34 +40,52 @@ using Cons = Lisp::Cons;
 TEST_CASE("cons_pages_life_time", "[ConsPages]")
 {
   ConsPages pages(4);
+  REQUIRE(testRandomAccessIterator({}, pages.cbegin(), pages.cend()));
   REQUIRE(pages.getPageSize() == 4u);
   REQUIRE(pages.getNumAllocated() == 0u);
   REQUIRE(pages.getNumVoid() == 0u);
   Cons * cons1 = pages.next();
+  REQUIRE(testRandomAccessIterator({cons1},
+                                   pages.cbegin(), pages.cend()));
   REQUIRE(pages.getNumAllocated() == 4u);
   REQUIRE(pages.getNumVoid() == 3u);
   Cons * cons2 = pages.next();
+  REQUIRE(testRandomAccessIterator({cons1, cons2},
+                                   pages.cbegin(), pages.cend()));
   REQUIRE(pages.getNumAllocated() == 4u);
   REQUIRE(pages.getNumVoid() == 2u);
   Cons * cons3 = pages.next();
+  REQUIRE(testRandomAccessIterator({cons1, cons2, cons3},
+                                   pages.cbegin(), pages.cend()));
   REQUIRE(pages.getNumAllocated() == 4u);
   REQUIRE(pages.getNumVoid() == 1u);
   Cons * cons4 = pages.next();
+  REQUIRE(testRandomAccessIterator({cons1, cons2, cons3, cons4},
+                                   pages.cbegin(), pages.cend()));
+
   REQUIRE(pages.getNumAllocated() == 4u);
   REQUIRE(pages.getNumVoid() == 0u);
   Cons * cons5 = pages.next();
+  REQUIRE(testRandomAccessIterator({cons1, cons2, cons3, cons4, cons5},
+                                   pages.cbegin(), pages.cend()));
   REQUIRE(pages.getNumAllocated() == 8u);
   REQUIRE(pages.getNumVoid() == 3u);
   pages.recycle(cons1);
+  REQUIRE(testRandomAccessIterator({cons1, cons2, cons3, cons4, cons5},
+                                   pages.cbegin(), pages.cend()));
   REQUIRE(pages.getNumRecycled() == 1u);
   REQUIRE(pages.getNumVoid() == 4u);
   REQUIRE(pages.next() == cons1);
+  REQUIRE(testRandomAccessIterator({cons1, cons2, cons3, cons4, cons5},
+                                   pages.cbegin(), pages.cend()));
   REQUIRE(pages.getNumRecycled() == 0u);
   REQUIRE(pages.getNumAllocated() == 8u);
   pages.recycle(cons2);
   pages.recycle(cons3);
   pages.recycle(cons4);
   pages.recycle(cons5);
+  REQUIRE(testRandomAccessIterator({cons1, cons2, cons3, cons4, cons5},
+                                   pages.cbegin(), pages.cend()));
   REQUIRE(pages.getNumVoid() == 7u);
   REQUIRE(pages.getNumRecycled() == 4u);
   REQUIRE(pages.getNumAllocated() == 8u);

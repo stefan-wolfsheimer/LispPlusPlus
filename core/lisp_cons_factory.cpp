@@ -46,12 +46,12 @@ using Array = Lisp::Array;
 Lisp::ConsFactory::ConsFactory(std::size_t _pageSize,
                                unsigned short _garbageSteps,
                                unsigned short _recycleSteps) :
-   GarbageCollector(_pageSize),
-   garbageSteps(_garbageSteps),
-   recycleSteps(_recycleSteps),
-   backGarbageSteps(_garbageSteps),
-   backRecycleSteps(_recycleSteps),
-   pageSize(_pageSize),
+   GarbageCollector(_pageSize, _garbageSteps, _recycleSteps),
+   //garbageSteps(_garbageSteps),
+   //recycleSteps(_recycleSteps),
+   //backGarbageSteps(_garbageSteps),
+   //backRecycleSteps(_recycleSteps),
+   //pageSize(_pageSize),
    fromColor(Color::White),
    toColor(Color::Black),
    fromRootColor(Color::WhiteRoot),
@@ -68,15 +68,6 @@ Lisp::ConsFactory::ConsFactory(std::size_t _pageSize,
 
 Lisp::ConsFactory::~ConsFactory()
 {
-  for(auto ptr : pages)
-  {
-    for(std::size_t i = 0; i < pageSize; i++)
-    {
-      ptr[i].unsetCar();
-      ptr[i].unsetCdr();
-    }
-    delete [] ptr;
-  }
 }
 
 void ConsFactory::disableGarbageCollector()
@@ -253,7 +244,6 @@ void Lisp::ConsFactory::unroot(Cons * cons)
   stepRecycle();
 }
 
-#include <iostream>
 std::size_t Lisp::ConsFactory::numConses(Color color) const
 {
   if(color == Color::Free)

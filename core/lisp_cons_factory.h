@@ -153,16 +153,11 @@ namespace Lisp
 
     template<typename T>
     inline std::unordered_set<T*> getReachableConsesAsSetIntneral() const;
-    unsigned short int garbageSteps;
-    unsigned short int recycleSteps;
-    unsigned short int backGarbageSteps;
-    unsigned short int backRecycleSteps;
-    std::size_t pageSize;
+
     Color fromColor;
     Color toColor;
     Color fromRootColor;
     Color toRootColor;
-    std::vector<Cons*> pages;
     CollectibleContainer<Cons> conses[7];
     UnmanagedCollectibleContainer<Cons> freeConses;
 
