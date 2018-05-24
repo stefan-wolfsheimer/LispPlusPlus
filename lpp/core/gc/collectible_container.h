@@ -31,8 +31,8 @@ either expressed or implied, of the FreeBSD Project.
 #pragma once
 #include <vector>
 #include <assert.h>
-#include <core/gc/color.h>
-#include <core/lisp_cell.h>
+#include <lpp/core/gc/color.h>
+#include <lpp/core/lisp_cell.h>
 
 namespace Lisp
 {

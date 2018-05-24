@@ -35,7 +35,6 @@ either expressed or implied, of the FreeBSD Project.
 #include <unordered_map>
 #include <map>
 #include <cstdint>
-#include "core/lisp_cons_factory.h"
 
 namespace Lisp
 {

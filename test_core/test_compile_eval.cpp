@@ -29,9 +29,9 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include <catch.hpp>
-#include <core/lisp_vm.h>
-#include <core/types/lisp_string.h>
-#include <core/types/lisp_function.h>
+#include <lpp/core/lisp_vm.h>
+#include <lpp/core/types/lisp_string.h>
+#include <lpp/core/types/lisp_function.h>
 
 using Vm = Lisp::Vm;
 using Object = Lisp::Object;

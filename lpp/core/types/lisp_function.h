@@ -29,84 +29,31 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
+#include <cstdint>
 #include <vector>
-#include <assert.h>
-#include <core/gc/color.h>
-#include <core/gc/collectible_container.h>
-#include <core/lisp_cell.h>
+#include <lpp/core/lisp_object.h>
+#include <lpp/core/types/lisp_type_id.h>
 
 namespace Lisp
 {
-  template<typename T>
-  class UnmanagedCollectibleContainer
+  class Object;
+  class Vm;
+  class Function : public ManagedType
   {
   public:
-    inline void move(Lisp::CollectibleContainer<T> & rhs);
-    inline bool empty() const;
-    inline std::size_t size() const;
-    inline void addTo(std::vector<Cell> & cells) const;
-    T * popBack();
+    typedef std::size_t InstructionType;
   private:
-    std::vector<std::vector<T*> > elements;
+    friend class Vm;
+    Function(std::size_t reserveInstr, std::size_t reserveData);
+    typedef std::vector<std::pair<InstructionType, std::size_t> > ProgramType;
+    ProgramType instr;
+    std::vector<Object> data;
   };
 }
 
-template<typename T>
-inline void Lisp::UnmanagedCollectibleContainer<T>
-::move(Lisp::CollectibleContainer<T> & rhs)
+inline Lisp::Function::Function(std::size_t reserveInstr,
+                                std::size_t reserveData)
 {
-  if(!rhs.elements.empty())
-  {
-    elements.push_back(std::vector<T*>());
-    rhs.elements.swap(elements.back());
-  }
-}
-
-template<typename T>
-inline bool Lisp::UnmanagedCollectibleContainer<T>::empty() const
-{
-  return elements.empty();
-}
-
-template<typename T>
-inline std::size_t Lisp::UnmanagedCollectibleContainer<T>::size() const
-{
-  std::size_t n = 0;
-  for(auto & v : elements)
-  {
-    n+= v.size();
-  }
-  return n;
-}
-
-template<typename T>
-inline void
-Lisp::UnmanagedCollectibleContainer<T>::addTo(std::vector<Cell> & cells) const
-{
-  for(auto & v : elements)
-  {
-    for(auto & c : v)
-    {
-      cells.push_back(Cell(c));
-    }
-  }
-}
-
-template<typename T>
-T * Lisp::UnmanagedCollectibleContainer<T>::popBack()
-{
-  if(elements.empty())
-  {
-    return nullptr;
-  }
-  else
-  {
-    T * ret = elements.back().back();
-    elements.back().pop_back();
-    if(elements.back().empty())
-    {
-      elements.pop_back();
-    }
-    return ret;
-  }
+  instr.reserve(reserveInstr);
+  data.reserve(reserveData);
 }

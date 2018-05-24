@@ -1,4 +1,4 @@
-#include "core/gc/garbage_collector.h"
+#include <lpp/core/gc/garbage_collector.h>
 
 using GarbageCollector = Lisp::GarbageCollector;
 using Cell = Lisp::Cell;

@@ -30,10 +30,9 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
 #include <cstdint>
-#include <core/gc/color.h>
-#include "lisp_type_id.h"
-#include "core/lisp_object.h"
- //#include "core/lisp_cons_factory.h"
+#include <lpp/core/gc/color.h>
+#include <lpp/core/lisp_object.h>
+#include <lpp/core/types/lisp_type_id.h>
 
 namespace Lisp
 {

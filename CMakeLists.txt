@@ -56,5 +56,5 @@ ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
 add_executable(sim_cons_factory sim_cons_factory.cpp)
 target_link_libraries(sim_cons_factory Simul Core)
 
-add_subdirectory (core)
+add_subdirectory (lpp/core)
 add_subdirectory (simul)

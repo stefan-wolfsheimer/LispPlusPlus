@@ -30,8 +30,8 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include "lisp_cons_graph_edge.h"
 #include "lisp_cons_graph_node.h"
-#include "core/types/cons.h"
 #include <unordered_set>
+#include <lpp/core/types/cons.h>
 
 using ConsGraphNode = Lisp::ConsGraphNode;
 using ConsGraphEdge = Lisp::ConsGraphEdge;

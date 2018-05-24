@@ -29,8 +29,8 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include <catch.hpp>
-#include "core/lisp_object.h"
-#include "core/types/lisp_type_id.h"
+#include <lpp/core/lisp_object.h>
+#include <lpp/core/types/lisp_type_id.h>
 
 using Object = Lisp::Object;
 using IntegerType = Lisp::IntegerType;

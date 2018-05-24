@@ -33,12 +33,12 @@ either expressed or implied, of the FreeBSD Project.
 #include <unordered_set>
 #include <catch.hpp>
 
-#include "core/lisp_cons_factory.h"
-#include "core/types/cons.h"
+#include <lpp/core/lisp_cons_factory.h>
+#include <lpp/core/types/cons.h>
 // todo: replace ConsContainer
-#include "core/types/lisp_cons_container.h"
-#include "core/types/lisp_array.h"
-#include "core/lisp_object.h"
+#include <lpp/core/types/lisp_cons_container.h>
+#include <lpp/core/types/lisp_array.h>
+#include <lpp/core/lisp_object.h>
 #include "simul/lisp_cons_graph.h"
 #include "simul/lisp_cons_graph_edge.h"
 #include "simul/lisp_cons_graph_node.h"

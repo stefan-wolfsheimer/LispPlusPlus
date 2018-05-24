@@ -1,5 +1,5 @@
 #include "lisp_symbol.h"
-#include "core/lisp_symbol_factory.h"
+#include <lpp/core/lisp_symbol_factory.h>
 using Symbol = Lisp::Symbol;
 
 Symbol::~Symbol()

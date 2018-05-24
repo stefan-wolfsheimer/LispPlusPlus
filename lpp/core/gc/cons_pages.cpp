@@ -28,32 +28,51 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#pragma once
-#include <cstdint>
-#include <vector>
-#include "core/lisp_object.h"
-#include "core/types/lisp_type_id.h"
 
-namespace Lisp
+#include <lpp/core/gc/cons_pages.h>
+#include <lpp/core/gc/collectible_container.h>
+
+using ConsPages = Lisp::ConsPages;
+
+ConsPages::~ConsPages()
 {
-  class Object;
-  class Vm;
-  class Function : public ManagedType
+  for(std::size_t p = 0; p < pages.size(); p++)
   {
-  public:
-    typedef std::size_t InstructionType;
-  private:
-    friend class Vm;
-    Function(std::size_t reserveInstr, std::size_t reserveData);
-    typedef std::vector<std::pair<InstructionType, std::size_t> > ProgramType;
-    ProgramType instr;
-    std::vector<Object> data;
-  };
+    std::size_t s = (p + 1) == pages.size() ? pos : pageSize;
+    auto & page(pages[p]);
+    for(std::size_t i = 0; i < s; i++)
+    {
+      page[i].unsetCar();
+      page[i].unsetCdr();
+    }
+    delete [] pages[p];
+  }
 }
 
-inline Lisp::Function::Function(std::size_t reserveInstr,
-                                std::size_t reserveData)
+void ConsPages::recycleAll(const std::unordered_set<Cons*> & reachable,
+                           CollectibleContainer<Cons> & target,
+                           Color ignoreColor)
 {
-  instr.reserve(reserveInstr);
-  data.reserve(reserveData);
+  recycled.clear();
+  for(std::size_t p = 0; p < pages.size(); p++)
+  {
+    // todo use iterators when friendship is removed
+    std::size_t s = (p + 1) == pages.size() ? pos : pageSize;
+    auto & page(pages[p]);
+    for(std::size_t i = 0; i < s; i++)
+    {
+      if(reachable.find(&page[i]) == reachable.end())
+      {
+        recycle(&page[i]);
+      }
+      else
+      {
+        if(page[i].getColor() != ignoreColor)
+        {
+          target.add(&page[i]);
+        }
+      }
+    }
+  }
 }
+

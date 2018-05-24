@@ -1,7 +1,7 @@
 #include <vector>
-#include <core/gc/cons_pages.h>
-#include <core/gc/collectible_container.h>
-#include <core/gc/unmanaged_collectible_container.h>
+#include <lpp/core/gc/cons_pages.h>
+#include <lpp/core/gc/collectible_container.h>
+#include <lpp/core/gc/unmanaged_collectible_container.h>
 
 #define CONS_PAGE_SIZE 512
 

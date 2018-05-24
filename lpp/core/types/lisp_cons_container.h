@@ -32,7 +32,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <cstdint>
 #include <vector>
 #include <assert.h>
-#include "core/lisp_cons_factory.h"
+#include <lpp/core/lisp_cons_factory.h>
 
 
 namespace Lisp

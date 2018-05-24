@@ -33,10 +33,10 @@ either expressed or implied, of the FreeBSD Project.
 #include <unordered_set>
 #include <unordered_map>
 #include <memory>
-#include <core/gc/collectible_container.h>
-#include <core/gc/unmanaged_collectible_container.h>
-#include <core/gc/color.h>
-#include <core/gc/garbage_collector.h>
+#include <lpp/core/gc/collectible_container.h>
+#include <lpp/core/gc/unmanaged_collectible_container.h>
+#include <lpp/core/gc/color.h>
+#include <lpp/core/gc/garbage_collector.h>
 
 // @todo move to config.h
 #define CONS_PAGE_SIZE 512

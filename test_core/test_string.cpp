@@ -29,8 +29,8 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include <catch.hpp>
-#include "core/lisp_cell.h"
-#include "core/types/lisp_string.h"
+#include <lpp/core/lisp_cell.h>
+#include <lpp/core/types/lisp_string.h>
 
 using Cell = Lisp::Cell;
 using String = Lisp::String;

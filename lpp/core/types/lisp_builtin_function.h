@@ -1,6 +1,6 @@
 #pragma once
 #include <functional>
-#include "core/types/lisp_function_interface.h"
+#include <lpp/core/types/lisp_function_interface.h>
 
 namespace Lisp
 {
