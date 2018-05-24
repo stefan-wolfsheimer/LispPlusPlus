@@ -55,14 +55,14 @@ Lisp::ConsFactory::ConsFactory(std::size_t _pageSize,
    fromColor(Color::White),
    toColor(Color::Black),
    fromRootColor(Color::WhiteRoot),
-   toRootColor(Color::BlackRoot),
-   conses({ CollectibleContainer<Cons>(Lisp::Color::Void, this),
+   toRootColor(Color::BlackRoot)
+   /*conses({ CollectibleContainer<Cons>(Lisp::Color::Void, this),
             CollectibleContainer<Cons>(Lisp::Color::White, this),
             CollectibleContainer<Cons>(Lisp::Color::Grey, this),
             CollectibleContainer<Cons>(Lisp::Color::Black, this),
             CollectibleContainer<Cons>(Lisp::Color::WhiteRoot, this),
             CollectibleContainer<Cons>(Lisp::Color::GreyRoot, this),
-            CollectibleContainer<Cons>(Lisp::Color::BlackRoot, this) })
+            CollectibleContainer<Cons>(Lisp::Color::BlackRoot, this) }) */
 {
 }
 
@@ -271,21 +271,6 @@ std::size_t Lisp::ConsFactory::numRootConses() const
 std::size_t Lisp::ConsFactory::numReachableConses() const
 {
   return getReachableConsesAsConstSet().size();
-}
-
-std::vector<Cell> Lisp::ConsFactory::getCollectible(Color color) const
-{
-  std::vector<Cell> ret;
-  if(color == Color::Free)
-  {
-    // todo create abstract data structure for free collectible objects
-    freeConses.addTo(ret);
-  }
-  else
-  {
-    conses[(unsigned char)color].addTo(ret);
-  }
-  return ret;
 }
 
 std::vector<Cons*> Lisp::ConsFactory::getConses(Color color) const

@@ -39,7 +39,7 @@ namespace Lisp
   template<typename T>
   class UnmanagedCollectibleContainer;
 
-  class ConsFactory; //todo rename to GarbageCollector
+  class GarbageCollector;
   
   template<typename T>
   class CollectibleContainer
@@ -47,7 +47,7 @@ namespace Lisp
   public:
     friend class ConsFactory; //todo rename to GarbageCollector
     friend class UnmanagedCollectibleContainer<T>;
-    CollectibleContainer(Color _color, ConsFactory * _gc);
+    CollectibleContainer(Color _color, GarbageCollector * _gc);
     inline Color getColor() const;
     inline ConsFactory * getCollector() const;
     inline void remove(T * obj);
@@ -56,16 +56,21 @@ namespace Lisp
     inline bool empty() const;
     inline std::size_t size() const;
     inline void addTo(std::vector<Cell> & cells) const;
+
+    using const_iterator = typename std::vector<T*>::const_iterator;
+    inline const_iterator cbegin();
+    inline const_iterator cend();
+
   private:
     std::vector<T*> elements;
-    ConsFactory * gc;
+    GarbageCollector * gc;
     Color color;
   };
 }
 
 template<typename T>
 inline Lisp::CollectibleContainer<T>::CollectibleContainer(Color _color,
-                                                           ConsFactory * _gc)
+                                                           GarbageCollector * _gc)
   : gc(_gc), color(_color)
 {
 }
@@ -128,4 +133,16 @@ void Lisp::CollectibleContainer<T>::addTo(std::vector<Cell> & cells) const
   {
     cells.push_back(p);
   }
+}
+
+template<typename T>
+typename Lisp::CollectibleContainer<T>::const_iterator Lisp::CollectibleContainer<T>::cbegin()
+{
+  return elements.cbegin();
+}
+
+template<typename T>
+typename Lisp::CollectibleContainer<T>::const_iterator Lisp::CollectibleContainer<T>::cend()
+{
+  return elements.cend();
 }

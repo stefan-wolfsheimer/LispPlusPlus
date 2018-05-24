@@ -127,11 +127,6 @@ namespace Lisp
      */
     std::size_t numReachableConses() const;
 
-    std::vector<Cell> getCollectible() const;
-    std::vector<Cell> getCollectible(Color color) const;
-    std::vector<Cell> getRootCollectible() const;
-    std::vector<Cell> getReachable() const;
-
     // todo replace with getCollectible
     std::vector<Cons*> getConses(Color color) const;
     // todo replace with getRootCollectible
@@ -158,8 +153,8 @@ namespace Lisp
     Color toColor;
     Color fromRootColor;
     Color toRootColor;
-    CollectibleContainer<Cons> conses[7];
-    UnmanagedCollectibleContainer<Cons> freeConses;
+    //CollectibleContainer<Cons> conses[7];
+    //UnmanagedCollectibleContainer<Cons> freeConses;
 
     std::vector<ConsContainer*> consContainers[7];
 
