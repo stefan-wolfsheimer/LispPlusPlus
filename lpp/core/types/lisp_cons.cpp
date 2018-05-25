@@ -35,11 +35,11 @@ either expressed or implied, of the FreeBSD Project.
 using Cons = Lisp::Cons;
 
 Lisp::Cons::Cons() :
-   color(Color::Void),
-   refCount(0),
    car(Lisp::nil),
    cdr(Lisp::nil)
 {
+  color = Color::Void;
+  refCount = 0;
 }
 
 void Lisp::Cons::unroot()

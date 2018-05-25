@@ -13,14 +13,16 @@ namespace Lisp
     GarbageCollector(std::size_t consPageSize,
                      unsigned short _garbageSteps=1,
                      unsigned short _recycleSteps=1);
+
     std::vector<Cell> getCollectible() const;
     std::vector<Cell> getCollectible(Color color) const;
+    std::vector<Cell> getDisposedCollectible() const;
     std::vector<Cell> getRootCollectible() const;
     std::vector<Cell> getReachable() const;
 
   protected: //todo make private
     CollectibleContainer<Cons> conses[7];
-    UnmanagedCollectibleContainer<Cons> freeConses;
+    UnmanagedCollectibleContainer<Cons> freeConses; // todo: rename to disposed
 
     ConsPages consPages;
     unsigned short int garbageSteps;

@@ -279,11 +279,11 @@ std::vector<Cons*> Lisp::ConsFactory::getConses(Color color) const
   std::vector<Cons*> ret;
   if(color == Color::Free)
   {
-    std::vector<Cell> tmp;
-    for(auto & c : tmp)
-    {
-      ret.push_back(c.as<Cons>());
-    }
+    //std::vector<Cell> tmp;
+    //for(auto & c : tmp)
+    //{
+    //  ret.push_back(c.as<Cons>());
+    //}
   }
   else
   {

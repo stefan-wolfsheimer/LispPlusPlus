@@ -30,15 +30,17 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
 #include <cstdint>
-#include <lpp/core/gc/color.h>
+#include <lpp/core/types/collectible.h>
 #include <lpp/core/lisp_object.h>
 #include <lpp/core/types/lisp_type_id.h>
+
 
 namespace Lisp
 {
   class ConsFactory;
   template<typename T> class CollectibleContainer;
-  class Cons : public BasicType
+
+  class Cons : public Collectible
   {
     // todo: derive from GarbageCollectable
   public:
@@ -68,10 +70,10 @@ namespace Lisp
   private:
     // todo reduce memory footprint
     // reference to color vector
-    ConsFactory * consFactory;
-    Color color;
-    std::size_t refCount;
-    std::size_t index;
+    //ConsFactory * consFactory;
+    //Color color;
+    //std::size_t refCount;
+    //std::size_t index;
     Cell car;
     Cell cdr;
     void unroot();
