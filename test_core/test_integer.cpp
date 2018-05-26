@@ -30,16 +30,16 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include <catch.hpp>
 #include <lpp/core/lisp_object.h>
-#include <lpp/core/types/lisp_type_id.h>
+#include <lpp/core/types/type_id.h>
 
 using Object = Lisp::Object;
 using IntegerType = Lisp::IntegerType;
-using AtomType = Lisp::AtomType;
+//using AtomType = Lisp::AtomType;
 
 TEST_CASE("integer_is_a_integer", "[Integer]")
 {
   Object obj(2);
   REQUIRE(obj.isA<IntegerType>());
-  REQUIRE(obj.isA<AtomType>());
+  //REQUIRE(obj.isA<AtomType>());
   REQUIRE(obj.as<IntegerType>() == 2);
 }

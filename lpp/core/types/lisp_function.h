@@ -32,7 +32,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <cstdint>
 #include <vector>
 #include <lpp/core/lisp_object.h>
-#include <lpp/core/types/lisp_type_id.h>
+#include <lpp/core/types/type_id.h>
 
 namespace Lisp
 {

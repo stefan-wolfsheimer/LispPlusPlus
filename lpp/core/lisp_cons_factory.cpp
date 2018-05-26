@@ -46,23 +46,7 @@ using Array = Lisp::Array;
 Lisp::ConsFactory::ConsFactory(std::size_t _pageSize,
                                unsigned short _garbageSteps,
                                unsigned short _recycleSteps) :
-   GarbageCollector(_pageSize, _garbageSteps, _recycleSteps),
-   //garbageSteps(_garbageSteps),
-   //recycleSteps(_recycleSteps),
-   //backGarbageSteps(_garbageSteps),
-   //backRecycleSteps(_recycleSteps),
-   //pageSize(_pageSize),
-   fromColor(Color::White),
-   toColor(Color::Black),
-   fromRootColor(Color::WhiteRoot),
-   toRootColor(Color::BlackRoot)
-   /*conses({ CollectibleContainer<Cons>(Lisp::Color::Void, this),
-            CollectibleContainer<Cons>(Lisp::Color::White, this),
-            CollectibleContainer<Cons>(Lisp::Color::Grey, this),
-            CollectibleContainer<Cons>(Lisp::Color::Black, this),
-            CollectibleContainer<Cons>(Lisp::Color::WhiteRoot, this),
-            CollectibleContainer<Cons>(Lisp::Color::GreyRoot, this),
-            CollectibleContainer<Cons>(Lisp::Color::BlackRoot, this) }) */
+   GarbageCollector(_pageSize, _garbageSteps, _recycleSteps)
 {
 }
 
@@ -90,26 +74,6 @@ void ConsFactory::enableGarbageCollector()
 void ConsFactory::enableGarbageRecycling()
 {
   recycleSteps = backRecycleSteps;
-}
-
-Lisp::ConsFactory::Color Lisp::ConsFactory::getFromColor() const
-{
-  return fromColor;
-}
-
-Lisp::ConsFactory::Color Lisp::ConsFactory::getToColor() const
-{
-  return toColor;
-}
-
-Lisp::ConsFactory::Color Lisp::ConsFactory::getFromRootColor() const
-{
-  return fromRootColor;
-}
-
-Lisp::ConsFactory::Color Lisp::ConsFactory::getToRootColor() const
-{
-  return toRootColor;
 }
 
 void Lisp::ConsFactory::gcStep(Cons * cons)

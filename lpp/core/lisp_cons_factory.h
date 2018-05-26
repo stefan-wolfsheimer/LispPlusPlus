@@ -64,11 +64,6 @@ namespace Lisp
     void enableGarbageCollector();
     void enableGarbageRecycling();
 
-    Color getFromColor() const;
-    Color getToColor() const;
-    Color getFromRootColor() const;
-    Color getToRootColor() const;
-
     /**
      * Allocate and initialize a new Cons object in the root set.
      * Reference count is 0.
@@ -149,15 +144,7 @@ namespace Lisp
     template<typename T>
     inline std::unordered_set<T*> getReachableConsesAsSetIntneral() const;
 
-    Color fromColor;
-    Color toColor;
-    Color fromRootColor;
-    Color toRootColor;
-    //CollectibleContainer<Cons> conses[7];
-    //UnmanagedCollectibleContainer<Cons> freeConses;
-
     std::vector<ConsContainer*> consContainers[7];
-
     std::vector<Array*> arrays[7];
   };
 }

@@ -775,7 +775,7 @@ static std::size_t getNumConses(SharedConsFactory factory, Color color)
   if(color != Color::Void)
   {
     auto conses = factory->getConses(color);
-    bool colorOfConsesEqual = Lisp::checkColorOfConses(*factory, color);
+    bool colorOfConsesEqual = factory->checkSanity(color);
     CHECK(colorOfConsesEqual);
     CHECK(nConses == conses.size());
     return (nConses == conses.size() && colorOfConsesEqual) ? nConses : error;

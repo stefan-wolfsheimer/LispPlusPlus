@@ -31,7 +31,8 @@ either expressed or implied, of the FreeBSD Project.
 #pragma once
 #include <cstdint>
 #include <functional>
-#include "lisp_type_id.h"
+#include <lpp/core/types/type_id.h>
+#include <lpp/core/types/managed_type.h>
 
 namespace Lisp
 {

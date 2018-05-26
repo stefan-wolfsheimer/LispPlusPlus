@@ -1,5 +1,5 @@
 #pragma once
-#include "lisp_type_id.h"
+#include <lpp/core/types/type_id.h>
 
 namespace Lisp
 {

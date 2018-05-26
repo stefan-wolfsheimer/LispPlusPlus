@@ -29,33 +29,35 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
-#include <cstdint>
-#include <memory>
 #include <lpp/core/types/type_id.h>
-#include <lpp/core/types/managed_type.h>
 
 namespace Lisp
 {
-  class String : public ManagedType
+  class ManagedType : public BasicType
   {
   public:
-    String(const std::string & str);
-    inline std::string getCString() const;
+    ManagedType();
+    virtual ~ManagedType() {}
+    inline std::size_t getRefCount() const;
   private:
-    std::shared_ptr<std::string> shared_string;
-    std::string::iterator begin;
-    std::string::iterator end;
+    friend class Cell;
+    std::size_t refCount;
   };
 }
 
-inline Lisp::String::String(const std::string & str)
-  : shared_string(std::make_shared<std::string>(str))
+///////////////////////////////////////////////////////////////////////
+//
+// implementation
+//
+///////////////////////////////////////////////////////////////////////
+inline Lisp::ManagedType::ManagedType()
 {
-  begin = shared_string->begin();
-  end = shared_string->end();
+  refCount = 0;
 }
 
-inline std::string Lisp::String::getCString() const
+inline std::size_t Lisp::ManagedType::getRefCount() const
 {
-  return std::string(begin, end);
+  return refCount;
 }
+
+

@@ -8,6 +8,7 @@ using Vm = Lisp::Vm;
 
 Object Vm::compile(const Object & obj) const
 {
+  /*
   if(obj.isA<AtomType>())
   {
     // SETV &1
@@ -16,6 +17,6 @@ Object Vm::compile(const Object & obj) const
     func->instr.push_back(std::make_pair(Lisp::SETV, 0));
     func->data.push_back(obj);
     return Object(func);
-  }
+    }*/
   return Lisp::nil;
 }

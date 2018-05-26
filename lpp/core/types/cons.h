@@ -31,9 +31,8 @@ either expressed or implied, of the FreeBSD Project.
 #pragma once
 #include <cstdint>
 #include <lpp/core/types/collectible.h>
+#include <lpp/core/types/type_id.h>
 #include <lpp/core/lisp_object.h>
-#include <lpp/core/types/lisp_type_id.h>
-
 
 namespace Lisp
 {
@@ -51,9 +50,6 @@ namespace Lisp
     friend class CollectibleContainer<Cons>;
 
     using Color = Lisp::Color;
-    inline std::size_t getRefCount() const;
-    inline Color getColor() const;
-    inline bool isRoot() const;
     inline Object getCar() const;
     inline Object getCdr() const;
     inline const Cell & getCarCell() const;
@@ -66,7 +62,7 @@ namespace Lisp
                 TypeId typeId=TypeTraits<Cons>::typeId);
     void setCdr(Cons * cons,
                 TypeId typeId=TypeTraits<Cons>::typeId);
-    inline std::size_t getIndex() const;
+
   private:
     // todo reduce memory footprint
     // reference to color vector
@@ -81,33 +77,6 @@ namespace Lisp
     Cons();
   };
 }
-
-/******************************************************************************
- * Implementation
- ******************************************************************************/
-std::size_t Lisp::Cons::getRefCount() const
-{
-  return refCount;
-}
-
-Lisp::Cons::Color Lisp::Cons::getColor() const
-{
-  return color;
-}
-
-bool Lisp::Cons::isRoot() const
-{
-  return
-    color == Cons::Color::WhiteRoot ||
-    color == Cons::Color::BlackRoot ||
-    color == Cons::Color::GreyRoot;
-}
-
-std::size_t Lisp::Cons::getIndex() const
-{
-  return index;
-}
-
 
 Lisp::Object Lisp::Cons::getCar() const
 {

@@ -37,14 +37,16 @@ namespace Lisp
 {
   /** typeId
    *  largest bit flags managed types
-   *  00: cons, nil     (0x0000)
+   *  00: nil           (0x0000)
    *  01: value types   (0x4000)
    *  10: managed types (0x8000)
-   *  11: container     (0xc000)
+   *  11: collectible   (0xc000)
    */
 
   typedef ::std::uint_least16_t TypeId;
   typedef ::std::int_fast32_t IntegerType;
+  class ManagedType;
+  class Collectible;
   class Symbol;
   class String;
   class Cons;
@@ -58,24 +60,7 @@ namespace Lisp
   struct Undefined : BasicType {};
 
 
-  struct ContainerType : BasicType
-  {
-    //virtual ~ContainerType() {}
-    //virtual bool stepGarbageCollector(ConsFactory * factory) = 0;
-    //virtual std::vector<Cell> getChildren() const = 0;
-  };
-  
-  class ManagedType : public BasicType
-  {
-  public:
-    ManagedType();
-    virtual ~ManagedType() {}
-    inline std::size_t getRefCount() const;
-  private:
-    friend class Cell;
-    std::size_t refCount;
-  };
-  struct AtomType : ValueType, public ManagedType {};
+  //struct AtomType : ValueType, public ManagedType {};
 
   union CellDataType
   {
@@ -169,12 +154,12 @@ namespace Lisp
   };
 
   template<>
-  struct TypeTraits<Cons> : PointerTypeTraits<0x0002u, Cons>
+  struct TypeTraits<Cons> : PointerTypeTraits<0xc001u, Cons>
   {
   };
 
   template<>
-  struct TypeTraits<const Cons> : PointerTypeTraits<0x0002u, const Cons>
+  struct TypeTraits<const Cons> : PointerTypeTraits<0xc001u, const Cons>
   {
   };
 
@@ -185,14 +170,36 @@ namespace Lisp
     typedef ManagedType * Type;
     static inline bool isA(TypeId tid)
     {
-      return tid & 0x8000;
+      return (tid & 0xc000) == 0x8000;
     }
 
     static inline Type as(const CellDataType & data, TypeId tid)
     {
       if(isA(tid))
       {
-        return static_cast<ManagedType*>(data.ptr);
+        return reinterpret_cast<ManagedType*>(data.ptr);
+      }
+      else
+      {
+        return nullptr;
+      }
+    }
+  };
+
+  template<>
+  struct TypeTraits<Collectible> : public TypeTraits<void>
+  {
+    typedef Collectible * Type;
+    static inline bool isA(TypeId tid)
+    {
+      return (tid & 0xc000) == 0xc000;
+    }
+
+    static inline Type as(const CellDataType & data, TypeId tid)
+    {
+      if(isA(tid))
+      {
+        return reinterpret_cast<Collectible*>(data.ptr);
       }
       else
       {
@@ -206,48 +213,9 @@ namespace Lisp
   {
     static inline bool isA(TypeId tid)
     {
-      return tid & 0x4000;
+      return (tid & 0xc000) == 0x4000;
     }
   };
-
-  template<>
-  struct TypeTraits<AtomType>
-  {
-    static inline bool isA(TypeId tid)
-    {
-      // todo container type is not an atom
-      // check differnt predicates in std scheme
-      return tid & 0xc000;
-    }
-  };
-
-  template<>
-  struct TypeTraits<ContainerType>
-  {
-    static inline bool isA(TypeId tid)
-    {
-      // 00 ^ 11 = 11 -> false (cons, nil)
-      // 01 ^ 11 = 10 -> false (value type)
-      // 10 ^ 11 = 01 -> false (managed type)
-      // 11 ^ 11 = 00 -> true (atom type)
-      return !(tid ^ 0xc000);
-    }
-  };
-}
-
-///////////////////////////////////////////////////////////////////////
-//
-// ManagedType
-//
-///////////////////////////////////////////////////////////////////////
-inline Lisp::ManagedType::ManagedType()
-{
-  refCount = 0;
-}
-
-inline std::size_t Lisp::ManagedType::getRefCount() const
-{
-  return refCount;
 }
 
 

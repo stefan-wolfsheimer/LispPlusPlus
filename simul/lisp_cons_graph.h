@@ -42,7 +42,9 @@ namespace Lisp
   class ConsGraphEdge;
   class ConsGraphNode;
 
+  //todo: remove this function and use garbagecollector method instead
   bool checkConsFactory(const ConsFactory & factory);
+  //todo: remove this function and use garbagecollector method instead
   bool checkColorOfConses(const ConsFactory & factory,
                           Lisp::ConsFactory::Color color);
 
