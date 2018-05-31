@@ -31,46 +31,52 @@ either expressed or implied, of the FreeBSD Project.
 #include <catch.hpp>
 #include <lpp/core/lisp_vm.h>
 #include <lpp/core/types/cons.h>
+#include <lpp/core/lisp_cell.h>
+#include "test_random_access_iterator.h"
+
+using Cell = Lisp::Cell;
+using Cons = Lisp::Cons;
+using Color = Lisp::Color;
+using Object = Lisp::Object;
 
 TEST_CASE("cons_allocator_color_has_size_1", "[Cons]")
 {
-  REQUIRE(sizeof(Lisp::Cons::Color) == 1u);
+  REQUIRE(sizeof(Color) == 1u);
 }
 
 TEST_CASE("nil_is_not_a_cons", "[Cons]")
 {
-  REQUIRE_FALSE(Lisp::nil.isA<Lisp::Cons>());
+  REQUIRE_FALSE(Lisp::nil.isA<Cons>());
 }
 
 TEST_CASE("nil_as_cons_is_pullptr", "[Cons]")
 {
-  REQUIRE(Lisp::nil.as<Lisp::Cons>() == nullptr);
+  REQUIRE(Lisp::nil.as<Cons>() == nullptr);
 }
 
 TEST_CASE("cons_is_a_cons", "[Cons]")
 {
   Lisp::Vm vm;
   auto obj = vm.cons(Lisp::nil, Lisp::nil);
-  REQUIRE(obj.isA<Lisp::Cons>());
+  REQUIRE(obj.isA<Cons>());
 }
 
 TEST_CASE("cons_as_cons_is_cons", "[Cons]")
 {
   Lisp::Vm vm;
   auto obj = vm.cons(Lisp::nil, Lisp::nil);
-  REQUIRE(obj.as<Lisp::Cons>());
+  REQUIRE(obj.as<Cons>());
 }
 
 TEST_CASE("cons_has_refcount_1", "[Cons]")
 {
   Lisp::Vm vm;
   auto obj = vm.cons(Lisp::nil, Lisp::nil);
-  REQUIRE(obj.as<Lisp::Cons>()->getRefCount() == 1u);
+  REQUIRE(obj.as<Cons>()->getRefCount() == 1u);
 }
 
 TEST_CASE("cons_is_root", "[Cons]")
 {
-  using Cons = Lisp::Cons;
   Lisp::Vm vm;
   auto obj = vm.cons(Lisp::nil, Lisp::nil);
   REQUIRE(obj.as<Cons>()->isRoot());

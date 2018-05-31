@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
 #include <cstdint>
+#include <functional>
 #include <lpp/core/types/type_id.h>
 #include <lpp/core/types/managed_type.h>
 
@@ -64,7 +65,8 @@ namespace Lisp
 
     template<typename T>
     inline typename Lisp::TypeTraits<T>::Type as() const;
-    
+
+    void forEachChild(std::function<void(const Cell&)> func) const;
   protected:
     TypeId typeId;
     CellDataType data;
@@ -121,3 +123,4 @@ inline typename Lisp::TypeTraits<T>::Type Lisp::Cell::as() const
 {
   return TypeTraits<T>::as(data, typeId);
 }
+

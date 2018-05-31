@@ -38,15 +38,24 @@ namespace Lisp
   /** typeId
    *  largest bit flags managed types
    *  00: nil           (0x0000)
+   *      cons          (0x0002)
    *  01: value types   (0x4000)
    *  10: managed types (0x8000)
-   *  11: collectible   (0xc000)
+   *  11: collectibleContainer   (0xc000)
    */
 
   typedef ::std::uint_least16_t TypeId;
   typedef ::std::int_fast32_t IntegerType;
   class ManagedType;
   class Collectible;
+  /** 
+        BasicType
+           |
+      Collectible
+         /    \
+     Cons      Container
+   */
+  class Container;
   class Symbol;
   class String;
   class Cons;
@@ -84,12 +93,19 @@ namespace Lisp
   };
 
   template<TypeId TID, typename T>
-  struct PointerTypeTraits : public TypeIdTraits<TID>
+  struct PointerTypeTraits
   {
+    static const TypeId typeId = TID;
     typedef T * Type;
+
+    static inline bool isA(TypeId tid)
+    {
+      return tid == typeId;
+    }
+
     static inline Type as(const CellDataType & data, TypeId tid)
     {
-      if(TypeIdTraits<TID>::isA(tid))
+      if(isA(tid))
       {
         return static_cast<T*>(data.ptr);
       }
@@ -154,12 +170,12 @@ namespace Lisp
   };
 
   template<>
-  struct TypeTraits<Cons> : PointerTypeTraits<0xc001u, Cons>
+  struct TypeTraits<Cons> : PointerTypeTraits<0x0002u, Cons>
   {
   };
 
   template<>
-  struct TypeTraits<const Cons> : PointerTypeTraits<0xc001u, const Cons>
+  struct TypeTraits<const Cons> : PointerTypeTraits<0x0002u, const Cons>
   {
   };
 
@@ -187,9 +203,9 @@ namespace Lisp
   };
 
   template<>
-  struct TypeTraits<Collectible> : public TypeTraits<void>
+  struct TypeTraits<Container> : public TypeTraits<void>
   {
-    typedef Collectible * Type;
+    typedef Container * Type;
     static inline bool isA(TypeId tid)
     {
       return (tid & 0xc000) == 0xc000;
@@ -199,7 +215,75 @@ namespace Lisp
     {
       if(isA(tid))
       {
-        return reinterpret_cast<Collectible*>(data.ptr);
+        return reinterpret_cast<Container*>(data.ptr);
+      }
+      else
+      {
+        return nullptr;
+      }
+    }
+  };
+
+  // todo: implement one template for const and non-const
+  template<>
+  struct TypeTraits<const Container> : public TypeTraits<void>
+  {
+    typedef Container * Type;
+    static inline bool isA(TypeId tid)
+    {
+      return (tid & 0xc000) == 0xc000;
+    }
+
+    static inline Type as(const CellDataType & data, TypeId tid)
+    {
+      if(isA(tid))
+      {
+        return reinterpret_cast<Type>(data.ptr);
+      }
+      else
+      {
+        return nullptr;
+      }
+    }
+  };
+
+  template<>
+  struct TypeTraits<Collectible> : public TypeTraits<void>
+  {
+    typedef Collectible * Type;
+    static inline bool isA(TypeId tid)
+    {
+      return TypeTraits<Container>::isA(tid) || TypeTraits<Cons>::isA(tid);
+    }
+
+    static inline Type as(const CellDataType & data, TypeId tid)
+    {
+      if(isA(tid))
+      {
+        return reinterpret_cast<Type>(data.ptr);
+      }
+      else
+      {
+        return nullptr;
+      }
+    }
+  };
+
+  // todo: implement one template for const and non-const
+  template<>
+  struct TypeTraits<const Collectible> : public TypeTraits<void>
+  {
+    typedef const Collectible * Type;
+    static inline bool isA(TypeId tid)
+    {
+      return TypeTraits<const Container>::isA(tid) || TypeTraits<const Cons>::isA(tid);
+    }
+
+    static inline Type as(const CellDataType & data, TypeId tid)
+    {
+      if(isA(tid))
+      {
+        return reinterpret_cast<Type>(data.ptr);
       }
       else
       {

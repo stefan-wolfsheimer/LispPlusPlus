@@ -30,6 +30,8 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
 #include <cstdint>
+#include <functional>
+#include <type_traits>
 #include <lpp/core/types/collectible.h>
 #include <lpp/core/types/type_id.h>
 #include <lpp/core/lisp_object.h>
@@ -41,7 +43,6 @@ namespace Lisp
 
   class Cons : public Collectible
   {
-    // todo: derive from GarbageCollectable
   public:
     friend class ConsFactory;// todo: remove this friendship
     friend class ConsPages;
@@ -62,14 +63,8 @@ namespace Lisp
                 TypeId typeId=TypeTraits<Cons>::typeId);
     void setCdr(Cons * cons,
                 TypeId typeId=TypeTraits<Cons>::typeId);
-
+    inline void forEachChild(std::function<void(const Cell&)> func) const;
   private:
-    // todo reduce memory footprint
-    // reference to color vector
-    //ConsFactory * consFactory;
-    //Color color;
-    //std::size_t refCount;
-    //std::size_t index;
     Cell car;
     Cell cdr;
     void unroot();
@@ -78,6 +73,7 @@ namespace Lisp
   };
 }
 
+////////////////////////////////////////////////////////////////////////////////
 Lisp::Object Lisp::Cons::getCar() const
 {
   return Lisp::Object(car);
@@ -134,4 +130,10 @@ void Lisp::Cons::setCdr(const Object & rhs)
     // set non-cons
     cdr = rhs;
   }
+}
+
+void Lisp::Cons::forEachChild(std::function<void(const Cell&)> func) const
+{
+  func(getCarCell());
+  func(getCdrCell());
 }

@@ -68,25 +68,21 @@ bool GarbageCollector::checkSanity(Color color) const
   }
   if(color == getToColor())
   {
+    bool ret = true;
+    auto fromColor = getFromColor();
     for(const Cell & cell : cells)
     {
-      // todo: implement iterator for collectible and use Collectible
-      auto cons = cell.as<Cons>();
-      if(cons->getCarCell().isA<const Cons>())
-      {
-        if(cons->getCarCell().as<const Cons>()->getColor() == getFromColor())
-        {
-          return false;
-        }
-      }
-      if(cons->getCdrCell().isA<const Cons>())
-      {
-        if(cons->getCdrCell().as<const Cons>()->getColor() == getFromColor())
-        {
-          return false;
-        }
-      }
+      cell.forEachChild([&ret, fromColor](const Cell & child){
+          if(child.isA<const Collectible>())
+          {
+            if(child.as<const Collectible>()->getColor() == fromColor)
+            {
+              ret = false;
+            }
+          }
+        });
     }
+    return ret;
   }
   return true;
 }

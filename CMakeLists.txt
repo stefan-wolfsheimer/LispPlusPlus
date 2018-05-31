@@ -33,7 +33,6 @@ IF(CMAKE_BUILD_TYPE MATCHES Debug)
       test_core/test_collectible_container.cpp
       test_core/test_cons_factory.cpp
       test_core/test_cons.cpp
-      test_core/test_cons_iterator.cpp
       test_core/test_symbol_factory.cpp
       test_core/test_vm.cpp
       test_core/test_builtin_function.cpp

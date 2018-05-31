@@ -69,3 +69,12 @@ void Cell::unset()
     }
   }
 }
+
+void Cell::forEachChild(std::function<void(const Cell&)> func) const
+{
+  if(isA<Cons>())
+  {
+    as<Cons>()->forEachChild(func);
+  }
+}
+
