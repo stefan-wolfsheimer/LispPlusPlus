@@ -134,6 +134,6 @@ void Lisp::Cons::setCdr(const Object & rhs)
 
 void Lisp::Cons::forEachChild(std::function<void(const Cell&)> func) const
 {
-  func(getCarCell());
-  func(getCdrCell());
+  func(car);
+  func(cdr);
 }

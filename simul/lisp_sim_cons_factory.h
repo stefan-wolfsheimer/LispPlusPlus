@@ -37,6 +37,7 @@ either expressed or implied, of the FreeBSD Project.
 
 namespace Lisp
 {
+  class CollectibleGraph;
   class SimConsFactory
   {
   public:
@@ -68,10 +69,10 @@ namespace Lisp
     std::size_t getRecycleSteps() const;
 
     double getTargetNumEdges(std::shared_ptr<ConsFactory> factory,
-                             const Lisp::ConsGraph & graph) const;
+                             const Lisp::CollectibleGraph & graph) const;
     double getTargetNumEdges(std::shared_ptr<ConsFactory> factory) const;
     double getEdgeFraction(std::shared_ptr<ConsFactory> factory,
-                           const Lisp::ConsGraph & graph) const;
+                           const Lisp::CollectibleGraph & graph) const;
     double getEdgeFraction(std::shared_ptr<ConsFactory> factory) const;
   private:
     using SharedObject = std::shared_ptr<Object>;

@@ -58,8 +58,10 @@ namespace Lisp
     inline void addTo(std::vector<Cell> & cells) const;
 
     using const_iterator = typename std::vector<T*>::const_iterator;
-    inline const_iterator cbegin();
-    inline const_iterator cend();
+    //inline const_iterator cbegin();
+    //inline const_iterator cend();
+    inline const_iterator cbegin() const noexcept;
+    inline const_iterator cend() const noexcept;
 
   private:
     std::vector<T*> elements;
@@ -136,13 +138,13 @@ void Lisp::CollectibleContainer<T>::addTo(std::vector<Cell> & cells) const
 }
 
 template<typename T>
-typename Lisp::CollectibleContainer<T>::const_iterator Lisp::CollectibleContainer<T>::cbegin()
+typename Lisp::CollectibleContainer<T>::const_iterator Lisp::CollectibleContainer<T>::cbegin() const noexcept
 {
   return elements.cbegin();
 }
 
 template<typename T>
-typename Lisp::CollectibleContainer<T>::const_iterator Lisp::CollectibleContainer<T>::cend()
+typename Lisp::CollectibleContainer<T>::const_iterator Lisp::CollectibleContainer<T>::cend() const noexcept
 {
   return elements.cend();
 }

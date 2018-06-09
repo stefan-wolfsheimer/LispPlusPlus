@@ -274,50 +274,30 @@ std::vector<Cons*> Lisp::ConsFactory::getRootConses() const
   return ret;
 }
 
-template<typename T> std::unordered_set<T*>
-Lisp::ConsFactory::getReachableConsesAsSetIntneral() const
-{
-  typedef T ConsType;
-  std::unordered_set<ConsType*> todo;
-  std::unordered_set<ConsType*> root;
-  todo.insert(conses[(unsigned char)Color::BlackRoot].elements.begin(),
-              conses[(unsigned char)Color::BlackRoot].elements.end());
-  todo.insert(conses[(unsigned char)Color::GreyRoot].elements.begin(),
-              conses[(unsigned char)Color::GreyRoot].elements.end());
-  todo.insert(conses[(unsigned char)Color::WhiteRoot].elements.begin(),
-              conses[(unsigned char)Color::WhiteRoot].elements.end());
-  while(!todo.empty())
-  {
-    ConsType * cons = *todo.begin();
-    todo.erase(cons);
-    root.insert(cons);
-    {
-      const Cell & ocar(cons->car);
-      ConsType * car = ocar.as<ConsType>();
-      if(car && todo.find(car) == todo.end() && root.find(car) == root.end())
-      {
-        todo.insert(car);
-      }
-      const Cell & ocdr(cons->cdr);
-      ConsType * cdr = ocdr.as<ConsType>();
-      if(cdr && todo.find(cdr) == todo.end() && root.find(cdr) == root.end())
-      {
-        todo.insert(cdr);
-      }
-    }
-  }
-  return root;
-}
-
-
 std::unordered_set<const Cons*> Lisp::ConsFactory::getReachableConsesAsConstSet() const
 {
-  return getReachableConsesAsSetIntneral<const Cons>();
+  //todo: remove this function
+  std::unordered_set<const Cons*> ret;
+  forEachReachable([&ret](const Cell & c){
+      if(c.isA<Cons>())
+      {
+         ret.insert(c.as<const Cons>());
+      }
+    });
+  return ret;
 }
 
 std::unordered_set<Cons*> Lisp::ConsFactory::getReachableConsesAsSet() const
 {
-  return getReachableConsesAsSetIntneral<Cons>();
+  //todo: remove this function
+  std::unordered_set<Cons*> ret;
+  forEachReachable([&ret](const Cell & c){
+      if(c.isA<Cons>())
+      {
+         ret.insert(c.as<Cons>());
+      }
+    });
+  return ret;
 }
 
 std::vector<Cons*> Lisp::ConsFactory::getReachableConses() const
@@ -331,9 +311,8 @@ std::vector<Cons*> Lisp::ConsFactory::getReachableConses() const
 void Lisp::ConsFactory::cycleGarbageCollector()
 {
   //Todo lock
-  std::unordered_set<Cons*> root;
   std::size_t nRoot = 0;
-  root = Lisp::ConsFactory::getReachableConsesAsSetIntneral<Cons>();
+  std::unordered_set<Cons*> root = Lisp::ConsFactory::getReachableConsesAsSet();
   for(auto cons : root)
   {
     if(cons->isRoot())

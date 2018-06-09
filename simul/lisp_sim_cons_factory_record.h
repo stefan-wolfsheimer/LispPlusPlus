@@ -41,7 +41,7 @@ either expressed or implied, of the FreeBSD Project.
 namespace Lisp
 {
   class ConsFactory;
-  class ConsGraph;
+  class CollectibleGraph;
   class Object;
   class Cons;
   struct SimConsFactoryRecord

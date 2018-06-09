@@ -67,6 +67,9 @@ namespace Lisp
     inline typename Lisp::TypeTraits<T>::Type as() const;
 
     void forEachChild(std::function<void(const Cell&)> func) const;
+
+    inline bool operator==(const Lisp::Cell & b) const;
+
   protected:
     TypeId typeId;
     CellDataType data;
@@ -75,6 +78,43 @@ namespace Lisp
     inline void init(ManagedType * managedType, TypeId _typeId);
   };
 }
+
+template<>
+class std::hash<Lisp::Cell>
+{
+public:
+  std::size_t operator()(const Lisp::Cell & c) const
+  {
+    if(c.isA<const Lisp::Collectible>())
+    {
+      static std::hash<const Lisp::Collectible*> hasher;
+      return hasher(c.as<const Lisp::Collectible>());
+    }
+    else if(c.isA<Lisp::Nil>())
+    {
+      return 0u;
+    }
+  }
+};
+
+template<>
+class std::equal_to<Lisp::Cell>
+{
+public:
+  std::size_t operator()(const Lisp::Cell & a, const Lisp::Cell & b) const
+  {
+    if(a.isA<const Lisp::Collectible>() && b.isA<const Lisp::Collectible>())
+    {
+      static std::equal_to<const Lisp::Collectible*> eq;
+      return eq(a.as<Lisp::Collectible>(), b.as<Lisp::Collectible>());
+    }
+    else if(a.isA<Lisp::Nil>() && b.isA<Lisp::Nil>())
+    {
+      return true;
+    }
+    return false;
+  }
+};
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -122,5 +162,11 @@ template<typename T>
 inline typename Lisp::TypeTraits<T>::Type Lisp::Cell::as() const
 {
   return TypeTraits<T>::as(data, typeId);
+}
+
+inline bool Lisp::Cell::operator==(const Lisp::Cell & b) const
+{
+  static std::equal_to<Lisp::Cell> eq;
+  return eq(*this, b);
 }
 

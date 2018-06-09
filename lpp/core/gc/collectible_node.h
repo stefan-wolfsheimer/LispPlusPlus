@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2017, Stefan Wolfsheimer
+Copyright (c) 2018, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -28,41 +28,67 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#include "lisp_cons_graph_node.h"
-using Cons = Lisp::Cons;
+#pragma once
+#include <unordered_set>
+#include <lpp/core/lisp_cell.h>
 
-Lisp::ConsGraphNode::ConsGraphNode(Cons * _cons) : cons(_cons)
+namespace Lisp
 {
-}
+  class CollectibleEdge;
 
-Lisp::Cons * Lisp::ConsGraphNode::getCons() const
-{
-  return cons;
-}
-
-std::unordered_set<Cons*> Lisp::ConsGraphNode::getParents() const
-{
-  std::unordered_set<Cons*> ret;
-  for(auto n : parents)
+  class CollectibleNode
   {
-    if(n->cons)
+  public:
+    CollectibleNode(const Cell & _cell);
+    inline const Cell & getCell() const;
+    inline std::unordered_set<Cell> getParents() const;
+    inline std::unordered_set<Cell> getChildren() const;
+  private:
+    friend class CollectibleGraph;
+    friend class CollectibleEdge;
+    Cell cell;
+    std::vector<CollectibleEdge*> edges;
+    std::unordered_set<CollectibleNode*> parents;
+    std::unordered_set<CollectibleNode*> children;
+  };
+}
+
+///////////////////////////////////////////////////////////
+//
+// implementation
+//
+///////////////////////////////////////////////////////////
+inline Lisp::CollectibleNode::CollectibleNode(const Cell & _cell)
+  : cell(_cell)
+{}
+
+inline const Lisp::Cell & Lisp::CollectibleNode::getCell() const
+{
+  return cell;
+}
+
+inline std::unordered_set<Lisp::Cell> Lisp::CollectibleNode::getParents() const
+{
+  std::unordered_set<Lisp::Cell> ret;
+  for(auto p : parents)
+  {
+    if(!p->getCell().isA<Nil>())
     {
-      ret.insert(n->cons);
+      ret.insert(p->getCell());
     }
   }
   return ret;
 }
 
-std::unordered_set<Cons*> Lisp::ConsGraphNode::getChildren() const
+inline std::unordered_set<Lisp::Cell> Lisp::CollectibleNode::getChildren() const
 {
-  std::unordered_set<Cons*> ret;
-  for(auto n : children)
+  std::unordered_set<Lisp::Cell> ret;
+  for(auto p : children)
   {
-    if(n->cons)
+    if(!p->getCell().isA<Nil>())
     {
-      ret.insert(n->cons);
+      ret.insert(p->getCell());
     }
   }
   return ret;
 }
-

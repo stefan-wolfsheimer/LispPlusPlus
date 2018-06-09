@@ -141,8 +141,8 @@ namespace Lisp
     inline void greyChildInternal(Cons * cons);
     inline void greyChildInternal(const Cell & cell);
 
-    template<typename T>
-    inline std::unordered_set<T*> getReachableConsesAsSetIntneral() const;
+    //template<typename T>
+    //inline std::unordered_set<T*> getReachableConsesAsSetIntneral() const;
 
     std::vector<ConsContainer*> consContainers[7];
     std::vector<Array*> arrays[7];

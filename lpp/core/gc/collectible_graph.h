@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2017, Stefan Wolfsheimer
+Copyright (c) 2018, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -29,29 +29,59 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
-#include <cstdint>
+#include <memory>
+#include <unordered_map>
 #include <unordered_set>
+#include <lpp/core/lisp_cell.h>
 
 namespace Lisp
 {
-  class ConsGraphNode;
-  class Cons;
-  class ConsGraphEdge
+  class Collectible;
+  class GarbageCollector;
+  class CollectibleNode;
+  class CollectibleEdge;
+
+  class CollectibleGraph
   {
   public:
-    friend class ConsGraph;
-    std::size_t getWeight() const;
-    ConsGraphEdge(const ConsGraphNode * _parent,
-                  const ConsGraphNode * _child);
-    Cons * getParent() const;
-    Cons * getChild() const;
+    CollectibleGraph(const GarbageCollector & collector);
+    std::shared_ptr<CollectibleEdge> findEdge(const Cell & parent,
+                                              const Cell & child) const;
+    std::shared_ptr<CollectibleNode> findNode(const Cell & cell) const;
+    std::shared_ptr<CollectibleNode> getNode(std::size_t index) const;
+    std::shared_ptr<CollectibleEdge> getEdge(std::size_t index) const;
+    inline std::size_t numNodes() const;
+    inline std::size_t numEdges() const;
   private:
-    static std::unordered_set<const ConsGraphNode*>
-    computeChildSet(const std::unordered_set<const ConsGraphNode*>& input);
-
-    mutable std::size_t weight;
-    mutable bool weightReady;
-    const ConsGraphNode * child;
-    const ConsGraphNode * parent;
+    using SharedNode = std::shared_ptr<CollectibleNode>;
+    using Pair = std::pair<Cell, Cell>;
+    struct PairHash
+    {
+      std::size_t operator()(const Pair & p) const
+      {
+        return std::hash<Cell>()(p.first) ^ std::hash<Cell>()(p.second);
+      }
+    };
+    struct PairEq
+    {
+      bool operator()(const Pair & p1, const Pair & p2) const
+      {
+        return std::equal_to<Cell>()(p1.first, p2.first) &&
+               std::equal_to<Cell>()(p1.second, p2.second);
+      }
+    };
+    std::unordered_map<Cell, SharedNode> nodes;
+    std::unordered_map<Pair, std::shared_ptr<CollectibleEdge>, PairHash, PairEq> edges;
   };
 }
+
+inline std::size_t Lisp::CollectibleGraph::numNodes() const
+{
+  return nodes.size();
+}
+
+inline std::size_t Lisp::CollectibleGraph::numEdges() const
+{
+  return edges.size();
+}
+

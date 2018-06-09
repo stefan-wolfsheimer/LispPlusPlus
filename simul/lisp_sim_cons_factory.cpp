@@ -36,13 +36,15 @@ either expressed or implied, of the FreeBSD Project.
 #include <lpp/core/lisp_cons_factory.h>
 #include <lpp/core/lisp_object.h>
 #include <lpp/core/types/cons.h>
-#include "lisp_cons_graph.h"
-#include "lisp_cons_graph_node.h"
-#include "lisp_cons_graph_edge.h"
 
+#include <lpp/core/gc/collectible_graph.h>
+#include <lpp/core/gc/collectible_node.h>
+#include <lpp/core/gc/collectible_edge.h>
+
+//todo: rename to GarbageCollector simulation
 using ConsFactory = Lisp::ConsFactory;
 using Color = ConsFactory::Color;
-using ConsGraph = Lisp::ConsGraph;
+using CollectibleGraph = Lisp::CollectibleGraph;
 using SimConsFactory = Lisp::SimConsFactory;
 using SimConsFactoryRecord = Lisp::SimConsFactoryRecord;
 const unsigned short SimConsFactory::carIndex = 1;
@@ -134,7 +136,7 @@ std::size_t SimConsFactory::getRecycleSteps() const
 
 
 double SimConsFactory::getTargetNumEdges(std::shared_ptr<ConsFactory> factory,
-                                         const ConsGraph & graph) const
+                                         const CollectibleGraph & graph) const
 {
   // f = (n - min_edges) / (max_edges - min_edges)
   // f * (max_edges - min_edges) = n - min_edges
@@ -146,12 +148,12 @@ double SimConsFactory::getTargetNumEdges(std::shared_ptr<ConsFactory> factory,
 
 double SimConsFactory::getTargetNumEdges(std::shared_ptr<ConsFactory> factory) const
 {
-  ConsGraph graph(*factory);
+  CollectibleGraph graph(*factory);
   return getTargetNumEdges(factory, graph);
 }
 
 double SimConsFactory::getEdgeFraction(std::shared_ptr<ConsFactory> factory,
-                                       const Lisp::ConsGraph & graph) const
+                                       const Lisp::CollectibleGraph & graph) const
 {
   // min_edges = n_root_conses + n_conses
   // max_edges = n_root_conses + 2 * (n_conses + n_root_conses)
@@ -170,7 +172,7 @@ double SimConsFactory::getEdgeFraction(std::shared_ptr<ConsFactory> factory,
 
 double SimConsFactory::getEdgeFraction(std::shared_ptr<ConsFactory> factory) const
 {
-  ConsGraph graph(*factory);
+  CollectibleGraph graph(*factory);
   return getEdgeFraction(factory, graph);
 }
 
@@ -194,7 +196,7 @@ std::vector<SimConsFactoryRecord> SimConsFactory::run()
       {
         stepEdge(factory);
       }
-      ConsGraph graph(*factory);
+      CollectibleGraph graph(*factory);
       rec.step = i;
       rec.numRootConses = factory->numRootConses();
       rec.numBulkConses = (graph.numNodes()-1) - factory->numRootConses();
@@ -320,19 +322,20 @@ void Lisp::SimConsFactory::stepConses(std::shared_ptr<ConsFactory> factory,
   }
   else if(selectRemoveCons(nonRootConses.size(), targetNumBulkConses))
   {
-    ConsGraph graph(*factory);
+    CollectibleGraph graph(*factory);
     std::size_t i = rand() % nonRootConses.size();
     auto cons = nonRootConses[i];
     auto node = graph.findNode(cons);
     for(auto parent : node->getParents())
     {
-      if(parent->getCarCell().as<Cons>() == cons)
+      auto pcons = parent.as<Cons>();
+      if(pcons->getCarCell().as<Cons>() == cons)
       {
-        parent->unsetCar();
+        pcons->unsetCar();
       }
-      if(parent->getCdrCell().as<Cons>() == cons)
+      if(pcons->getCdrCell().as<Cons>() == cons)
       {
-        parent->unsetCdr();
+        pcons->unsetCdr();
       }
     }
   }
@@ -342,7 +345,7 @@ void SimConsFactory::stepEdge(std::shared_ptr<ConsFactory> factory)
 {
   static float acceptanceRate = 0.75f;
   static float errorAcceptanceRate = 0.25f;
-  ConsGraph graph(*factory);
+  CollectibleGraph graph(*factory);
   std::size_t n_root_conses = factory->numRootConses();
   std::size_t n_conses = (graph.numNodes()-1) - n_root_conses;
   double target_num_edges = targetEdgeFraction * ( 2.0 * n_root_conses + n_conses) + n_root_conses + n_conses;
@@ -360,16 +363,16 @@ void SimConsFactory::stepEdge(std::shared_ptr<ConsFactory> factory)
         std::size_t i = rand() % freeEdges.size();
         std::size_t j = rand() % graph.numNodes();
         auto node = graph.getNode(j);
-        auto cons = node->getCons();
-        if(cons)
+        auto cell = node->getCell();
+        if(cell.isA<Cons>())
         {
           if(freeEdges[i].second == carIndex)
           {
-            freeEdges[i].first->setCar(cons);
+            freeEdges[i].first->setCar(cell.as<Cons>());
           }
           else
           {
-            freeEdges[i].first->setCdr(cons);
+            freeEdges[i].first->setCdr(cell.as<Cons>());
           }
         }
       }
@@ -384,17 +387,17 @@ void SimConsFactory::stepEdge(std::shared_ptr<ConsFactory> factory)
       auto edge = graph.getEdge(i);
       if(edge)
       {
-        Cons * parent = edge->getParent();
-        Cons * child = edge->getChild();
-        if(parent && child)
+        auto parent = edge->getParent();
+        auto child = edge->getChild();
+        if(parent.isA<Cons>() && child.isA<Cons>())
         {
-          if(parent->getCarCell().as<Cons>() == child)
+          if(parent.as<Cons>()->getCarCell() == child)
           {
-            parent->unsetCar();
+            parent.as<Cons>()->unsetCar();
           }
-          else if(parent->getCdrCell().as<Cons>() == child)
+          else if(parent.as<Cons>()->getCdrCell() == child)
           {
-            parent->unsetCdr();
+            parent.as<Cons>()->unsetCdr();
           }
         }
       }

@@ -1,4 +1,5 @@
 #pragma once
+#include <functional>
 #include <lpp/core/types/type_id.h>
 #include <lpp/core/gc/color.h>
 

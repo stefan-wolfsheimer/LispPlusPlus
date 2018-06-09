@@ -30,26 +30,37 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
 #include <unordered_set>
-#include <vector>
-
+#include <lpp/core/gc/collectible_node.h>
 namespace Lisp
 {
-  class Cons;
-  class ConsGraphEdge;
+  class CollectibleNode;
+  class Cell;
 
-  class ConsGraphNode
+  class CollectibleEdge
   {
   public:
-    friend class ConsGraph;
-    friend class ConsGraphEdge;
-    ConsGraphNode(Cons * _cons);
-    Lisp::Cons * getCons() const;
-    std::unordered_set<Cons*> getParents() const;
-    std::unordered_set<Cons*> getChildren() const;
+    CollectibleEdge(CollectibleNode * _parent,
+                    CollectibleNode * _child);
+    Cell getParent() const;
+    Cell getChild() const;
   private:
-    std::vector<ConsGraphEdge*> edges;
-    Lisp::Cons * cons;
-    std::unordered_set<ConsGraphNode*> parents;
-    std::unordered_set<ConsGraphNode*> children;
+    const CollectibleNode * child;
+    const CollectibleNode * parent;
   };
+}
+
+inline Lisp::CollectibleEdge::CollectibleEdge(CollectibleNode * _parent,
+                                              CollectibleNode * _child)
+  : child(_child), parent(_parent)
+{
+}
+
+inline Lisp::Cell Lisp::CollectibleEdge::getParent() const
+{
+  return parent->getCell();
+}
+
+inline Lisp::Cell Lisp::CollectibleEdge::getChild() const
+{
+  return child->getCell();
 }
