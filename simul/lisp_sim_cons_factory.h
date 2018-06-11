@@ -28,6 +28,7 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
+//@todo rename to garbagbe collector
 #pragma once
 #include "lisp_sim_cons_factory_record.h"
 #include <cstddef>
@@ -38,6 +39,8 @@ either expressed or implied, of the FreeBSD Project.
 namespace Lisp
 {
   class CollectibleGraph;
+  class GarbageCollector;
+
   class SimConsFactory
   {
   public:
@@ -68,12 +71,12 @@ namespace Lisp
     void setRecycleSteps(std::size_t recycleSteps);
     std::size_t getRecycleSteps() const;
 
-    double getTargetNumEdges(std::shared_ptr<ConsFactory> factory,
+    double getTargetNumEdges(std::shared_ptr<GarbageCollector> factory,
                              const Lisp::CollectibleGraph & graph) const;
-    double getTargetNumEdges(std::shared_ptr<ConsFactory> factory) const;
-    double getEdgeFraction(std::shared_ptr<ConsFactory> factory,
+    double getTargetNumEdges(std::shared_ptr<GarbageCollector> factory) const;
+    double getEdgeFraction(std::shared_ptr<GarbageCollector> factory,
                            const Lisp::CollectibleGraph & graph) const;
-    double getEdgeFraction(std::shared_ptr<ConsFactory> factory) const;
+    double getEdgeFraction(std::shared_ptr<GarbageCollector> factory) const;
   private:
     using SharedObject = std::shared_ptr<Object>;
 
@@ -101,10 +104,12 @@ namespace Lisp
     static const unsigned short carIndex;
     static const unsigned short cdrIndex;
 
-    std::vector<std::pair<Cons*, unsigned short> > getFreeEdges(std::shared_ptr<ConsFactory> factory);
-    void stepRootConses(std::shared_ptr<ConsFactory> factory, std::list<SharedObject> & rootConses);
-    void stepConses(std::shared_ptr<ConsFactory> factory, std::list<SharedObject> & rootConses);
-    void stepEdge(std::shared_ptr<ConsFactory> factory);
+    std::vector<std::pair<Cons*, unsigned short> > getFreeEdges(std::shared_ptr<GarbageCollector> factory);
+    void stepRootConses(std::shared_ptr<GarbageCollector> factory,
+                        std::list<SharedObject> & rootConses);
+    void stepConses(std::shared_ptr<GarbageCollector> factory,
+                    std::list<SharedObject> & rootConses);
+    void stepEdge(std::shared_ptr<GarbageCollector> factory);
     bool selectAddCons(std::size_t numberOfConses, std::size_t target);
     bool selectRemoveCons(std::size_t numberOfConses, std::size_t target);
   };

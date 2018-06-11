@@ -40,10 +40,10 @@ const bool Lisp::Vm::withDebug = false;
 const bool Lisp::Vm::withDebug = true;
 #endif
 
-Lisp::Vm::Vm(std::shared_ptr<ConsFactory> _consFactory)
+Lisp::Vm::Vm(std::shared_ptr<GarbageCollector> _consFactory)
   : consFactory( _consFactory ?
                  _consFactory :
-                 std::make_shared<ConsFactory>())
+                 std::make_shared<GarbageCollector>())
 {
   dataStack.reserve(1024);
   values.reserve(1024);

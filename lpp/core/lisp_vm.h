@@ -30,7 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
 #include <memory>
-#include "lisp_cons_factory.h"
+#include <lpp/core/gc/garbage_collector.h>
 #include "lisp_object.h"
 #include "types/lisp_function_interface.h"
 
@@ -40,8 +40,8 @@ namespace Lisp
   {
   public:
     static const bool withDebug;
-    Vm(std::shared_ptr<ConsFactory> _consFactory = nullptr);
-    inline std::shared_ptr<ConsFactory> getConsFactory() const;
+    Vm(std::shared_ptr<GarbageCollector> _consFactory = nullptr);
+    inline std::shared_ptr<GarbageCollector> getConsFactory() const;
     inline Object cons(const Object & car, const Object & cdr);
     inline Object list();
     inline Object list(const Object & a);
@@ -68,7 +68,7 @@ namespace Lisp
     void eval(const Function * func);
     inline Object getValue() const;
   private:
-    std::shared_ptr<ConsFactory> consFactory;
+    std::shared_ptr<GarbageCollector> consFactory;
     std::vector<Object> dataStack;
     std::vector<Object> values;
   };
@@ -77,7 +77,7 @@ namespace Lisp
 /******************************************************************************
  * implementation
  ******************************************************************************/
-std::shared_ptr<Lisp::ConsFactory> Lisp::Vm::getConsFactory() const
+std::shared_ptr<Lisp::GarbageCollector> Lisp::Vm::getConsFactory() const
 {
   return consFactory;
 }
@@ -85,7 +85,7 @@ std::shared_ptr<Lisp::ConsFactory> Lisp::Vm::getConsFactory() const
 inline Lisp::Object Lisp::Vm::cons(const Lisp::Object & _car,
                                    const Lisp::Object & _cdr)
 {
-  return Lisp::Object(consFactory->make(_car, _cdr));
+  return Lisp::Object(consFactory->makeCons(_car, _cdr));
 }
 
 inline Lisp::Object Lisp::Vm::list()

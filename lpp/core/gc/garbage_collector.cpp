@@ -31,6 +31,9 @@ either expressed or implied, of the FreeBSD Project.
 #include <stdexcept>
 #include <lpp/core/gc/garbage_collector.h>
 #include <lpp/core/types/collectible.h>
+#include <lpp/core/types/lisp_cons_container.h>
+//todo: check if this is needed
+#include <lpp/core/types/lisp_array.h>
 
 using GarbageCollector = Lisp::GarbageCollector;
 using CollectibleGraph = Lisp::CollectibleGraph;
@@ -87,6 +90,7 @@ void GarbageCollector::forEachCollectible(Color color, std::function<void(const 
 
 void GarbageCollector::forEachDisposedCollectible(std::function<void(const Cell &)> func) const
 {
+  // todo: implement
 }
 
 void GarbageCollector::forEachRootCollectible(std::function<void(const Cell &)> func) const
@@ -114,6 +118,171 @@ void GarbageCollector::forEachReachable(std::function<void(const Cell &)> func) 
           todo.insert(child);
         }
       });
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// process garbage collector
+//
+////////////////////////////////////////////////////////////////////////////////
+void GarbageCollector::cycleCollector()
+{
+  //@todo: make it generic for all collectible
+  std::size_t nRoot = 0;
+  std::unordered_set<Cons*> root;
+  forEachReachable([&root](const Cell & cell){
+      if(cell.isA<Cons>())
+      {
+        root.insert(cell.as<Cons>());
+      }
+  });
+  for(auto cons : root)
+  {
+    if(cons->isRoot())
+    {
+      nRoot++;
+    }
+  }
+  assert(root.size() >= nRoot);
+  //assert(pages.size() * pageSize > root.size());
+  fromColor = Color::White;
+  toColor = Color::Black;
+  fromRootColor = Color::WhiteRoot;
+  toRootColor = Color::BlackRoot;
+  conses[(unsigned char)toColor].elements.clear();
+  conses[(unsigned char)toColor].elements.reserve(root.size() - nRoot);
+  //conses[(unsigned char)Color::Void].elements.clear();
+  //conses[(unsigned char)Color::Void].elements.reserve(pages.size() * pageSize - root.size());
+  conses[(unsigned char)Color::Grey].elements.clear();
+  conses[(unsigned char)fromRootColor].elements.reserve(conses[(unsigned char)fromRootColor].size() + conses[(unsigned char)toRootColor].size());
+  for(auto obj : conses[(unsigned char)toRootColor].elements)
+  {
+    assert(root.find(obj) != root.end());
+    conses[(unsigned char)fromRootColor].add(obj);
+  }
+  conses[(unsigned char)toRootColor].elements.clear();
+  conses[(unsigned char)fromColor].elements.clear();
+  consPages.recycleAll(root, conses[(unsigned char)toColor], fromRootColor);
+}
+
+bool GarbageCollector::stepCollector(ConsContainer* container)
+{
+  if(container->gcTop < container->conses.size())
+  {
+    auto cons = container->conses[container->gcTop];
+    if(cons->color == fromRootColor)
+    {
+      conses[(unsigned char)cons->color].remove(cons);
+      conses[(unsigned char)toRootColor].add(cons);
+      greyChildInternal(cons->getCarCell());
+      greyChildInternal(cons->getCdrCell());
+    }
+    else
+    {
+      assert(cons->color == toRootColor);
+    }
+    container->gcTop++;
+    return false;
+  }
+  else
+  {
+    return true;
+  }
+}
+
+void GarbageCollector::stepCollector()
+{
+  //Todo lock
+  for(unsigned short i=0; i < garbageSteps; i++)
+  {
+    if(!consContainers[(unsigned char)(fromRootColor)].empty())
+    {
+      auto container = consContainers[(unsigned char)fromRootColor].back();
+      assert(container->color == fromRootColor);
+      assert(container->index == consContainers[(unsigned char)fromRootColor].size()-1);
+      if(stepCollector(container))
+      {
+        consContainers[(unsigned char)fromRootColor].pop_back();
+        container->index = consContainers[(unsigned char)toRootColor].size();
+        container->color = toRootColor;
+        consContainers[(unsigned char)toRootColor].push_back(container);
+        container->gcTop = 0;
+      }
+    }
+    else if(!conses[(unsigned char)(fromRootColor)].empty())
+    {
+      // Todo: check edge case: cons == car or cons == cdr !
+      auto cons = conses[(unsigned char)fromRootColor].popBack();
+      assert(cons->color == fromRootColor);
+      assert(cons->index == conses[(unsigned char)fromRootColor].size());
+      conses[(unsigned char)toRootColor].add(cons);
+      greyChildInternal(cons->getCarCell());
+      greyChildInternal(cons->getCdrCell());
+    }
+    else if(!conses[(unsigned char)Color::GreyRoot].empty())
+    {
+      // Todo: check edge case: cons == car or cons == cdr !
+      auto cons = conses[(unsigned char)Color::GreyRoot].popBack();
+      assert(cons->color == Color::GreyRoot);
+      assert(cons->index == conses[(unsigned char)Color::GreyRoot].size());
+      conses[(unsigned char)toRootColor].add(cons);
+      greyChildInternal(cons->getCarCell());
+      greyChildInternal(cons->getCdrCell());
+    }
+    else if(!conses[(unsigned char)Color::Grey].empty())
+    {
+      // Todo: check edge case: cons == car or cons == cdr !
+      auto cons = conses[(unsigned char)Color::Grey].popBack();
+      assert(cons->color == Color::Grey);
+      assert(cons->index == conses[(unsigned char)Color::Grey].size());
+      conses[(unsigned char)toColor].add(cons);
+      greyChildInternal(cons->getCarCell());
+      greyChildInternal(cons->getCdrCell());
+    }
+    else
+    {
+      // Todo test swap
+      assert(conses[(unsigned char)Color::Grey].empty());
+      assert(conses[(unsigned char)Color::GreyRoot].empty());
+      assert(conses[(unsigned char)fromRootColor].empty());
+      freeConses.move(conses[(unsigned char)fromColor]);
+      if(toColor == Color::White)
+      {
+        toColor = Color::Black;
+        toRootColor = Color::BlackRoot;
+        fromColor = Color::White;
+        fromRootColor = Color::WhiteRoot;
+      }
+      else
+      {
+        toColor = Color::White;
+        toRootColor = Color::WhiteRoot;
+        fromColor = Color::Black;
+        fromRootColor = Color::BlackRoot;
+      }
+    }
+  }
+}
+
+void Lisp::GarbageCollector::stepRecycle()
+{
+  std::size_t i = recycleSteps;
+  Cons * cons;
+  while(i && (cons = freeConses.popBack()))
+  {
+    if(!cons->getCarCell().isA<Cons>())
+    {
+      cons->unsetCar();
+    }
+    if(!cons->getCdrCell().isA<Cons>())
+    {
+      cons->unsetCdr();
+    }
+    //todo move to another unmanged container (because we don't need
+    // index and color managedment overhead
+    consPages.recycle(cons);
+    i--;
   }
 }
 
@@ -175,5 +344,25 @@ bool GarbageCollector::checkSanity() const
     checkSanity(Color::BlackRoot);
 }
 
+//////////////////////////////////////////////////
+// todo: check if the following is still needed
+//////////////////////////////////////////////////
+Lisp::Array * GarbageCollector::makeArray()
+{
+  Color color = (toColor == Color::Black ? Color::WhiteRoot : Color::BlackRoot);
+  auto ret = new Array(this, color, arrays[(unsigned char)color].size());
+  arrays[(unsigned char)color].push_back(ret);
+  return ret;
+}
+
+Lisp::ConsContainer * GarbageCollector::makeContainer()
+{
+  Color color = toColor == Color::Black ? Color::WhiteRoot : Color::BlackRoot;
+  auto ret = new ConsContainer(this,
+                               color,
+                               consContainers[(unsigned char)color].size());
+  consContainers[(unsigned char)color].push_back(ret);
+  return ret;
+}
 
 

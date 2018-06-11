@@ -33,18 +33,18 @@ either expressed or implied, of the FreeBSD Project.
 #include <vector>
 #include <assert.h>
 #include <lpp/core/lisp_object.h>
-#include <lpp/core/lisp_cons_factory.h>
+#include <lpp/core/gc/garbage_collector.h>
 
 
 namespace Lisp
 {
   class Cons;
-  class ConsFactory;
   // Todo replace ConsContainer with Array
+
   class Array
   {
   public:
-    using Color = ConsFactory::Color;
+    using Color = Lisp::Color;
     using const_iterator = std::vector<Object>::const_iterator;
     using const_reverse_iterator = std::vector<Object>::const_reverse_iterator;
     using size_type = std::vector<Object>::size_type;
@@ -66,11 +66,11 @@ namespace Lisp
     inline Color getColor() const;
     inline std::size_t getGcTop() const;
   private:
-    friend class ConsFactory;
-    Array(ConsFactory * _consFactory, Color color, std::size_t _index);
+    friend class GarbageCollector;
+    Array(GarbageCollector * _consFactory, Color color, std::size_t _index);
     std::vector<Lisp::Object> data;
     std::size_t gcTop;
-    ConsFactory * consFactory;
+    GarbageCollector * consFactory;
     Color color;
     std::size_t index;
   };
@@ -79,7 +79,7 @@ namespace Lisp
 /******************************************************************************
  * Implementation
  ******************************************************************************/
-inline Lisp::Array::Array(ConsFactory * _consFactory,
+inline Lisp::Array::Array(GarbageCollector * _consFactory,
                           Color _color,
                           std::size_t _index)
   : consFactory(_consFactory), color(_color), index(_index)
@@ -145,7 +145,7 @@ inline void Lisp::Array::push_back(Object && rhs)
 }
 
 
-inline Lisp::ConsFactory::Color Lisp::Array::getColor() const
+inline Lisp::Color Lisp::Array::getColor() const
 {
   return color;
 }

@@ -1,5 +1,5 @@
 #pragma once
-
+//@todo: remove this
 namespace Lisp
 {
   class GarbageCollectable : public BasicType

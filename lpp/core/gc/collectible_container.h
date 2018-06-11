@@ -45,7 +45,7 @@ namespace Lisp
   class CollectibleContainer
   {
   public:
-    friend class ConsFactory; //todo rename to GarbageCollector
+    friend class GarbageCollector;
     friend class UnmanagedCollectibleContainer<T>;
     CollectibleContainer(Color _color, GarbageCollector * _gc);
     inline Color getColor() const;
@@ -58,8 +58,6 @@ namespace Lisp
     inline void addTo(std::vector<Cell> & cells) const;
 
     using const_iterator = typename std::vector<T*>::const_iterator;
-    //inline const_iterator cbegin();
-    //inline const_iterator cend();
     inline const_iterator cbegin() const noexcept;
     inline const_iterator cend() const noexcept;
 

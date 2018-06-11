@@ -33,7 +33,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <cstdlib>
 #include <exception>
 #include <assert.h>
-#include <lpp/core/lisp_cons_factory.h>
+#include <lpp/core/gc/garbage_collector.h>
 #include <lpp/core/lisp_object.h>
 #include <lpp/core/types/cons.h>
 
@@ -41,9 +41,9 @@ either expressed or implied, of the FreeBSD Project.
 #include <lpp/core/gc/collectible_node.h>
 #include <lpp/core/gc/collectible_edge.h>
 
-//todo: rename to GarbageCollector simulation
-using ConsFactory = Lisp::ConsFactory;
-using Color = ConsFactory::Color;
+
+using GarbageCollector = Lisp::GarbageCollector;
+using Color = Lisp::Color;
 using CollectibleGraph = Lisp::CollectibleGraph;
 using SimConsFactory = Lisp::SimConsFactory;
 using SimConsFactoryRecord = Lisp::SimConsFactoryRecord;
@@ -135,30 +135,30 @@ std::size_t SimConsFactory::getRecycleSteps() const
 }
 
 
-double SimConsFactory::getTargetNumEdges(std::shared_ptr<ConsFactory> factory,
+double SimConsFactory::getTargetNumEdges(std::shared_ptr<GarbageCollector> factory,
                                          const CollectibleGraph & graph) const
 {
   // f = (n - min_edges) / (max_edges - min_edges)
   // f * (max_edges - min_edges) = n - min_edges
   // n = f * (max_edges - min_edges) + min_edges
-  std::size_t maxEdges = factory->numRootConses() + 2 * (graph.numNodes()-1);
+  std::size_t maxEdges = factory->numRootCollectible() + 2 * (graph.numNodes()-1);
   std::size_t minEdges = graph.numNodes()-1;
   return getTargetEdgeFraction() * (maxEdges - minEdges) + minEdges;
 }
 
-double SimConsFactory::getTargetNumEdges(std::shared_ptr<ConsFactory> factory) const
+double SimConsFactory::getTargetNumEdges(std::shared_ptr<GarbageCollector> factory) const
 {
   CollectibleGraph graph(*factory);
   return getTargetNumEdges(factory, graph);
 }
 
-double SimConsFactory::getEdgeFraction(std::shared_ptr<ConsFactory> factory,
+double SimConsFactory::getEdgeFraction(std::shared_ptr<GarbageCollector> factory,
                                        const Lisp::CollectibleGraph & graph) const
 {
   // min_edges = n_root_conses + n_conses
   // max_edges = n_root_conses + 2 * (n_conses + n_root_conses)
   // f = (n - min_edges) / (max_edges - min_edges)
-  std::size_t maxEdges = factory->numRootConses() + 2 * (graph.numNodes()-1);
+  std::size_t maxEdges = factory->numRootCollectible() + 2 * (graph.numNodes()-1);
   std::size_t minEdges = graph.numNodes()-1;
   if(maxEdges - minEdges)
   {
@@ -170,7 +170,7 @@ double SimConsFactory::getEdgeFraction(std::shared_ptr<ConsFactory> factory,
   }
 }
 
-double SimConsFactory::getEdgeFraction(std::shared_ptr<ConsFactory> factory) const
+double SimConsFactory::getEdgeFraction(std::shared_ptr<GarbageCollector> factory) const
 {
   CollectibleGraph graph(*factory);
   return getEdgeFraction(factory, graph);
@@ -179,9 +179,9 @@ double SimConsFactory::getEdgeFraction(std::shared_ptr<ConsFactory> factory) con
 std::vector<SimConsFactoryRecord> SimConsFactory::run()
 {
   std::vector<SimConsFactoryRecord> ret;
-  auto factory = std::make_shared<ConsFactory>(100,
-                                               garbageSteps,
-                                               recycleSteps);
+  auto factory = std::make_shared<GarbageCollector>(100,
+                                                    garbageSteps,
+                                                    recycleSteps);
   {
     std::list<SharedObject> rootConses;
     for(std::size_t i = 0; i < numSteps; i++)
@@ -198,11 +198,11 @@ std::vector<SimConsFactoryRecord> SimConsFactory::run()
       }
       CollectibleGraph graph(*factory);
       rec.step = i;
-      rec.numRootConses = factory->numRootConses();
-      rec.numBulkConses = (graph.numNodes()-1) - factory->numRootConses();
+      rec.numRootConses = factory->numRootCollectible();
+      rec.numBulkConses = (graph.numNodes()-1) - factory->numRootCollectible();
       rec.numReachableConses = (graph.numNodes()-1);
-      rec.numVoidConses = factory->numConses(Color::Void);
-      rec.numFreeConses = factory->numConses(Color::Free);
+      rec.numVoidConses = factory->numCollectible(Color::Void);
+      rec.numFreeConses = factory->numCollectible(Color::Free);
       rec.numEdges = graph.numEdges();
       rec.expectedNumEdges = getTargetNumEdges(factory, graph);
       rec.edgeFraction = getEdgeFraction(factory, graph);
@@ -212,14 +212,14 @@ std::vector<SimConsFactoryRecord> SimConsFactory::run()
   return ret;
 }
 
-void Lisp::SimConsFactory::stepRootConses(std::shared_ptr<ConsFactory> factory,
+void Lisp::SimConsFactory::stepRootConses(std::shared_ptr<GarbageCollector> factory,
                                           std::list<SharedObject> & rootConses)
 {
-  if(selectAddCons(factory->numRootConses(), targetNumRootConses))
+  if(selectAddCons(factory->numRootCollectible(), targetNumRootConses))
   {
-    rootConses.push_back(std::make_shared<Object>(factory->make(Lisp::nil, Lisp::nil)));
+    rootConses.push_back(std::make_shared<Object>(factory->makeCons(Lisp::nil, Lisp::nil)));
   }
-  else if(selectRemoveCons(factory->numRootConses(), targetNumRootConses))
+  else if(selectRemoveCons(factory->numRootCollectible(), targetNumRootConses))
   {
     std::size_t i = rand() % rootConses.size();
     auto itr = rootConses.begin();
@@ -271,28 +271,31 @@ bool Lisp::SimConsFactory::selectRemoveCons(std::size_t numberOfConses,
 }
 
 std::vector<std::pair<Lisp::Cons*, unsigned short> >
-Lisp::SimConsFactory::getFreeEdges(std::shared_ptr<ConsFactory> factory)
+Lisp::SimConsFactory::getFreeEdges(std::shared_ptr<GarbageCollector> factory)
 {
   using ConsPair = std::pair<Cons*, unsigned short>;
   using Cons = Lisp::Cons;
   using Nil = Lisp::Nil;
 
   std::vector<ConsPair> freeEdges;
-  for(Cons * cons : factory->getReachableConsesAsSet())
+  for(auto cell : factory->getReachable())
   {
-    if(cons->getCarCell().isA<Nil>())
+    if(cell.isA<Cons>())
     {
-      freeEdges.push_back(ConsPair(cons, carIndex));
-    }
-    if(cons->getCdrCell().isA<Nil>())
-    {
-      freeEdges.push_back(ConsPair(cons, cdrIndex));
+      if(cell.as<Cons>()->getCarCell().isA<Nil>())
+      {
+        freeEdges.push_back(ConsPair(cell.as<Cons>(), carIndex));
+      }
+      if(cell.as<Cons>()->getCdrCell().isA<Nil>())
+      {
+        freeEdges.push_back(ConsPair(cell.as<Cons>(), cdrIndex));
+      }
     }
   }
   return freeEdges;
 }
 
-void Lisp::SimConsFactory::stepConses(std::shared_ptr<ConsFactory> factory,
+void Lisp::SimConsFactory::stepConses(std::shared_ptr<GarbageCollector> factory,
                                       std::list<SharedObject> & rootConses)
 {
   using Cons = Lisp::Cons;
@@ -300,11 +303,11 @@ void Lisp::SimConsFactory::stepConses(std::shared_ptr<ConsFactory> factory,
   using ConsPair = std::pair<Cons*, unsigned short>;
   auto freeEdges = getFreeEdges(factory);
   std::vector<Cons *> nonRootConses;
-  for(Cons * cons : factory->getReachableConsesAsSet())
+  for(auto cell : factory->getReachable())
   {
-    if(!cons->isRoot())
+    if(cell.isA<Cons>() && !cell.as<Cons>()->isRoot())
     {
-      nonRootConses.push_back(cons);
+      nonRootConses.push_back(cell.as<Cons>());
     }
   }
   if(freeEdges.size() > 0 && selectAddCons(nonRootConses.size(),
@@ -313,11 +316,11 @@ void Lisp::SimConsFactory::stepConses(std::shared_ptr<ConsFactory> factory,
     std::size_t i = rand() % freeEdges.size();
     if(freeEdges[i].second == carIndex)
     {
-      freeEdges[i].first->setCar(Object(factory->make(Lisp::nil, Lisp::nil)));
+      freeEdges[i].first->setCar(Object(factory->makeCons(Lisp::nil, Lisp::nil)));
     }
     else
     {
-      freeEdges[i].first->setCdr(Object(factory->make(Lisp::nil, Lisp::nil)));
+      freeEdges[i].first->setCdr(Object(factory->makeCons(Lisp::nil, Lisp::nil)));
     }
   }
   else if(selectRemoveCons(nonRootConses.size(), targetNumBulkConses))
@@ -341,12 +344,12 @@ void Lisp::SimConsFactory::stepConses(std::shared_ptr<ConsFactory> factory,
   }
 }
 
-void SimConsFactory::stepEdge(std::shared_ptr<ConsFactory> factory)
+void SimConsFactory::stepEdge(std::shared_ptr<GarbageCollector> factory)
 {
   static float acceptanceRate = 0.75f;
   static float errorAcceptanceRate = 0.25f;
   CollectibleGraph graph(*factory);
-  std::size_t n_root_conses = factory->numRootConses();
+  std::size_t n_root_conses = factory->numRootCollectible();
   std::size_t n_conses = (graph.numNodes()-1) - n_root_conses;
   double target_num_edges = targetEdgeFraction * ( 2.0 * n_root_conses + n_conses) + n_root_conses + n_conses;
   std::size_t num_edges = graph.numEdges();

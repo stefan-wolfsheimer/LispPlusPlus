@@ -38,13 +38,13 @@ either expressed or implied, of the FreeBSD Project.
 
 namespace Lisp
 {
-  class ConsFactory;
+  class GarbageCollector;
   template<typename T> class CollectibleContainer;
 
   class Cons : public Collectible
   {
   public:
-    friend class ConsFactory;// todo: remove this friendship
+    friend class GarbageCollector;
     friend class ConsPages;
     friend class ConsContainer;
     friend class Object;

@@ -5,6 +5,8 @@
 
 namespace Lisp
 {
+  class GarbageCollector;
+
   class Collectible : public BasicType
   {
   public:
@@ -16,7 +18,7 @@ namespace Lisp
   protected:
     // todo reduce memory footprint
     // reference to color vector
-    ConsFactory * consFactory;
+    GarbageCollector * consFactory;
     Color color;
     std::size_t refCount;
     std::size_t index;
