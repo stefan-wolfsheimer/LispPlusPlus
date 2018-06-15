@@ -40,9 +40,19 @@ namespace Lisp
   class UnmanagedCollectibleContainer;
 
   class GarbageCollector;
-  
+
+  class BasicCollectibleContainer
+  {
+  public:
+    BasicCollectibleContainer(Color _color, GarbageCollector * _gc);
+  protected:
+    GarbageCollector * gc;
+    Color color;
+
+  };
+
   template<typename T>
-  class CollectibleContainer
+  class CollectibleContainer : public BasicCollectibleContainer
   {
   public:
     friend class GarbageCollector;
@@ -63,17 +73,20 @@ namespace Lisp
 
   private:
     std::vector<T*> elements;
-    GarbageCollector * gc;
-    Color color;
+    //GarbageCollector * gc;
+    //Color color;
   };
 }
 
+////////////////////////////////////////////////////////////////////////////////
+inline Lisp::BasicCollectibleContainer::BasicCollectibleContainer(Color _color,
+                                                                  GarbageCollector * _gc) : gc(_gc), color(_color)
+{}
+
 template<typename T>
 inline Lisp::CollectibleContainer<T>::CollectibleContainer(Color _color,
-                                                           GarbageCollector * _gc)
-  : gc(_gc), color(_color)
-{
-}
+                                                           GarbageCollector * _gc) : BasicCollectibleContainer(_color, _gc)
+{}
 
 template<typename T>
 inline Lisp::Color Lisp::CollectibleContainer<T>::getColor() const

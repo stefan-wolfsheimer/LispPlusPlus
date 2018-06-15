@@ -201,8 +201,8 @@ std::vector<SimConsFactoryRecord> SimConsFactory::run()
       rec.numRootConses = factory->numRootCollectible();
       rec.numBulkConses = (graph.numNodes()-1) - factory->numRootCollectible();
       rec.numReachableConses = (graph.numNodes()-1);
-      rec.numVoidConses = factory->numCollectible(Color::Void);
-      rec.numFreeConses = factory->numCollectible(Color::Free);
+      rec.numVoidConses = factory->numVoidCollectible();
+      rec.numFreeConses = factory->numDisposedCollectible();
       rec.numEdges = graph.numEdges();
       rec.expectedNumEdges = getTargetNumEdges(factory, graph);
       rec.edgeFraction = getEdgeFraction(factory, graph);

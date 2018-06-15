@@ -38,7 +38,7 @@ Lisp::Cons::Cons() :
    car(Lisp::nil),
    cdr(Lisp::nil)
 {
-  color = Color::Void;
+  //color = Color::Void;
   refCount = 0;
 }
 

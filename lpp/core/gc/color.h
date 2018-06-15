@@ -32,12 +32,10 @@ either expressed or implied, of the FreeBSD Project.
 
 namespace Lisp
 {
-  enum class Color : unsigned char { Void=0u, //todo: remove this color
-                                     White=1u,
-                                     Grey=2u,
-                                     Black=3u,
-                                     WhiteRoot=4u,
-                                     GreyRoot=5u,
-                                     BlackRoot=6u,
-                                     Free=7u }; // todo: remove this color
+  enum class Color : unsigned char { White=0u,
+                                     Grey=1u,
+                                     Black=2u,
+                                     WhiteRoot=3u,
+                                     GreyRoot=4u,
+                                     BlackRoot=5u };
 }

@@ -44,7 +44,7 @@ GarbageCollector::GarbageCollector(std::size_t consPageSize,
                                    unsigned short _garbageSteps,
                                    unsigned short _recycleSteps)
   : consPages(consPageSize),
-    conses({CollectibleContainer<Cons>(Lisp::Color::Void, this),
+    conses({/*CollectibleContainer<Cons>(Lisp::Color::Void, this),*/
             CollectibleContainer<Cons>(Lisp::Color::White, this),
             CollectibleContainer<Cons>(Lisp::Color::Grey, this),
             CollectibleContainer<Cons>(Lisp::Color::Black, this),
@@ -246,7 +246,7 @@ void GarbageCollector::stepCollector()
       assert(conses[(unsigned char)Color::Grey].empty());
       assert(conses[(unsigned char)Color::GreyRoot].empty());
       assert(conses[(unsigned char)fromRootColor].empty());
-      freeConses.move(conses[(unsigned char)fromColor]);
+      disposedConses.move(conses[(unsigned char)fromColor]);
       if(toColor == Color::White)
       {
         toColor = Color::Black;
@@ -269,7 +269,7 @@ void Lisp::GarbageCollector::stepRecycle()
 {
   std::size_t i = recycleSteps;
   Cons * cons;
-  while(i && (cons = freeConses.popBack()))
+  while(i && (cons = disposedConses.popBack()))
   {
     if(!cons->getCarCell().isA<Cons>())
     {

@@ -136,10 +136,10 @@ namespace Lisp
     
 
   protected: //todo make private
-    CollectibleContainer<Cons> conses[7]; // todo: reduce number of colors
-    std::vector<ConsContainer*> consContainers[7]; // todo: check if this is needed
+    CollectibleContainer<Cons> conses[6];
+    std::vector<ConsContainer*> consContainers[6]; // todo: check if this is needed
     std::vector<Array*> arrays[7]; // todo: check if this is needed
-    UnmanagedCollectibleContainer<Cons> freeConses; // todo: rename to disposed
+    UnmanagedCollectibleContainer<Cons> disposedConses;
     
     ConsPages consPages;
     unsigned short int garbageSteps;
@@ -219,7 +219,8 @@ inline Lisp::Cons * Lisp::GarbageCollector::makeCons(Object && car, Object && cd
 void Lisp::GarbageCollector::root(Cons * cons)
 {
   assert(!cons->isRoot());
-  assert(cons->color != Cons::Color::Void);
+  //@todo reactivate this check
+  //assert(cons->color != Cons::Color::Void);
   assert(cons->index < conses[(unsigned char)cons->color].size());
   //todo: make assertion work
   //assert(cons == &*conses[(unsigned char)cons->color][cons->index]);
@@ -340,7 +341,7 @@ inline std::size_t Lisp::GarbageCollector::numVoidCollectible() const
 inline std::size_t Lisp::GarbageCollector::numDisposedCollectible() const
 {
   // todo: other
-  return 0;
+  return disposedConses.size();
 }
 
 inline std::size_t Lisp::GarbageCollector::numRootCollectible() const
