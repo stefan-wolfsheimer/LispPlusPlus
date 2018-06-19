@@ -105,7 +105,7 @@ SCENARIO("no cons allocated", "[ConsFactory]")
   }
 }
 
-SCENARIO("one cons without children", "[ConsColl]")
+SCENARIO("one cons without children", "[GarbageCollector]")
 {
   GIVEN("A root cons")
   {
@@ -159,7 +159,7 @@ SCENARIO("one cons without children", "[ConsColl]")
   }
 }
 
-SCENARIO("one cons with self-ref", "[ConsColl]")
+SCENARIO("one cons with self-ref", "[GarbageCollector]")
 {
   GIVEN("A root cons")
   {
@@ -190,7 +190,7 @@ SCENARIO("one cons with self-ref", "[ConsColl]")
   }
 }
 
-SCENARIO("a cons with 2 children", "[ConsColl]")
+SCENARIO("a cons with 2 children", "[GarbageCollector]")
 {
   /*
               o
@@ -253,7 +253,7 @@ SCENARIO("a cons with 2 children", "[ConsColl]")
   }
 }
  
-SCENARIO("3 conses with 4 children", "[ConsFactory]")
+SCENARIO("3 conses with 4 children", "[GarbageCollector]")
 {
   GIVEN("2 conses")
   {
@@ -349,7 +349,7 @@ SCENARIO("3 conses with 4 children", "[ConsFactory]")
   }
 }
 
-SCENARIO("copy cons object with object copy constructor", "[ConsFactory]")
+SCENARIO("copy cons object with object copy constructor", "[GarbageCollector]")
 {
   GIVEN("A cons with 2 children")
   {
@@ -422,7 +422,7 @@ SCENARIO("copy cons object with object copy constructor", "[ConsFactory]")
   }
 }
 
-SCENARIO("copy cons object with object assignement operator", "[ConsColl]")
+SCENARIO("copy cons object with object assignement operator", "[GarbageCollector]")
 {
   GIVEN("conses with 4 children")
   {
@@ -465,7 +465,7 @@ SCENARIO("copy cons object with object assignement operator", "[ConsColl]")
 }
 
 #if 0
-SCENARIO("one array without elements", "[ConsColl]")
+SCENARIO("one array without elements", "[GarbageCollector]")
 {
   GIVEN("A root array")
   {
@@ -504,9 +504,9 @@ SCENARIO("one array without elements", "[ConsColl]")
     }
   }
 }
-#endif
 
-SCENARIO("recycle ConsContainer", "[ConsColl]")
+
+SCENARIO("recycle ConsContainer", "[GarbageCollector]")
 {
   auto coll = std::make_shared<GarbageCollector>(8, 1);
   auto container = coll->makeContainer();
@@ -631,7 +631,7 @@ SCENARIO("recycle ConsContainer", "[ConsColl]")
     }
   }
 }
-
+#endif
 //////////////////////////////////////////////////////////
 /// implementation
 //////////////////////////////////////////////////////////

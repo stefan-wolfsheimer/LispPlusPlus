@@ -32,6 +32,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <cstdint>
 #include <functional>
 #include <type_traits>
+#include <lpp/core/gc/collectible_container.h>
 #include <lpp/core/types/collectible.h>
 #include <lpp/core/types/type_id.h>
 #include <lpp/core/lisp_object.h>
@@ -59,52 +60,69 @@ namespace Lisp
     inline void unsetCdr();
     inline void setCar(const Object & rhs);
     inline void setCdr(const Object & rhs);
-    void setCar(Cons * cons,
-                TypeId typeId=TypeTraits<Cons>::typeId);
-    void setCdr(Cons * cons,
-                TypeId typeId=TypeTraits<Cons>::typeId);
+    inline void setCar(Cons * cons,
+                       TypeId typeId=TypeTraits<Cons>::typeId);
+    inline void setCdr(Cons * cons,
+                       TypeId typeId=TypeTraits<Cons>::typeId);
     inline void forEachChild(std::function<void(const Cell&)> func) const;
+    inline void grey();
   private:
     Cell car;
     Cell cdr;
-    void unroot();
-    void root();
+    inline void unroot();
+    inline void root();
+
+    /**
+     * Performs a garbage collector step on cons
+     *
+     * If color is getFromColor() then change color to getToColor()
+     * If color is getFromRootColor() then change color to getToRootColor()
+     * If color is Color::Grey then  change color to getToColor()
+     * If color is Color::GreyRoot then change color to getToRootColor()
+     * All children having getFromColor() or getFromRootColor()) are changed
+     * to Color::GreyRoot or Color::Grey.
+     */
+    inline void gcStep();
     Cons();
   };
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-Lisp::Object Lisp::Cons::getCar() const
+inline Lisp::Cons::Cons() : car(Lisp::nil), cdr(Lisp::nil)
+{
+}
+
+inline Lisp::Object Lisp::Cons::getCar() const
 {
   return Lisp::Object(car);
 }
 
-Lisp::Object Lisp::Cons::getCdr() const
+inline Lisp::Object Lisp::Cons::getCdr() const
 {
   return Lisp::Object(cdr);
 }
 
-const Lisp::Cell & Lisp::Cons::getCarCell() const
+inline const Lisp::Cell & Lisp::Cons::getCarCell() const
 {
   return car;
 }
 
-const Lisp::Cell & Lisp::Cons::getCdrCell() const
+inline const Lisp::Cell & Lisp::Cons::getCdrCell() const
 {
   return cdr;
 }
 
-void Lisp::Cons::unsetCar()
+inline void Lisp::Cons::unsetCar()
 {
   car = Lisp::nil;
 }
 
-void Lisp::Cons::unsetCdr()
+inline void Lisp::Cons::unsetCdr()
 {
   cdr = Lisp::nil;
 }
 
-void Lisp::Cons::setCar(const Object & rhs)
+inline void Lisp::Cons::setCar(const Object & rhs)
 {
   Lisp::Cons * cons = rhs.as<Cons>();
   if(cons)
@@ -118,7 +136,7 @@ void Lisp::Cons::setCar(const Object & rhs)
   }
 }
 
-void Lisp::Cons::setCdr(const Object & rhs)
+inline void Lisp::Cons::setCdr(const Object & rhs)
 {
   Lisp::Cons * cons = rhs.as<Cons>();
   if(cons)
@@ -132,8 +150,53 @@ void Lisp::Cons::setCdr(const Object & rhs)
   }
 }
 
-void Lisp::Cons::forEachChild(std::function<void(const Cell&)> func) const
+//@todo move everything to header
+
+void Lisp::Cons::setCar(Cons * cons, TypeId _typeId)
+{
+  car = Lisp::nil;
+  car.typeId = _typeId; 
+  car.data.ptr = cons;
+  gcStep();
+}
+
+void Lisp::Cons::setCdr(Cons * cons, TypeId _typeId)
+{
+  cdr = Lisp::nil;
+  cdr.typeId = _typeId;
+  cdr.data.ptr = cons;
+  gcStep();
+}
+
+inline void Lisp::Cons::forEachChild(std::function<void(const Cell&)> func) const
 {
   func(car);
   func(cdr);
+}
+
+inline void Lisp::Cons::unroot()
+{
+  Collectible::unrootInternal<Cons>();
+}
+
+inline void Lisp::Cons::root()
+{
+  Collectible::rootInternal<Cons>();
+}
+
+inline void Lisp::Cons::grey()
+{
+  Collectible::greyInternal<Cons>();
+}
+
+inline void Lisp::Cons::gcStep()
+{
+  getCarCell().grey();
+  getCdrCell().grey();
+  auto toContainer = getContainer<Cons>()->getToContainer<Cons>();
+  if(toContainer)
+  {
+    getContainer<Cons>()->remove(this);
+    toContainer->add(this);
+  }
 }

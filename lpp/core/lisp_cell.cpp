@@ -2,6 +2,7 @@
 #include "lisp_cell.h"
 #include "lisp_object.h"
 #include "types/cons.h"
+#include "types/container.h"
 #include "lisp_symbol_factory.h"
 
 using Cell = Lisp::Cell;
@@ -43,15 +44,20 @@ Lisp::Cell::Cell(const Object & rhs)
   }
 }
 
+Cell::Cell(Container * rhs, TypeId typeId)
+{
+  typeId = typeId;
+  data.ptr = rhs;
+}
+
 Cell::~Cell()
 {
   unset();
 }
 
-void Lisp::Cell::init(Lisp::Cons * cons,
+void Lisp::Cell::init(Lisp::Collectible * cons,
                       Lisp::TypeId _typeId)
 {
-  //todo replace Cons with Collectible
   typeId = _typeId;
   data.ptr = static_cast<BasicType*>(cons);
 }
@@ -77,4 +83,21 @@ void Cell::forEachChild(std::function<void(const Cell&)> func) const
     as<Cons>()->forEachChild(func);
   }
 }
+
+void Cell::grey() const
+{
+  auto cons = as<Cons>();
+  if(cons)
+  {
+    cons->grey();
+    return;
+  }
+  auto container = as<Container>();
+  if(container)
+  {
+    container->grey();
+    return;
+  }
+}
+
 

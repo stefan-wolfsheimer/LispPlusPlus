@@ -101,8 +101,7 @@ void Object::unsetCons()
 void Object::init(Cons * cons, TypeId _typeId)
 {
   Cell::init(cons, _typeId);
-  assert(cons->isRoot());
-  cons->refCount++;
+  cons->incRefCount();
 }
 
 Object Lisp::nil(Object::nil());

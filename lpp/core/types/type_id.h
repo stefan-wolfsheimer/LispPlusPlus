@@ -229,6 +229,7 @@ namespace Lisp
   struct TypeTraits<const Container> : public TypeTraits<void>
   {
     typedef Container * Type;
+
     static inline bool isA(TypeId tid)
     {
       return (tid & 0xc000) == 0xc000;

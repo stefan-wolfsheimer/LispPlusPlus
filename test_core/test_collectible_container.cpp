@@ -31,14 +31,13 @@ either expressed or implied, of the FreeBSD Project.
 #include <catch.hpp>
 #include <lpp/core/gc/collectible_container.h>
 #include <lpp/core/gc/unmanaged_collectible_container.h>
-#include <lpp/core/types/cons.h>
+#include <lpp/core/types/collectible.h>
 
 using Color = Lisp::Color;
+using Collectible = Lisp::Collectible;
 
-struct Entity
+struct Entity : public Collectible
 {
-  Color color;
-  std::size_t index;
 };
 
 using CollectibleContainer = Lisp::CollectibleContainer<Entity>;
@@ -58,18 +57,18 @@ TEST_CASE("collectible_container_life_cycle", "[CollectibleContainer]")
   container.add(&ent2);
   container.add(&ent3);
   REQUIRE(container.size() == 3);
-  REQUIRE(ent1.color == Color::Black);
-  REQUIRE(ent1.index == 0u);
-  REQUIRE(ent2.color == Color::Black);
-  REQUIRE(ent2.index == 1u);
-  REQUIRE(ent3.color == Color::Black);
-  REQUIRE(ent3.index == 2u);
+  REQUIRE(ent1.getColor() == Color::Black);
+  REQUIRE(ent1.getIndex() == 0u);
+  REQUIRE(ent2.getColor() == Color::Black);
+  REQUIRE(ent2.getIndex() == 1u);
+  REQUIRE(ent3.getColor() == Color::Black);
+  REQUIRE(ent3.getIndex() == 2u);
   container.remove(&ent1);
   REQUIRE(container.size() == 2);
-  REQUIRE(ent2.color == Color::Black);
-  REQUIRE(ent2.index == 1u);
-  REQUIRE(ent3.color == Color::Black);
-  REQUIRE(ent3.index == 0u);
+  REQUIRE(ent2.getColor() == Color::Black);
+  REQUIRE(ent2.getIndex() == 1u);
+  REQUIRE(ent3.getColor() == Color::Black);
+  REQUIRE(ent3.getIndex() == 0u);
   REQUIRE(container.popBack() == &ent2);
   REQUIRE(container.size() == 1);
   REQUIRE(container.popBack() == &ent3);

@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2017, Stefan Wolfsheimer
+Copyright (c) 2018, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -28,54 +28,12 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#include <assert.h>
+#include <lpp/core/gc/collectible_container.h>
 #include <lpp/core/gc/garbage_collector.h>
-#include "cons.h"
 
-using Cons = Lisp::Cons;
-
-Lisp::Cons::Cons() :
-   car(Lisp::nil),
-   cdr(Lisp::nil)
+//@todo move to basic_collectible_container
+void Lisp::CollectibleContainer<void>::collect()
 {
-  //color = Color::Void;
-  refCount = 0;
+  gc->stepCollector();
+  gc->stepRecycle();
 }
-
-void Lisp::Cons::unroot()
-{
-  if(!--refCount)
-  {
-    consFactory->unroot(this);
-  }
-}
-
-void Lisp::Cons::root()
-{
-  if(isRoot())
-  {
-    ++refCount;
-  }
-  else
-  {
-    consFactory->root(this);
-  }
-}
-
-
-void Lisp::Cons::setCar(Cons * cons, TypeId _typeId)
-{
-  car = Lisp::nil;
-  car.typeId = _typeId; 
-  car.data.ptr = cons;
-  consFactory->gcStep(this);
-}
-
-void Lisp::Cons::setCdr(Cons * cons, TypeId _typeId)
-{
-  cdr = Lisp::nil;
-  cdr.typeId = _typeId;
-  cdr.data.ptr = cons;
-  consFactory->gcStep(this);
-}
-

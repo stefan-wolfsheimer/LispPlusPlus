@@ -33,6 +33,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <assert.h>
 #include <lpp/core/gc/color.h>
 #include <lpp/core/lisp_cell.h>
+#include <lpp/core/gc/basic_collectible_container.h>
 
 namespace Lisp
 {
@@ -41,25 +42,13 @@ namespace Lisp
 
   class GarbageCollector;
 
-  class BasicCollectibleContainer
-  {
-  public:
-    BasicCollectibleContainer(Color _color, GarbageCollector * _gc);
-  protected:
-    GarbageCollector * gc;
-    Color color;
-
-  };
-
   template<typename T>
-  class CollectibleContainer : public BasicCollectibleContainer
+  class CollectibleContainer : public CollectibleContainer<void>
   {
   public:
     friend class GarbageCollector;
     friend class UnmanagedCollectibleContainer<T>;
     CollectibleContainer(Color _color, GarbageCollector * _gc);
-    inline Color getColor() const;
-    inline ConsFactory * getCollector() const;
     inline void remove(T * obj);
     inline void add(T * obj);
     inline T * popBack();
@@ -67,37 +56,23 @@ namespace Lisp
     inline std::size_t size() const;
     inline void addTo(std::vector<Cell> & cells) const;
 
+    inline void root(T * obj);
+    inline void unroot(T * obj);
+    
     using const_iterator = typename std::vector<T*>::const_iterator;
     inline const_iterator cbegin() const noexcept;
     inline const_iterator cend() const noexcept;
 
   private:
     std::vector<T*> elements;
-    //GarbageCollector * gc;
-    //Color color;
   };
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-inline Lisp::BasicCollectibleContainer::BasicCollectibleContainer(Color _color,
-                                                                  GarbageCollector * _gc) : gc(_gc), color(_color)
-{}
-
 template<typename T>
-inline Lisp::CollectibleContainer<T>::CollectibleContainer(Color _color,
-                                                           GarbageCollector * _gc) : BasicCollectibleContainer(_color, _gc)
-{}
-
-template<typename T>
-inline Lisp::Color Lisp::CollectibleContainer<T>::getColor() const
+inline Lisp::CollectibleContainer<T>::CollectibleContainer(Color _color, GarbageCollector * _gc)
+  : CollectibleContainer<void>(_color, _gc)
 {
-  return color; 
-}
-
-template<typename T>
-inline Lisp::ConsFactory * Lisp::CollectibleContainer<T>::getCollector() const
-{
-  return gc;
 }
 
 template<typename T>
@@ -114,8 +89,8 @@ inline void Lisp::CollectibleContainer<T>::remove(T * obj)
 template<typename T>
 inline void Lisp::CollectibleContainer<T>::add(T * obj)
 {
-  obj->color = color;
   obj->index = elements.size();
+  obj->container = this;
   elements.push_back(obj);
 }
 
@@ -146,6 +121,28 @@ void Lisp::CollectibleContainer<T>::addTo(std::vector<Cell> & cells) const
   {
     cells.push_back(p);
   }
+}
+
+template<typename T>
+inline void Lisp::CollectibleContainer<T>::root(T * obj)
+{
+  assert(!obj->isRoot());
+  assert(obj->index < elements.size());
+  assert(obj == elements[obj->index]);
+  remove(obj);
+  obj->refCount = 1;
+  getOtherContainer<T>()->add(obj);
+  collect();
+}
+
+template<typename T>
+inline void Lisp::CollectibleContainer<T>::unroot(T * obj)
+{
+  assert(obj->isRoot());
+  assert(obj == elements[obj->index]);
+  remove(obj);
+  getOtherContainer<T>()->add(obj);
+  collect();
 }
 
 template<typename T>

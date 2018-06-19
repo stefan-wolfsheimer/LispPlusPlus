@@ -34,7 +34,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <assert.h>
 #include <lpp/core/gc/garbage_collector.h>
 #include <lpp/core/gc/color.h>
-///todo: move to core/gc
+///@todo: remove
 
 namespace Lisp
 {
@@ -91,7 +91,7 @@ inline void Lisp::ConsContainer::pushCons(Cons * cons)
   cons->root();
   if(color == consFactory->getToRootColor())
   {
-    consFactory->gcStep(cons);
+    cons->gcStep();
   }
   conses.push_back(cons);
 }
@@ -145,7 +145,7 @@ inline void Lisp::ConsContainer::setCons(size_type pos, Cons* cons)
   conses[pos]->unroot();
   cons->root();
   // make sure that cons has ToColor
-  consFactory->gcStep(cons);
+  cons->gcStep();
   conses[pos] = cons;
 }
 
