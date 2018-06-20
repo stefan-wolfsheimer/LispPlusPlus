@@ -29,9 +29,9 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include <catch.hpp>
-#include <lpp/core/lisp_vm.h>
+#include <lpp/core/vm.h>
 #include <lpp/core/types/cons.h>
-#include <lpp/core/lisp_cell.h>
+#include <lpp/core/cell.h>
 #include "test_random_access_iterator.h"
 
 using Cell = Lisp::Cell;

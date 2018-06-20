@@ -32,7 +32,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <cstdint>
 #include <vector>
 #include <assert.h>
-#include <lpp/core/lisp_object.h>
+#include <lpp/core/object.h>
 #include <lpp/core/gc/garbage_collector.h>
 
 

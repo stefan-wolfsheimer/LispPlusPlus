@@ -5,8 +5,8 @@ add_library( Core
   gc/garbage_collector.cpp
   gc/collectible_container.cpp
   gc/collectible_graph.cpp
-  lisp_cell.cpp
-  lisp_object.cpp
-  lisp_symbol_factory.cpp
-  lisp_vm.cpp
-  lisp_compile.cpp )
+  cell.cpp
+  object.cpp
+  symbol_factory.cpp
+  vm.cpp
+  compile.cpp )

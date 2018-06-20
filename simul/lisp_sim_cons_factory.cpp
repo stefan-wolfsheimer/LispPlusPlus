@@ -34,7 +34,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <exception>
 #include <assert.h>
 #include <lpp/core/gc/garbage_collector.h>
-#include <lpp/core/lisp_object.h>
+#include <lpp/core/object.h>
 #include <lpp/core/types/cons.h>
 
 #include <lpp/core/gc/collectible_graph.h>

@@ -30,7 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
 #include <unordered_set>
-#include <lpp/core/lisp_cell.h>
+#include <lpp/core/cell.h>
 
 namespace Lisp
 {

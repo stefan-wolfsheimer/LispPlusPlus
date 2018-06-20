@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2017-2018, Stefan Wolfsheimer
+Copyright (c) 2017, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -28,46 +28,82 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#pragma once
-#include <unordered_map>
-#include "lisp_object.h"
+#include <assert.h>
+#include "object.h"
+#include "types/cons.h"
 
-namespace Lisp
+using Object = Lisp::Object;
+using Nil = Lisp::Nil;
+
+Object::Object(const Object & rhs) : Cell(rhs)
 {
-  class Symbol;
-  class Object;
-  class Env
+  if(rhs.isA<Lisp::Cons>())
   {
-  public:
-    void set(Symbol * symb, const Object & obj);
-    void set(Symbol * symb, Object && obj);
-    bool unset(Symbol * symb);
-    const Object & find(Symbol * symb) const;
-  private:
-    std::unordered_map<Symbol*, Object> bindings;
-  };
-
-} //namespace Lisp
-
-inline void Lisp::Env::set(Symbol * symb, const Object & obj)
-{
-  bindings[symb] = obj;
-}
-
-inline void Lisp::Env::set(Symbol * symb, Object && obj)
-{
-  bindings[symb] = obj;
-}
-
-inline const Lisp::Object & Lisp::Env::find(Symbol * symb) const
-{
-  auto itr = bindings.find(symb);
-  if(itr == bindings.end())
-  {
-    return Lisp::undefined;
-  }
-  else
-  {
-    return itr->second;
+    ((Cons*)data.ptr)->root();
   }
 }
+
+Object::Object(const Cell & rhs) : Cell(rhs)
+{
+  if(rhs.isA<Lisp::Cons>())
+  {
+    ((Cons*)data.ptr)->root();
+  }
+}
+
+Object::~Object()
+{
+  unsetCons();
+}
+
+
+Object & Lisp::Object::operator=(const Object & rhs)
+{
+  Cell::unset();
+  unsetCons();
+  typeId = rhs.typeId;
+  if(rhs.isA<Lisp::Cons>())
+  {
+    assert(rhs.as<Cons>()->isRoot());
+    assert(rhs.as<Cons>()->getRefCount() > 0u);
+    data.ptr = rhs.as<Cons>();
+    // todo make more efficient
+    // rhs is by definition already rooted: only need to change reference count
+    ((Cons*)data.ptr)->root(); 
+  }
+  if(rhs.isA<Lisp::ManagedType>())
+  {
+    Cell::init(rhs.as<ManagedType>(), rhs.getTypeId());
+  }
+  return *this;
+}
+
+Lisp::Object & Lisp::Object::operator=(Object && rhs)
+{
+  Cell::unset();
+  unsetCons();
+  typeId = rhs.typeId;
+  data = rhs.data;
+  rhs.typeId = TypeTraits<Nil>::typeId;
+  return *this;
+}
+
+void Object::unsetCons()
+{
+  if(isA<Cons>())
+  {
+    assert(as<Cons>()->isRoot());
+    assert(as<Cons>()->getRefCount() > 0u);
+    ((Cons*)data.ptr)->unroot();
+  }
+}
+
+void Object::init(Cons * cons, TypeId _typeId)
+{
+  Cell::init(cons, _typeId);
+  cons->incRefCount();
+}
+
+Object Lisp::nil(Object::nil());
+Object Lisp::undefined(Object::undefined());
+

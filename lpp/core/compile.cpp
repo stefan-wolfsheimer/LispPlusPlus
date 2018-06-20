@@ -1,6 +1,6 @@
-#include "lisp_vm.h"
+#include "vm.h"
 #include "types/lisp_function.h"
-#include "lisp_opcode.h"
+#include "opcode.h"
 
 using Object = Lisp::Object;
 using Function = Lisp::Function;

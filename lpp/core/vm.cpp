@@ -29,10 +29,10 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include <assert.h>
-#include "lisp_vm.h"
+#include "vm.h"
 #include "types/lisp_function.h"
-#include "lisp_config.h"
-#include "lisp_opcode.h"
+#include "config.h"
+#include "opcode.h"
 
 #ifdef NDEBUG
 const bool Lisp::Vm::withDebug = false;

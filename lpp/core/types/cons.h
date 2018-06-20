@@ -35,7 +35,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <lpp/core/gc/collectible_container.h>
 #include <lpp/core/types/collectible.h>
 #include <lpp/core/types/type_id.h>
-#include <lpp/core/lisp_object.h>
+#include <lpp/core/object.h>
 
 namespace Lisp
 {

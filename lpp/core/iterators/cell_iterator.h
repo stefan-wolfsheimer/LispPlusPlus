@@ -1,6 +1,6 @@
 #pragma once
 #include <iterator>
-#include <core/lisp_cell.h>
+#include <core/cell.h>
 
 namespace Lisp
 {

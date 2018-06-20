@@ -29,9 +29,9 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include <catch.hpp>
-#include <lpp/core/lisp_vm.h>
+#include <lpp/core/vm.h>
 #include <lpp/core/types/lisp_builtin_function.h>
-#include <lpp/core/lisp_object.h>
+#include <lpp/core/object.h>
 
 using BuiltinFunction = Lisp::BuiltinFunction;
 using Vm = Lisp::Vm;

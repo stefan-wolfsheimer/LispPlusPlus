@@ -1,9 +1,9 @@
 #include <assert.h>
-#include "lisp_cell.h"
-#include "lisp_object.h"
+#include "cell.h"
+#include "object.h"
 #include "types/cons.h"
 #include "types/container.h"
-#include "lisp_symbol_factory.h"
+#include "symbol_factory.h"
 
 using Cell = Lisp::Cell;
 using Cons = Lisp::Cons;

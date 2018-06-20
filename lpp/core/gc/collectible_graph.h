@@ -32,7 +32,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <memory>
 #include <unordered_map>
 #include <unordered_set>
-#include <lpp/core/lisp_cell.h>
+#include <lpp/core/cell.h>
 
 namespace Lisp
 {

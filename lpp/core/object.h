@@ -28,40 +28,76 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#include <assert.h>
-#include "lisp_symbol_factory.h"
-#include "types/lisp_symbol.h"
+#pragma once
+#include <cstdint>
+#include "cell.h"
+#include "config.h"
 
-using SymbolFactory = Lisp::SymbolFactory;
-using Symbol = Lisp::Symbol;
-
-SymbolFactory::~SymbolFactory()
+namespace Lisp
 {
-  for(auto & p : symbols)
+  class Object : public Cell
   {
-    assert(p.second->factory == this);
-    p.second->factory = nullptr;
-  }
+  public:
+    Object();
+    Object(const Object & rhs);
+    Object(Object && rhs);
+    explicit Object(const Cell & rhs);
+
+    template<typename T>
+    Object(T * obj);
+    static Object nil();
+    static Object undefined();
+
+    Object & operator=(const Object & rhs);
+    Object & operator=(Object && rhs);
+ 
+    ~Object();
+
+  protected:
+    void init(Cons * cons, TypeId _typeId);
+    inline void init(ManagedType * managedType, TypeId _typeId);
+  private:
+    inline void unsetCons();
+  };
+
+  extern Object nil;
+  extern Object undefined;
 }
 
-Symbol * SymbolFactory::make(const std::string & name)
+inline Lisp::Object::Object() : Lisp::Cell()
 {
-  auto res = symbols.insert(std::make_pair(name, (Symbol*)nullptr));
-  if(res.second)
-  {
-    res.first->second = new Symbol(res.first->first.c_str(), this);
-    return res.first->second;
-  }
-  else
-  {
-    return res.first->second;
-  }
 }
 
-void SymbolFactory::remove(Symbol * symbol)
+inline Lisp::Object::Object(Object && rhs)
 {
-  auto itr = symbols.find(symbol->getName());
-  assert(itr != symbols.end());
-  symbols.erase(itr);
+  typeId = rhs.typeId;
+  data = rhs.data;
+  rhs.typeId = TypeTraits<Nil>::typeId;
 }
 
+template<typename T>
+inline Lisp::Object::Object(T * obj)
+{
+  init(obj, TypeTraits<T>::typeId);
+}
+
+inline Lisp::Object Lisp::Object::nil()
+{
+  Object ret;
+  ret.typeId = TypeTraits<Nil>::typeId;
+  ret.data.ptr = nullptr;
+  return ret;
+}
+
+inline Lisp::Object Lisp::Object::undefined()
+{
+  Object ret;
+  ret.typeId = TypeTraits<Undefined>::typeId;
+  ret.data.ptr = nullptr;
+  return ret;
+}
+
+inline void Lisp::Object::init(ManagedType * managedType, TypeId _typeId)
+{
+  Cell::init(managedType, _typeId);
+}

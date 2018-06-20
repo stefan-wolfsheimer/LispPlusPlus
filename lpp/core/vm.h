@@ -31,7 +31,7 @@ either expressed or implied, of the FreeBSD Project.
 #pragma once
 #include <memory>
 #include <lpp/core/gc/garbage_collector.h>
-#include "lisp_object.h"
+#include "object.h"
 #include "types/lisp_function_interface.h"
 
 namespace Lisp

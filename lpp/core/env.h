@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2017, Stefan Wolfsheimer
+Copyright (c) 2017-2018, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -29,75 +29,45 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
-#include <cstdint>
-#include "lisp_cell.h"
-#include "lisp_config.h"
+#include <unordered_map>
+#include "object.h"
 
 namespace Lisp
 {
-  class Object : public Cell
+  class Symbol;
+  class Object;
+  class Env
   {
   public:
-    Object();
-    Object(const Object & rhs);
-    Object(Object && rhs);
-    explicit Object(const Cell & rhs);
-
-    template<typename T>
-    Object(T * obj);
-    static Object nil();
-    static Object undefined();
-
-    Object & operator=(const Object & rhs);
-    Object & operator=(Object && rhs);
- 
-    ~Object();
-
-  protected:
-    void init(Cons * cons, TypeId _typeId);
-    inline void init(ManagedType * managedType, TypeId _typeId);
+    void set(Symbol * symb, const Object & obj);
+    void set(Symbol * symb, Object && obj);
+    bool unset(Symbol * symb);
+    const Object & find(Symbol * symb) const;
   private:
-    inline void unsetCons();
+    std::unordered_map<Symbol*, Object> bindings;
   };
 
-  extern Object nil;
-  extern Object undefined;
+} //namespace Lisp
+
+inline void Lisp::Env::set(Symbol * symb, const Object & obj)
+{
+  bindings[symb] = obj;
 }
 
-inline Lisp::Object::Object() : Lisp::Cell()
+inline void Lisp::Env::set(Symbol * symb, Object && obj)
 {
+  bindings[symb] = obj;
 }
 
-inline Lisp::Object::Object(Object && rhs)
+inline const Lisp::Object & Lisp::Env::find(Symbol * symb) const
 {
-  typeId = rhs.typeId;
-  data = rhs.data;
-  rhs.typeId = TypeTraits<Nil>::typeId;
-}
-
-template<typename T>
-inline Lisp::Object::Object(T * obj)
-{
-  init(obj, TypeTraits<T>::typeId);
-}
-
-inline Lisp::Object Lisp::Object::nil()
-{
-  Object ret;
-  ret.typeId = TypeTraits<Nil>::typeId;
-  ret.data.ptr = nullptr;
-  return ret;
-}
-
-inline Lisp::Object Lisp::Object::undefined()
-{
-  Object ret;
-  ret.typeId = TypeTraits<Undefined>::typeId;
-  ret.data.ptr = nullptr;
-  return ret;
-}
-
-inline void Lisp::Object::init(ManagedType * managedType, TypeId _typeId)
-{
-  Cell::init(managedType, _typeId);
+  auto itr = bindings.find(symb);
+  if(itr == bindings.end())
+  {
+    return Lisp::undefined;
+  }
+  else
+  {
+    return itr->second;
+  }
 }

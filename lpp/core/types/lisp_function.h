@@ -31,7 +31,7 @@ either expressed or implied, of the FreeBSD Project.
 #pragma once
 #include <cstdint>
 #include <vector>
-#include <lpp/core/lisp_object.h>
+#include <lpp/core/object.h>
 #include <lpp/core/types/type_id.h>
 
 namespace Lisp

@@ -29,7 +29,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include <catch.hpp>
-#include <lpp/core/lisp_cell.h>
+#include <lpp/core/cell.h>
 #include <lpp/core/types/lisp_string.h>
 
 using Cell = Lisp::Cell;

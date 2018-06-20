@@ -38,7 +38,7 @@ either expressed or implied, of the FreeBSD Project.
 // todo: replace ConsContainer
 #include <lpp/core/types/lisp_cons_container.h>
 #include <lpp/core/types/lisp_array.h>
-#include <lpp/core/lisp_object.h>
+#include <lpp/core/object.h>
 
 #include <lpp/core/gc/collectible_graph.h>
 #include <lpp/core/gc/collectible_edge.h>

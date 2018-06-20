@@ -32,7 +32,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <vector>
 #include <assert.h>
 #include <lpp/core/gc/color.h>
-#include <lpp/core/lisp_cell.h>
+#include <lpp/core/cell.h>
 #include <lpp/core/gc/basic_collectible_container.h>
 
 namespace Lisp

@@ -28,8 +28,8 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#include <lpp/core/lisp_symbol_factory.h>
-#include <lpp/core/lisp_object.h>
+#include <lpp/core/symbol_factory.h>
+#include <lpp/core/object.h>
 #include <lpp/core/types/lisp_symbol.h>
 #include <catch.hpp>
 
