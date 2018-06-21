@@ -58,6 +58,7 @@ namespace Lisp
   class Container;
   class Symbol;
   class String;
+  class Array;
   class Cons;
   class Cell;
   class ConsFactory;
@@ -301,6 +302,17 @@ namespace Lisp
       return (tid & 0xc000) == 0x4000;
     }
   };
+
+  template<>
+  struct TypeTraits<Array> : PointerTypeTraits<0xc001u, Array>
+  {
+  };
+
+  template<>
+  struct TypeTraits<const Array> : PointerTypeTraits<0xc001u, const Array>
+  {
+  };
+
 }
 
 

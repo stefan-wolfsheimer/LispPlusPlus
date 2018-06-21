@@ -35,9 +35,7 @@ either expressed or implied, of the FreeBSD Project.
 
 #include <lpp/core/gc/garbage_collector.h>
 #include <lpp/core/types/cons.h>
-// todo: replace ConsContainer
-#include <lpp/core/types/lisp_cons_container.h>
-#include <lpp/core/types/lisp_array.h>
+#include <lpp/core/types/array.h>
 #include <lpp/core/object.h>
 
 #include <lpp/core/gc/collectible_graph.h>
@@ -464,14 +462,24 @@ SCENARIO("copy cons object with object assignement operator", "[GarbageCollector
   }
 }
 
+SCENARIO("one array without elements", "[GarbageCollector]")
+{
+  auto coll = makeCollector(8);
+  GIVEN("A root array")
+  {
+    auto array = coll->make<Array>();
+    //CollectibleGraph graph(*coll);
+    //REQUIRE(array->isRoot());
+    //REQUIRE(array->getColor() == coll->getFromRootColor());
+    //REQUIRE(array->getRefCount() == 1u);
+  }
+}
+
 #if 0
 SCENARIO("one array without elements", "[GarbageCollector]")
 {
   GIVEN("A root array")
   {
-    auto coll = makeCollector(8);
-    auto obj = std::make_shared<Object>(coll->makeArray());
-    auto array = obj->as<Array>();
     CollectibleGraph graph(*coll);
     THEN("it is in root set, has from-color and ref count 1")
     {

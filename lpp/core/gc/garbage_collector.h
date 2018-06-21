@@ -61,6 +61,9 @@ namespace Lisp
     inline Cons * makeCons(const Object & car, Object && cdr);
     inline Cons * makeCons(Object && car, Object && cdr);
 
+    template<typename C>
+    inline C * make();
+    
     inline Color getFromColor() const;
     inline Color getToColor() const;
     inline Color getFromRootColor() const;
@@ -119,6 +122,7 @@ namespace Lisp
     void forEachContainer(const CollectibleContainer<Container> & containers,
                           std::function<void(const Cell &)> func) const;
     inline Cons * makeCons();
+    inline void initContainer(Container *);
     inline void setToColor(Color color);
   };
 }
@@ -134,7 +138,6 @@ inline Lisp::Cons * Lisp::GarbageCollector::makeCons()
   stepRecycle();
   Cons * ret = consPages.next();
   ret->setRefCount(0u);
-  // new cons is root with from-color
   conses[(unsigned char)fromRootColor].add(ret);
   return ret;
 }
@@ -170,6 +173,22 @@ inline Lisp::Cons * Lisp::GarbageCollector::makeCons(Object && car, Object && cd
   ret->cdr = cdr;
   return ret;
 }
+
+inline void Lisp::GarbageCollector::initContainer(Container * container)
+{
+  container->setRefCount(0u);
+  containers[(unsigned char)fromRootColor].add(container);
+}
+
+template<typename C>
+inline C * Lisp::GarbageCollector::make()
+{
+  stepCollector();
+  stepRecycle();
+  C * ret = new C;
+  initContainer(ret);
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -314,14 +333,25 @@ inline void Lisp::GarbageCollector::setToColor(Color color)
     fromColor = Color::Black;
     fromRootColor = Color::BlackRoot;
   }
-  conses[(unsigned short)Color::Black].otherElements = &conses[(unsigned short)fromRootColor];
-  conses[(unsigned short)Color::Grey].otherElements = &conses[(unsigned short)fromRootColor];
-  conses[(unsigned short)Color::White].otherElements = &conses[(unsigned short)fromRootColor];
-  conses[(unsigned short)fromColor].greyElements = &conses[(unsigned short)Color::Grey];
-  conses[(unsigned short)fromRootColor].greyElements = &conses[(unsigned short)Color::GreyRoot];
-  conses[(unsigned short)toColor].toElements = nullptr;
-  conses[(unsigned short)toRootColor].toElements = nullptr;
-  conses[(unsigned short)Color::Grey].toElements = &conses[(unsigned short)toColor];
-  conses[(unsigned short)Color::GreyRoot].toElements = &conses[(unsigned short)toRootColor];
+  conses[(unsigned short)fromRootColor].otherElements     = &conses[(unsigned short)fromColor];
+  conses[(unsigned short)Color::GreyRoot].otherElements   = &conses[(unsigned short)Color::Grey];
+  conses[(unsigned short)toRootColor].otherElements       = &conses[(unsigned short)toColor];
+  conses[(unsigned short)Color::White].otherElements      = &conses[(unsigned short)fromRootColor];
+  conses[(unsigned short)Color::Grey].otherElements       = &conses[(unsigned short)fromRootColor];
+  conses[(unsigned short)Color::Black].otherElements      = &conses[(unsigned short)fromRootColor];
+
+  conses[(unsigned short)fromRootColor].greyElements      = &conses[(unsigned short)Color::GreyRoot];
+  conses[(unsigned short)Color::GreyRoot].greyElements    = nullptr;
+  conses[(unsigned short)toRootColor].greyElements        = nullptr;
+  conses[(unsigned short)fromColor].greyElements          = &conses[(unsigned short)Color::Grey];
+  conses[(unsigned short)Color::Grey].greyElements        = nullptr;
+  conses[(unsigned short)toColor].greyElements            = nullptr;
+
+  conses[(unsigned short)fromRootColor].toElements        = &conses[(unsigned short)Color::GreyRoot];
+  conses[(unsigned short)Color::GreyRoot].toElements      = &conses[(unsigned short)toRootColor];;
+  conses[(unsigned short)toRootColor].toElements          = nullptr;
+  conses[(unsigned short)fromColor].toElements            = &conses[(unsigned short)Color::Grey];
+  conses[(unsigned short)Color::Grey].toElements          = &conses[(unsigned short)toColor];;
+  conses[(unsigned short)toColor].toElements              = nullptr;
 }
 

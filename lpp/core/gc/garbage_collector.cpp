@@ -60,11 +60,6 @@ GarbageCollector::GarbageCollector(std::size_t consPageSize,
     backRecycleSteps(_recycleSteps)
 {
   setToColor(Color::Black);
-  conses[(unsigned short)Color::BlackRoot].otherElements = &conses[(unsigned short)Color::Black];
-  conses[(unsigned short)Color::GreyRoot].otherElements = &conses[(unsigned short)Color::Grey];
-  conses[(unsigned short)Color::WhiteRoot].otherElements = &conses[(unsigned short)Color::White];
-  conses[(unsigned short)Color::Grey].greyElements = nullptr;
-  conses[(unsigned short)Color::GreyRoot].greyElements = nullptr;
 }
 
 void GarbageCollector::forEachCons(const CollectibleContainer<Cons> & conses,

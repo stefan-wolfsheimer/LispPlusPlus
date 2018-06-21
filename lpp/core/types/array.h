@@ -29,30 +29,41 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
+#include <lpp/core/types/container.h>
+
+namespace Lisp
+{
+  class Array : public Container
+  {
+  public:
+    virtual TypeId getTypeId() const override;
+  };
+}
+
+#if 0
+#pragma once
 #include <cstdint>
 #include <vector>
 #include <assert.h>
-#include <lpp/core/object.h>
-#include <lpp/core/gc/garbage_collector.h>
+#include <lpp/core/cell.h>
 
 
 namespace Lisp
 {
   class Cons;
-  // Todo replace ConsContainer with Array
 
-  class Array
+  class Array : public Container
   {
   public:
     using Color = Lisp::Color;
-    using const_iterator = std::vector<Object>::const_iterator;
-    using const_reverse_iterator = std::vector<Object>::const_reverse_iterator;
-    using size_type = std::vector<Object>::size_type;
-    using difference_type = std::vector<Object>::difference_type;
-    using reference = std::vector<Object>::reference;
-    using const_reference = std::vector<Object>::const_reference;
-    using pointer = std::vector<Object>::pointer;
-    using const_pointer = std::vector<Object>::const_pointer;
+    using const_iterator = std::vector<Cell>::const_iterator;
+    using const_reverse_iterator = std::vector<Cell>::const_reverse_iterator;
+    using size_type = std::vector<Cell>::size_type;
+    using difference_type = std::vector<Cell>::difference_type;
+    using reference = std::vector<Cell>::reference;
+    using const_reference = std::vector<Cell>::const_reference;
+    using pointer = std::vector<Cell>::pointer;
+    using const_pointer = std::vector<Cell>::const_pointer;
     inline const_iterator cbegin() const;
     inline const_iterator cend() const;
     inline const_reverse_iterator crbegin() const;
@@ -60,32 +71,32 @@ namespace Lisp
     inline const_reference at(size_type pos) const;
     inline const_reference operator[](size_type pos) const;
 
-    inline void push_back(const Object & rhs);
-    inline void push_back(Object && rhs);
+    inline void push_back(const Cell & rhs);
+    inline void push_back(Cell && rhs);
 
-    inline Color getColor() const;
+    //inline Color getColor() const;
     inline std::size_t getGcTop() const;
   private:
     friend class GarbageCollector;
-    Array(GarbageCollector * _consFactory, Color color, std::size_t _index);
-    std::vector<Lisp::Object> data;
+    //Array(GarbageCollector * _consFactory, Color color, std::size_t _index);
+    std::vector<Lisp::Cell> data;
     std::size_t gcTop;
-    GarbageCollector * consFactory;
-    Color color;
-    std::size_t index;
+    //GarbageCollector * consFactory;
+    //Color color;
+    //std::size_t index;
   };
 }
 
 /******************************************************************************
  * Implementation
  ******************************************************************************/
-inline Lisp::Array::Array(GarbageCollector * _consFactory,
-                          Color _color,
-                          std::size_t _index)
-  : consFactory(_consFactory), color(_color), index(_index)
-{
-  gcTop = 0;
-}
+//inline Lisp::Array::Array(GarbageCollector * _consFactory,
+//                          Color _color,
+//                          std::size_t _index)
+//  : consFactory(_consFactory), color(_color), index(_index)
+//{
+//  gcTop = 0;
+//}
 
 inline Lisp::Array::const_iterator Lisp::Array::cbegin() const
 {
@@ -118,7 +129,7 @@ Lisp::Array::operator[]( size_type pos ) const
   return data[pos];
 }
 
-inline void Lisp::Array::push_back(const Object & rhs)
+inline void Lisp::Array::push_back(const Cell & rhs)
 {
   /*if(rhs.isA<Lisp::Cons>())
   {
@@ -131,7 +142,7 @@ inline void Lisp::Array::push_back(const Object & rhs)
   data.push_back(rhs);
 }
 
-inline void Lisp::Array::push_back(Object && rhs)
+inline void Lisp::Array::push_back(Cell && rhs)
 {
   /*if(rhs.isA<Lisp::Cons>())
   {
@@ -145,12 +156,13 @@ inline void Lisp::Array::push_back(Object && rhs)
 }
 
 
-inline Lisp::Color Lisp::Array::getColor() const
-{
-  return color;
-}
+//inline Lisp::Color Lisp::Array::getColor() const
+//{
+//  return color;
+//}
 
 inline std::size_t Lisp::Array::getGcTop() const
 {
   return gcTop;
 }
+#endif
