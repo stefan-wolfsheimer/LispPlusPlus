@@ -36,7 +36,8 @@ either expressed or implied, of the FreeBSD Project.
 using Color = Lisp::Color;
 using Collectible = Lisp::Collectible;
 
-struct Entity : public Collectible
+struct Entity : public Collectible,
+                public Lisp::CollectibleMixin<Entity>
 {
 };
 

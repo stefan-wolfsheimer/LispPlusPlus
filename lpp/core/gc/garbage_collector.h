@@ -110,14 +110,8 @@ namespace Lisp
     inline bool checkBulkSanity(Color color) const;
 
   private:
-
-    //CollectibleContainer<Cons> conses[6];
     ColorMap<Cons> consMap;
-    //UnmanagedCollectibleContainer<Cons> disposedConses;
-
-    //@todo containerMap
-    CollectibleContainer<Container> containers[6];
-    UnmanagedCollectibleContainer<Container> disposedContainers;
+    ColorMap<Container> containerMap;
     
     ConsPages consPages;
     unsigned short int garbageSteps;
@@ -185,7 +179,7 @@ inline Lisp::Cons * Lisp::GarbageCollector::makeCons(Object && car, Object && cd
 inline void Lisp::GarbageCollector::initContainer(Container * container)
 {
   container->setRefCount(0u);
-  containers[(unsigned short)Color::White].add(container);
+  containerMap.add(container);
 }
 
 template<typename C>
@@ -195,6 +189,7 @@ inline C * Lisp::GarbageCollector::make()
   stepRecycle();
   C * ret = new C;
   initContainer(ret);
+  return ret;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -230,12 +225,12 @@ inline std::size_t Lisp::GarbageCollector::numCollectible(Color color) const
 
 inline std::size_t Lisp::GarbageCollector::numRootCollectible(Color color) const
 {
-  return consMap.rootSize(color); /*@todo: others + containers[(unsigned char)color].rootSize(); */
+  return consMap.rootSize(color) + containerMap.rootSize(color);
 }
 
 inline std::size_t Lisp::GarbageCollector::numBulkCollectible(Color color) const
 {
-  return consMap.size(color) + containers[(unsigned char)color].size();
+  return consMap.size(color) + containerMap.size(color);
 }
 
 inline std::size_t Lisp::GarbageCollector::numVoidCollectible() const
@@ -245,7 +240,7 @@ inline std::size_t Lisp::GarbageCollector::numVoidCollectible() const
 
 inline std::size_t Lisp::GarbageCollector::numDisposedCollectible() const
 {
-  return consMap.numDisposed() + disposedContainers.size();
+  return consMap.numDisposed() + containerMap.numDisposed();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -301,13 +296,13 @@ inline void Lisp::GarbageCollector::forEachCollectible(Color color, std::functio
 inline void Lisp::GarbageCollector::forEachRootCollectible(Color color, std::function<void(const Cell &)> func) const
 {
   consMap.forEachRoot(color, func);
-  //@todo add container 
+  containerMap.forEachRoot(color, func);
 }
 
 inline void Lisp::GarbageCollector::forEachBulkCollectible(Color color, std::function<void(const Cell &)> func) const
 {
   consMap.forEachBulk(color, func);
-  //@todo add container 
+  containerMap.forEachBulk(color, func);
 }
 
 inline void Lisp::GarbageCollector::forEachDisposedCollectible(std::function<void(const Cell &)> func) const
@@ -412,33 +407,25 @@ inline bool Lisp::GarbageCollector::checkSanity(Color color, bool root) const
       {
         return false;
       }
-      auto coll = cell.as<Collectible>();
-      if(coll->getColor() != color)
+      if(cell.getColor() != color)
       {
         return false;
       }
-      if(coll->isRoot() != root)
+      if(cell.isRoot() != root)
       {
         return false;
       }
-      if(cell.isA<Cons>())
+      if(!cell.checkIndex())
       {
-        coll->getContainer<Cons>()->checkIndex(cell.as<Cons>());
-      }
-      else if(cell.isA<Container>())
-      {
-        coll->getContainer<Container>()->checkIndex(cell.as<Container>());
+        return false;
       }
       if(color == Color::Black)
       {
         bool ret = true;
         cell.forEachChild([&ret](const Cell & child){
-            if(child.isA<const Collectible>())
+            if(child.getColor() == Color::White)
             {
-              if(child.as<const Collectible>()->getColor() == Color::White)
-              {
-                ret = false;
-              }
+              ret = false;
             }
           });
         if(!ret)

@@ -34,29 +34,12 @@ either expressed or implied, of the FreeBSD Project.
 
 namespace Lisp
 {
-  class Container : public Collectible
+  class Container : public Collectible,
+                    public CollectibleMixin<Container>
   {
   public:
     virtual ~Container(){}
     virtual TypeId getTypeId() const = 0;
-    inline void unroot();
-    inline void root();
-    inline void grey();
   protected:
   };
-}
-
-inline void Lisp::Container::unroot()
-{
-  Collectible::unrootInternal<Container>();
-}
-
-inline void Lisp::Container::root()
-{
-  Collectible::rootInternal<Container>();
-}
-
-inline void Lisp::Container::grey()
-{
-  Collectible::greyInternal<Container>();
 }

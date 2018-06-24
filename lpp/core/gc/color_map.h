@@ -32,6 +32,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <functional>
 #include <lpp/core/gc/color.h>
 #include <lpp/core/gc/collectible_container.h>
+#include <lpp/core/cell.h>
 
 namespace Lisp
 {

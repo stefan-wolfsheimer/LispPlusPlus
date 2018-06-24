@@ -42,14 +42,13 @@ namespace Lisp
   class GarbageCollector;
   template<typename T> class CollectibleContainer;
 
-  class Cons : public Collectible
+  class Cons : public Collectible,
+               public CollectibleMixin<Cons>
   {
   public:
     friend class GarbageCollector;
     friend class ConsPages;
-    friend class ConsContainer;
     friend class Object;
-    friend class CollectibleContainer<Cons>;
 
     using Color = Lisp::Color;
     inline TypeId getTypeId() const;
@@ -66,15 +65,11 @@ namespace Lisp
     inline void setCdr(Cons * cons,
                        TypeId typeId=TypeTraits<Cons>::typeId);
     inline void forEachChild(std::function<void(const Cell&)> func) const;
-    inline void grey();
     inline bool greyChildren();
     inline bool unsetNonCollectibleChildren();
   private:
     Cell car;
     Cell cdr;
-    inline void unroot();
-    inline void root();
-
     /**
      * Performs a garbage collector step on cons
      *
@@ -158,9 +153,7 @@ inline void Lisp::Cons::setCdr(const Object & rhs)
   }
 }
 
-//@todo move everything to header
-
-void Lisp::Cons::setCar(Cons * cons, TypeId _typeId)
+inline void Lisp::Cons::setCar(Cons * cons, TypeId _typeId)
 {
   car = Lisp::nil;
   car.typeId = _typeId; 
@@ -168,7 +161,7 @@ void Lisp::Cons::setCar(Cons * cons, TypeId _typeId)
   gcStep();
 }
 
-void Lisp::Cons::setCdr(Cons * cons, TypeId _typeId)
+inline void Lisp::Cons::setCdr(Cons * cons, TypeId _typeId)
 {
   cdr = Lisp::nil;
   cdr.typeId = _typeId;
@@ -180,16 +173,6 @@ inline void Lisp::Cons::forEachChild(std::function<void(const Cell&)> func) cons
 {
   func(car);
   func(cdr);
-}
-
-inline void Lisp::Cons::unroot()
-{
-  Collectible::unrootInternal<Cons>();
-}
-
-inline void Lisp::Cons::root()
-{
-  Collectible::rootInternal<Cons>();
 }
 
 inline bool Lisp::Cons::greyChildren()
@@ -212,19 +195,14 @@ inline bool Lisp::Cons::unsetNonCollectibleChildren()
   return true;
 }
 
-inline void Lisp::Cons::grey()
-{
-  Collectible::greyInternal<Cons>();
-}
-
 inline void Lisp::Cons::gcStep()
 {
   getCarCell().grey();
   getCdrCell().grey();
-  auto toContainer = getContainer<Cons>()->getToContainer<Cons>();
+  auto toContainer = getContainer()->getToContainer();
   if(toContainer)
   {
-    getContainer<Cons>()->remove(this);
+    getContainer()->remove(this);
     toContainer->add(this);
   }
 }

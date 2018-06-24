@@ -3,7 +3,7 @@
 #include <functional>
 #include <lpp/core/types/type_id.h>
 #include <lpp/core/gc/color.h>
-#include <lpp/core/gc/basic_collectible_container.h>
+#include <lpp/core/gc/collectible_container.h>
 
 namespace Lisp
 {
@@ -11,35 +11,29 @@ namespace Lisp
 
   class Collectible : public BasicType
   {
-  public:
-    template<typename T>
-    friend class CollectibleContainer;
+  };
 
-    Collectible();
-    using Color = Lisp::Color;
+  template<typename T>
+  class CollectibleMixin
+  {
+  public:
+    friend class CollectibleContainer<T>;
+
+    CollectibleMixin();
     inline std::size_t getRefCount() const;
     inline void setRefCount(std::size_t);
     inline void incRefCount();
     inline Color getColor() const;
     inline bool isRoot() const;
     inline std::size_t getIndex() const;
-    
-    template<typename T>
     inline CollectibleContainer<T> * getContainer() const;
-
-  protected:
-    template<typename T>
-    inline void unrootInternal();
-
-    template<typename T>
-    inline void rootInternal();
-
-    template<typename T>
-    inline void greyInternal();
-
+    inline void unroot();
+    inline void root();
+    inline void grey();
+    inline bool checkIndex();
   private:
+    CollectibleContainer<T> * container;
     std::size_t refCount;
-    CollectibleContainer<void> * container;
     std::size_t index;
   };
 }
@@ -47,61 +41,66 @@ namespace Lisp
 /******************************************************************************
  * Implementation
  ******************************************************************************/
-inline Lisp::Collectible::Collectible()
+template<typename T>
+inline Lisp::CollectibleMixin<T>::CollectibleMixin()
 {
   refCount = 0;
 }
 
-std::size_t Lisp::Collectible::getRefCount() const
+template<typename T>
+inline std::size_t Lisp::CollectibleMixin<T>::getRefCount() const
 {
   return refCount;
 }
 
-inline void Lisp::Collectible::setRefCount(std::size_t rc)
+template<typename T>
+inline void Lisp::CollectibleMixin<T>::setRefCount(std::size_t rc)
 {
   refCount = rc;
 }
 
-inline void Lisp::Collectible::incRefCount()
+template<typename T>
+inline void Lisp::CollectibleMixin<T>::incRefCount()
 {
   assert(isRoot());
   refCount++;
 }
 
-
-
-Lisp::Color Lisp::Collectible::getColor() const
+template<typename T>
+Lisp::Color Lisp::CollectibleMixin<T>::getColor() const
 {
   return container->getColor();
 }
 
-bool Lisp::Collectible::isRoot() const
+template<typename T>
+bool Lisp::CollectibleMixin<T>::isRoot() const
 {
   return container->isRoot();
 }
 
-std::size_t Lisp::Collectible::getIndex() const
+template<typename T>
+std::size_t Lisp::CollectibleMixin<T>::getIndex() const
 {
   return index;
 }
 
 template<typename T>
-inline Lisp::CollectibleContainer<T> * Lisp::Collectible::getContainer() const
+inline Lisp::CollectibleContainer<T> * Lisp::CollectibleMixin<T>::getContainer() const
 {
-  return static_cast<Lisp::CollectibleContainer<T>*>(container);
+  return container;
 }
 
 template<typename T>
-inline void Lisp::Collectible::unrootInternal()
+inline void Lisp::CollectibleMixin<T>::unroot()
 {
   if(!--refCount)
   {
-    static_cast<Lisp::CollectibleContainer<T>*>(container)->unroot(static_cast<T*>(this));
+    container->unroot(static_cast<T*>(this));
   }
 }
 
 template<typename T>
-inline void Lisp::Collectible::rootInternal()
+inline void Lisp::CollectibleMixin<T>::root()
 {
   if(isRoot())
   {
@@ -109,17 +108,27 @@ inline void Lisp::Collectible::rootInternal()
   }
   else
   {
-    static_cast<Lisp::CollectibleContainer<T>*>(container)->root(static_cast<T*>(this));
+    container->root(static_cast<T*>(this));
   }
 }
 
 template<typename T>
-inline void Lisp::Collectible::greyInternal()
+inline void Lisp::CollectibleMixin<T>::grey()
 {
-  auto greyContainer = container->getGreyContainer<T>();
+  auto greyContainer = container->getGreyContainer();
   if(greyContainer)
   {
-    static_cast<Lisp::CollectibleContainer<T>*>(container)->remove(static_cast<T*>(this));
+    container->remove(static_cast<T*>(this));
     greyContainer->add(static_cast<T*>(this));
   }
+}
+
+template<typename T>
+inline bool Lisp::CollectibleMixin<T>::checkIndex()
+{
+  if(index >= container->size())
+  {
+    return false;
+  }
+  return (*container)[index] == this;
 }

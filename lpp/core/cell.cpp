@@ -95,3 +95,52 @@ void Cell::grey() const
 }
 
 
+bool Lisp::Cell::isRoot() const
+{
+  if(isA<Cons>())
+  {
+    as<Cons>()->isRoot();
+  }
+  else if(isA<Container>())
+  {
+    as<Container>()->isRoot();
+  }
+  else
+  {
+    return false;
+  }
+}
+
+Lisp::Color Lisp::Cell::getColor() const
+{
+  if(isA<Cons>())
+  {
+    as<Cons>()->getColor();
+  }
+  else if(isA<Container>())
+  {
+    as<Container>()->getColor();
+  }
+  else
+  {
+    return Color::Undefined;
+  }
+}
+
+bool Lisp::Cell::checkIndex() const
+{
+  if(isA<Cons>())
+  {
+    return as<Cons>()->checkIndex();
+  }
+  else if(isA<Container>())
+  {
+    return as<Container>()->checkIndex();
+  }
+  else
+  {
+    true;
+  }
+}
+
+

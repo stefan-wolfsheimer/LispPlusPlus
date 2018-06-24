@@ -43,12 +43,7 @@ GarbageCollector::GarbageCollector(std::size_t consPageSize,
                                    unsigned short _recycleSteps)
   : consPages(consPageSize),
     consMap(this),
-    containers({CollectibleContainer<Container>(Lisp::Color::White, false, this),
-          CollectibleContainer<Container>(Lisp::Color::Grey, false, this),
-          CollectibleContainer<Container>(Lisp::Color::Black, false, this),
-          CollectibleContainer<Container>(Lisp::Color::White,true, this),
-          CollectibleContainer<Container>(Lisp::Color::Grey,true, this),
-          CollectibleContainer<Container>(Lisp::Color::Black,true, this) }),
+    containerMap(this),
     garbageSteps(_garbageSteps),
     recycleSteps(_recycleSteps),
     backGarbageSteps(_garbageSteps),
@@ -128,34 +123,6 @@ void GarbageCollector::cycleCollector()
     cons->unsetNonCollectibleChildren();
     consPages.recycle(cons);
   }
-
-  /*
-  //@todo: make it generic for all collectible
-  std::size_t nRoot = 0;
-  std::unordered_set<Cons*> root;
-  for(auto cons : root)
-  {
-    if(cons->isRoot())
-    {
-      nRoot++;
-    }
-  }
-  assert(root.size() >= nRoot);
-  //assert(pages.size() * pageSize > root.size());
-  setToColor(Color::Black);
-  conses[(unsigned char)toColor].elements.clear();
-  conses[(unsigned char)toColor].elements.reserve(root.size() - nRoot);
-  conses[(unsigned char)Color::Grey].elements.clear();
-  conses[(unsigned char)fromRootColor].elements.reserve(conses[(unsigned char)fromRootColor].size() + conses[(unsigned char)toRootColor].size());
-  for(auto obj : conses[(unsigned char)toRootColor].elements)
-  {
-    assert(root.find(obj) != root.end());
-    conses[(unsigned char)fromRootColor].add(obj);
-  }
-  conses[(unsigned char)toRootColor].elements.clear();
-  conses[(unsigned char)fromColor].elements.clear();
-  consPages.recycleAll(root, conses[(unsigned char)toColor], fromRootColor);
-  */
 }
 
 void GarbageCollector::stepCollector()
@@ -187,27 +154,3 @@ void Lisp::GarbageCollector::stepRecycle()
     i--;
   }
 }
-
-
-//////////////////////////////////////////////////
-// @todo: check if the following is still needed
-//////////////////////////////////////////////////
-/*Lisp::Array * GarbageCollector::makeArray()
-{
-  Color color = fromRootColor;
-  auto ret = new Array(this, color, arrays[(unsigned char)color].size());
-  arrays[(unsigned char)color].push_back(ret);
-  return ret;
-  } */
-
-/*Lisp::ConsContainer * GarbageCollector::makeContainer()
-{
-  Color color = fromRootColor;
-  auto ret = new ConsContainer(this,
-                               color,
-                               consContainers[(unsigned char)color].size());
-  consContainers[(unsigned char)color].push_back(ret);
-  return ret;
-  }*/
-
-

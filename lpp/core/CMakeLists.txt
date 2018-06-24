@@ -4,7 +4,6 @@ add_library( Core
   types/array.cpp
   gc/cons_pages.cpp
   gc/garbage_collector.cpp
-  gc/collectible_container.cpp
   gc/collectible_graph.cpp
   cell.cpp
   object.cpp

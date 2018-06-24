@@ -33,6 +33,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <functional>
 #include <lpp/core/types/type_id.h>
 #include <lpp/core/types/managed_type.h>
+#include <lpp/core/gc/color.h>
 
 namespace Lisp
 {
@@ -69,10 +70,15 @@ namespace Lisp
     template<typename T>
     inline typename Lisp::TypeTraits<T>::Type as() const;
 
+    inline bool operator==(const Lisp::Cell & b) const;
+
+    /**
+     * Operations for Collectible */
+    bool isRoot() const;
+    Color getColor() const;
+    bool checkIndex() const;
     void forEachChild(std::function<void(const Cell&)> func) const;
     void grey() const;
-    
-    inline bool operator==(const Lisp::Cell & b) const;
 
   protected:
     TypeId typeId;
@@ -83,6 +89,11 @@ namespace Lisp
   };
 }
 
+//////////////////////////////////////////////////////////////////////
+//
+// hash function for Lisp::Cell
+//
+//////////////////////////////////////////////////////////////////////
 template<>
 class std::hash<Lisp::Cell>
 {
@@ -101,6 +112,11 @@ public:
   }
 };
 
+//////////////////////////////////////////////////////////////////////
+//
+// equal_to for Lisp::Cell
+//
+//////////////////////////////////////////////////////////////////////
 template<>
 class std::equal_to<Lisp::Cell>
 {
@@ -180,4 +196,5 @@ inline bool Lisp::Cell::operator==(const Lisp::Cell & b) const
   static std::equal_to<Lisp::Cell> eq;
   return eq(*this, b);
 }
+
 
