@@ -38,19 +38,6 @@ using CollectibleGraph = Lisp::CollectibleGraph;
 
 using Cell = Lisp::Cell;
 
-GarbageCollector::GarbageCollector(std::size_t consPageSize,
-                                   unsigned short _garbageSteps,
-                                   unsigned short _recycleSteps)
-  : consPages(consPageSize),
-    consMap(this),
-    containerMap(this),
-    garbageSteps(_garbageSteps),
-    recycleSteps(_recycleSteps),
-    backGarbageSteps(_garbageSteps),
-    backRecycleSteps(_recycleSteps)
-{
-}
-
 void GarbageCollector::forEachContainer(const CollectibleContainer<Container> & containers,
                                         std::function<void(const Cell &)> func) const
 {
@@ -93,30 +80,32 @@ void GarbageCollector::forEachReachable(std::function<void(const Cell &)> func) 
 // process garbage collector
 //
 ////////////////////////////////////////////////////////////////////////////////
-void GarbageCollector::cycleCollector()
+void GarbageCollector::cycle()
 {
-  std::vector<Cons*> conses;
-  std::vector<Container*> containers;
+  std::unordered_set<Cons*> conses;
+  std::unordered_set<Container*> containers;
   forEachReachable([&conses, &containers]
                    (const Cell & cell){
       if(cell.isA<Cons>())
       {
         auto c = cell.as<Cons>();
-        if(!c->isRoot() && c->getColor() != Color::Black)
+        if(!c->isRoot())
         {
-          conses.push_back(c);
+          conses.insert(c);
         }
       }
       else if(cell.isA<Container>())
       {
         auto c = cell.as<Container>();
-        if(!c->isRoot() && c->getColor() != Color::Black)
+        if(!c->isRoot())
         {
-          containers.push_back(c);
+          containers.insert(c);
         }
       }
   });
   consMap.swap(conses);
+  containerMap.swap(containers);
+  cycles++;
   Cons * cons;
   while((cons = consMap.popDisposed()))
   {
@@ -125,21 +114,7 @@ void GarbageCollector::cycleCollector()
   }
 }
 
-void GarbageCollector::stepCollector()
-{
-  for(unsigned short i=0; i < garbageSteps; i++)
-  {
-    bool swapable = true;
-    swapable &= consMap.step();
-    /*@todo other containers */
-    if(swapable)
-    {
-      consMap.swap();
-    }
-  }
-}
-
-void Lisp::GarbageCollector::stepRecycle()
+void Lisp::GarbageCollector::recycle()
 {
   /* @todo recycle contaienr, create tmp. object in garbageCollector
      if object is null -> popBack

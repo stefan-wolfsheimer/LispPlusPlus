@@ -221,6 +221,8 @@ void Lisp::SimConsFactory::stepRootConses(std::shared_ptr<GarbageCollector> fact
   }
   else if(selectRemoveCons(factory->numRootCollectible(), targetNumRootConses))
   {
+    /*@todo fix this bug */
+    std::cout << factory->numRootCollectible() << " " <<  rootConses.size() << std::endl;
     assert(factory->numRootCollectible() == rootConses.size());
     std::size_t i = rand() % rootConses.size();
     auto itr = rootConses.begin();

@@ -115,15 +115,31 @@ Lisp::Color Lisp::Cell::getColor() const
 {
   if(isA<Cons>())
   {
-    as<Cons>()->getColor();
+    return as<Cons>()->getColor();
   }
   else if(isA<Container>())
   {
-    as<Container>()->getColor();
+    return as<Container>()->getColor();
   }
   else
   {
     return Color::Undefined;
+  }
+}
+
+std::size_t Lisp::Cell::getRefCount() const
+{
+  if(isA<Cons>())
+  {
+    return as<Cons>()->getRefCount();
+  }
+  else if(isA<Container>())
+  {
+    return as<Container>()->getRefCount();
+  }
+  else
+  {
+    return 0u;
   }
 }
 

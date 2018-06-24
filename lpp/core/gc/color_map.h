@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
 #include <functional>
+#include <unordered_set>
 #include <lpp/core/gc/color.h>
 #include <lpp/core/gc/collectible_container.h>
 #include <lpp/core/cell.h>
@@ -48,10 +49,9 @@ namespace Lisp
     inline std::size_t size(Color color) const;
     inline std::size_t rootSize(Color color) const;
     inline std::size_t numDisposed() const;
-    inline std::size_t getCycles() const;
     inline bool step();
     inline void swap();
-    inline void swap(const std::vector<T*> & tobekeptGreyAndWhite);
+    inline void swap(const std::unordered_set<T*> & tobekept);
     inline T * popDisposed();
 
     inline void forEachBulk(Color color,
@@ -63,7 +63,6 @@ namespace Lisp
     inline void forEach(const CollectibleContainer<T> & elements,
                         std::function<void(const Cell &)> func) const;
     GarbageCollector * parent;
-    std::size_t cycles;
     CollectibleContainer<T> * white;
     CollectibleContainer<T> * grey;
     CollectibleContainer<T> * black;
@@ -76,7 +75,7 @@ namespace Lisp
 
 template<typename T>
 Lisp::ColorMap<T>::ColorMap(GarbageCollector * p)
-  : parent(p), cycles(0)
+  : parent(p)
 {
   white     = new CollectibleContainer<T>(Lisp::Color::White, false, p);
   grey      = new CollectibleContainer<T>(Lisp::Color::Grey,  false, p);
@@ -150,38 +149,35 @@ inline std::size_t Lisp::ColorMap<T>::numDisposed() const
 }
 
 template<typename T>
-std::size_t Lisp::ColorMap<T>::getCycles() const
-{
-  return cycles;
-}
-
-template<typename T>
 inline bool Lisp::ColorMap<T>::step()
 {
   if(!whiteRoot->empty())
   {
-    if(whiteRoot->back()->greyChildren())
+    assert(whiteRoot->back()->getIndex() == whiteRoot->size()-1);
+    T * obj = whiteRoot->back();
+    if(obj->greyChildren())
     {
-      assert(whiteRoot->back()->getIndex() == whiteRoot->size()-1);
-      blackRoot->add(whiteRoot->popBack());
+      blackRoot->move(obj);
     }
     return false;
   }
   else if(!greyRoot->empty())
   {
-    if(greyRoot->back()->greyChildren())
+    assert(greyRoot->back()->getIndex() == greyRoot->size()-1);
+    T * obj = greyRoot->back();
+    if(obj->greyChildren())
     {
-      assert(greyRoot->back()->getIndex() == greyRoot->size()-1);
-      blackRoot->add(greyRoot->popBack());
+      blackRoot->move(obj);
     }
     return false;
   }
   else if(!grey->empty())
   {
-    if(grey->back()->greyChildren())
+    assert(grey->back()->getIndex() == grey->size()-1);
+    T * obj = grey->back();
+    if(obj->greyChildren())
     {
-      assert(grey->back()->getIndex() == grey->size()-1);
-      black->add(grey->popBack());
+      black->move(obj);
     }
     return false;
   }
@@ -228,8 +224,6 @@ inline void Lisp::ColorMap<T>::swap()
   grey->toElements         = blackRoot;
   black->toElements        = nullptr;
 
-  cycles++;
-
   assert(whiteRoot->otherElements == white);
   assert(greyRoot->otherElements == grey);
   assert(blackRoot->otherElements == black);
@@ -251,36 +245,45 @@ inline void Lisp::ColorMap<T>::swap()
 }
 
 template<typename T>
-inline void Lisp::ColorMap<T>::swap(const std::vector<T*> & tobekept)
+inline void Lisp::ColorMap<T>::swap(const std::unordered_set<T*> & tobekept)
 {
-  black->elements.reserve(black->elements.size() + tobekept.size());
-  blackRoot->elements.reserve(blackRoot->elements.size() +
-                              whiteRoot->elements.size() +
-                              greyRoot->elements.size());
+  CollectibleContainer<T> removed(Color::White, false, nullptr);
+  assert(white->elements.size() +
+         black->elements.size() +
+         grey->elements.size() >= tobekept.size());
+  removed.elements.reserve(white->elements.size() +
+                           black->elements.size() +
+                           grey->elements.size() - tobekept.size());
+  for(auto container : {white, grey, black})
+  {
+    for(auto obj : container->elements)
+    {
+      if(tobekept.find(obj) == tobekept.end())
+      {
+        removed.elements.push_back(obj);
+      }
+    }
+    container->elements.clear();
+  }
+  white->elements.reserve(tobekept.size());
   for(auto obj : tobekept)
   {
-    if(obj->getColor() == Color::White)
-    {
-      white->remove(obj);
-    }
-    else if(obj->getColor() == Color::Grey)
-    {
-      grey->remove(obj);
-    }
-    black->add(obj);
+    white->add(obj);
   }
-  for(auto obj : *whiteRoot)
+  whiteRoot->elements.reserve(whiteRoot->elements.size() +
+                              greyRoot->elements.size() +
+                              blackRoot->elements.size());
+  for(auto obj : *blackRoot)
   {
-    blackRoot->add(obj);
+    whiteRoot->add(obj);
   }
   for(auto obj : *greyRoot)
   {
-    blackRoot->add(obj);
+    whiteRoot->add(obj);
   }
-  whiteRoot->elements.clear();
+  blackRoot->elements.clear();
   greyRoot->elements.clear();
-  disposed.move(*grey);
-  swap();
+  disposed.move(removed);
 }
 
 template<typename T>

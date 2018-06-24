@@ -93,13 +93,11 @@ namespace Lisp
     inline void disableRecycling();
     inline void enableCollector();
     inline void enableRecycling();
+    inline std::size_t getCycles() const;
 
-    inline std::size_t getConsCycles() const;
-    inline std::size_t getContainerCycles() const;
-
-    void cycleCollector();
-    void stepCollector();
-    void stepRecycle();
+    void cycle();
+    inline void step();
+    void recycle();
 
     // test and debug
     inline bool checkSanity() const;
@@ -118,6 +116,7 @@ namespace Lisp
     unsigned short int recycleSteps;
     unsigned short int backGarbageSteps;
     unsigned short int backRecycleSteps;
+    std::size_t cycles;
 
     void forEachCons(const CollectibleContainer<Cons> & conses,
                      std::function<void(const Cell &)> func) const;
@@ -134,10 +133,29 @@ namespace Lisp
 // Implementation
 //
 ////////////////////////////////////////////////////////////////////////////////
+inline Lisp::GarbageCollector::GarbageCollector(std::size_t consPageSize,
+                                                unsigned short _garbageSteps,
+                                                unsigned short _recycleSteps)
+  : consPages(consPageSize),
+    consMap(this),
+    containerMap(this),
+    garbageSteps(_garbageSteps),
+    recycleSteps(_recycleSteps),
+    backGarbageSteps(_garbageSteps),
+    backRecycleSteps(_recycleSteps),
+    cycles(0u)
+{
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Cons
+//
+////////////////////////////////////////////////////////////////////////////////
 inline Lisp::Cons * Lisp::GarbageCollector::makeCons()
 {
-  stepCollector();
-  stepRecycle();
+  step();
+  recycle();
   Cons * ret = consPages.next();
   ret->setRefCount(0u);
   consMap.add(ret);
@@ -176,6 +194,11 @@ inline Lisp::Cons * Lisp::GarbageCollector::makeCons(Object && car, Object && cd
   return ret;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+//
+// Container
+//
+////////////////////////////////////////////////////////////////////////////////
 inline void Lisp::GarbageCollector::initContainer(Container * container)
 {
   container->setRefCount(0u);
@@ -185,8 +208,8 @@ inline void Lisp::GarbageCollector::initContainer(Container * container)
 template<typename C>
 inline C * Lisp::GarbageCollector::make()
 {
-  stepCollector();
-  stepRecycle();
+  step();
+  recycle();
   C * ret = new C;
   initContainer(ret);
   return ret;
@@ -337,15 +360,31 @@ inline void Lisp::GarbageCollector::enableRecycling()
   recycleSteps = backRecycleSteps;
 }
 
-inline std::size_t Lisp::GarbageCollector::getConsCycles() const
+inline std::size_t Lisp::GarbageCollector::getCycles() const
 {
-  return consMap.getCycles();
+  return cycles;
 }
 
-inline std::size_t Lisp::GarbageCollector::getContainerCycles() const
+////////////////////////////////////////////////////////////////////////////////
+//
+// Processing
+//
+////////////////////////////////////////////////////////////////////////////////
+
+inline void Lisp::GarbageCollector::step()
 {
-  // @todo implement
-  return 0;
+  for(unsigned short i=0; i < garbageSteps; i++)
+  {
+    bool swapable = true;
+    swapable &= consMap.step();
+    swapable &= containerMap.step();
+    if(swapable)
+    {
+      cycles++;
+      consMap.swap();
+      containerMap.swap();
+    }
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

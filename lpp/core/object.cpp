@@ -29,8 +29,10 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include <assert.h>
-#include "object.h"
-#include "types/cons.h"
+#include <lpp/core/object.h>
+#include <lpp/core/types/cons.h>
+#include <lpp/core/types/container.h>
+#include <lpp/core/gc/garbage_collector.h>
 
 using Object = Lisp::Object;
 using Nil = Lisp::Nil;
@@ -39,15 +41,23 @@ Object::Object(const Object & rhs) : Cell(rhs)
 {
   if(rhs.isA<Lisp::Cons>())
   {
-    ((Cons*)data.ptr)->root();
+    static_cast<Cons*>(data.ptr)->root();
+  }
+  else if(rhs.isA<Lisp::Container>())
+  {
+    static_cast<Container*>(data.ptr)->root();
   }
 }
 
 Object::Object(const Cell & rhs) : Cell(rhs)
 {
-  if(rhs.isA<Lisp::Cons>())
+  if(rhs.isA<Cons>())
   {
-    ((Cons*)data.ptr)->root();
+    static_cast<Cons*>(data.ptr)->root();
+  }
+  else if(rhs.isA<Container>())
+  {
+    static_cast<Container*>(data.ptr)->root();
   }
 }
 
@@ -56,7 +66,6 @@ Object::~Object()
   unsetCons();
 }
 
-
 Object & Lisp::Object::operator=(const Object & rhs)
 {
   Cell::unset();
@@ -64,14 +73,20 @@ Object & Lisp::Object::operator=(const Object & rhs)
   typeId = rhs.typeId;
   if(rhs.isA<Lisp::Cons>())
   {
-    assert(rhs.as<Cons>()->isRoot());
-    assert(rhs.as<Cons>()->getRefCount() > 0u);
+    assert(rhs.isRoot());
+    assert(rhs.getRefCount() > 0u);
+    assert(rhs.checkIndex());
     data.ptr = rhs.as<Cons>();
-    // todo make more efficient
-    // rhs is by definition already rooted: only need to change reference count
-    ((Cons*)data.ptr)->root(); 
+    static_cast<Cons*>(data.ptr)->incRefCount();
   }
-  if(rhs.isA<Lisp::ManagedType>())
+  else if(rhs.isA<Lisp::Container>())
+  {
+    assert(rhs.isRoot());
+    assert(rhs.getRefCount() > 0u);
+    assert(rhs.checkIndex());
+    static_cast<Container*>(data.ptr)->incRefCount();
+  }
+  else if(rhs.isA<Lisp::ManagedType>())
   {
     Cell::init(rhs.as<ManagedType>(), rhs.getTypeId());
   }
@@ -92,9 +107,23 @@ void Object::unsetCons()
 {
   if(isA<Cons>())
   {
-    assert(as<Cons>()->isRoot());
-    assert(as<Cons>()->getRefCount() > 0u);
-    ((Cons*)data.ptr)->unroot();
+    assert(isRoot());
+    assert(getRefCount() > 0u);
+    assert(checkIndex());
+    static_cast<Cons*>(data.ptr)->unroot();
+    //@todo: activate when GC step has been debugged 
+    //static_cast<Cons*>(data.ptr)->getCollector()->step();
+    //static_cast<Cons*>(data.ptr)->getCollector()->recycle();
+  }
+  else if(isA<Container>())
+  {
+    assert(isRoot());
+    assert(getRefCount() > 0u);
+    assert(checkIndex());
+    static_cast<Container*>(data.ptr)->unroot();
+    //@todo: activate when GC step has been debugged 
+    //static_cast<Container*>(data.ptr)->getCollector()->step();
+    //static_cast<Container*>(data.ptr)->getCollector()->recycle();
   }
 }
 

@@ -37,6 +37,7 @@ namespace Lisp
   {
   public:
     virtual TypeId getTypeId() const override;
+    virtual bool greyChildren() override;
   };
 }
 

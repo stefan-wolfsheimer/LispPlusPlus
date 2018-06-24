@@ -29,6 +29,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
+#include <iostream>
 
 namespace Lisp
 {
@@ -36,4 +37,19 @@ namespace Lisp
                                      Grey=1u,
                                      Black=2u,
                                      Undefined=3u };
+}
+
+inline std::ostream& operator<<(std::ostream& ost, const Lisp::Color & color);
+  
+
+inline std::ostream& operator<<(std::ostream& ost, const Lisp::Color & color)
+{
+  switch(color)
+  {
+  case Lisp::Color::White: ost << "White"; break;
+  case Lisp::Color::Grey: ost << "Grey"; break;
+  case Lisp::Color::Black: ost << "Black"; break;
+  case Lisp::Color::Undefined: ost << "Undefined"; break;
+  }
+  return ost;
 }

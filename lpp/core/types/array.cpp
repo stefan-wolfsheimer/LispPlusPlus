@@ -6,3 +6,9 @@ TypeId Array::getTypeId() const
 {
   return TypeTraits<Array>::typeId;
 }
+
+bool Array::greyChildren()
+{
+  //@todo implement
+  return false;
+}

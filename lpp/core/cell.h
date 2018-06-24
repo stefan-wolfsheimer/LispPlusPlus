@@ -76,6 +76,7 @@ namespace Lisp
      * Operations for Collectible */
     bool isRoot() const;
     Color getColor() const;
+    std::size_t getRefCount() const;
     bool checkIndex() const;
     void forEachChild(std::function<void(const Cell&)> func) const;
     void grey() const;

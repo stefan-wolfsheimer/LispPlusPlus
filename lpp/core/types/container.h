@@ -40,6 +40,7 @@ namespace Lisp
   public:
     virtual ~Container(){}
     virtual TypeId getTypeId() const = 0;
+    virtual bool greyChildren() = 0;
   protected:
   };
 }

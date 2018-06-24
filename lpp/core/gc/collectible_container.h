@@ -38,19 +38,22 @@ namespace Lisp
   template<typename T>
   class UnmanagedCollectibleContainer;
 
+  template<typename T>
+  class ColorMap;
+  
   class GarbageCollector;
 
   template<typename T>
   class CollectibleContainer
   {
   public:
-    template<typename X>
-    friend class ColorMap;
+    friend class ColorMap<T>;
     friend class UnmanagedCollectibleContainer<T>;
 
     CollectibleContainer(Color _color, bool _isRoot, GarbageCollector * _gc);
     inline void remove(T * obj);
     inline void add(T * obj);
+    inline void move(T * obj);
 
     inline T * popBack();
     inline T * back() const;
@@ -63,6 +66,7 @@ namespace Lisp
     inline void unroot(T * obj);
     inline void collect();
 
+    inline GarbageCollector * getCollector() const;
     inline CollectibleContainer<T> * getOtherContainer() const;
     inline CollectibleContainer<T> * getGreyContainer() const;
     inline CollectibleContainer<T> * getToContainer() const;
@@ -110,6 +114,12 @@ inline void Lisp::CollectibleContainer<T>::add(T * obj)
   obj->container = this;
   elements.push_back(obj);
 }
+template<typename T>
+inline void Lisp::CollectibleContainer<T>::move(T * obj)
+{
+  obj->container->remove(obj);
+  add(obj);
+}
 
 template<typename T>
 inline T * Lisp::CollectibleContainer<T>::popBack()
@@ -149,16 +159,22 @@ inline Lisp::Color Lisp::CollectibleContainer<T>::getColor() const
   return color;
 }
 
+#include <iostream>
 template<typename T>
 inline void Lisp::CollectibleContainer<T>::root(T * obj)
 {
   assert(!obj->isRoot());
+  if(obj->index >= elements.size())
+  {
+    std::cout << obj->index << std::endl;
+    std::cout << elements.size() << std::endl;
+    std::cout << obj->getColor() << std::endl;
+  }
   assert(obj->index < elements.size());
   assert(obj == elements[obj->index]);
   remove(obj);
   obj->refCount = 1;
   otherElements->add(obj);
-  collect();
 }
 
 template<typename T>
@@ -168,14 +184,12 @@ inline void Lisp::CollectibleContainer<T>::unroot(T * obj)
   assert(obj == elements[obj->index]);
   remove(obj);
   otherElements->add(obj);
-  collect();
 }
 
 template<typename T>
-inline void Lisp::CollectibleContainer<T>::collect()
+inline Lisp::GarbageCollector * Lisp::CollectibleContainer<T>::getCollector() const
 {
-  //gc->stepCollector();
-  //gc->stepRecycle();
+  return gc;
 }
 
 template<typename T>

@@ -128,6 +128,7 @@ inline void Lisp::Cons::unsetCdr()
 inline void Lisp::Cons::setCar(const Object & rhs)
 {
   Lisp::Cons * cons = rhs.as<Cons>();
+  // @todo: case container 
   if(cons)
   {
     setCar(cons, rhs.typeId);
@@ -141,6 +142,7 @@ inline void Lisp::Cons::setCar(const Object & rhs)
 
 inline void Lisp::Cons::setCdr(const Object & rhs)
 {
+  // @todo: case container 
   Lisp::Cons * cons = rhs.as<Cons>();
   if(cons)
   {
