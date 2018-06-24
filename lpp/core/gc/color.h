@@ -34,8 +34,5 @@ namespace Lisp
 {
   enum class Color : unsigned char { White=0u,
                                      Grey=1u,
-                                     Black=2u,
-                                     WhiteRoot=3u,
-                                     GreyRoot=4u,
-                                     BlackRoot=5u };
+                                     Black=2u };
 }

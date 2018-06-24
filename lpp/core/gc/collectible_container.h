@@ -46,12 +46,16 @@ namespace Lisp
   class CollectibleContainer : public CollectibleContainer<void>
   {
   public:
-    friend class GarbageCollector;
+    template<typename X>
+    friend class ColorMap;
     friend class UnmanagedCollectibleContainer<T>;
-    CollectibleContainer(Color _color, GarbageCollector * _gc);
+
+    CollectibleContainer(Color _color, bool _isRoot, GarbageCollector * _gc);
     inline void remove(T * obj);
     inline void add(T * obj);
+
     inline T * popBack();
+    inline T * back() const;
     inline bool empty() const;
     inline std::size_t size() const;
     inline void addTo(std::vector<Cell> & cells) const;
@@ -60,9 +64,13 @@ namespace Lisp
     inline void unroot(T * obj);
     
     using const_iterator = typename std::vector<T*>::const_iterator;
+    using iterator = typename std::vector<T*>::iterator;
     inline const_iterator cbegin() const noexcept;
     inline const_iterator cend() const noexcept;
+    inline iterator begin() noexcept;
+    inline iterator end() noexcept;
 
+    inline bool checkIndex(T * obj);
   private:
     std::vector<T*> elements;
   };
@@ -70,8 +78,8 @@ namespace Lisp
 
 ////////////////////////////////////////////////////////////////////////////////
 template<typename T>
-inline Lisp::CollectibleContainer<T>::CollectibleContainer(Color _color, GarbageCollector * _gc)
-  : CollectibleContainer<void>(_color, _gc)
+inline Lisp::CollectibleContainer<T>::CollectibleContainer(Color _color, bool _isRoot, GarbageCollector * _gc)
+  : CollectibleContainer<void>(_color, _isRoot, _gc)
 {
 }
 
@@ -100,6 +108,12 @@ inline T * Lisp::CollectibleContainer<T>::popBack()
   T * ret = elements.back();
   elements.pop_back();
   return ret;
+}
+
+template<typename T>
+inline T * Lisp::CollectibleContainer<T>::back() const
+{
+  return elements.back();
 }
 
 template<typename T>
@@ -155,4 +169,27 @@ template<typename T>
 typename Lisp::CollectibleContainer<T>::const_iterator Lisp::CollectibleContainer<T>::cend() const noexcept
 {
   return elements.cend();
+}
+
+template<typename T>
+typename Lisp::CollectibleContainer<T>::iterator Lisp::CollectibleContainer<T>::begin() noexcept
+{
+  return elements.begin();
+}
+
+template<typename T>
+typename Lisp::CollectibleContainer<T>::iterator Lisp::CollectibleContainer<T>::end() noexcept
+{
+  return elements.end();
+}
+
+
+template<typename T>
+inline bool Lisp::CollectibleContainer<T>::checkIndex(T * obj)
+{
+  if(obj->getIndex() >= elements.size())
+  {
+    return false;
+  }
+  return elements[obj->getIndex()] == obj;
 }

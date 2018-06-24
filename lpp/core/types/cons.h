@@ -52,6 +52,7 @@ namespace Lisp
     friend class CollectibleContainer<Cons>;
 
     using Color = Lisp::Color;
+    inline TypeId getTypeId() const;
     inline Object getCar() const;
     inline Object getCdr() const;
     inline const Cell & getCarCell() const;
@@ -66,6 +67,8 @@ namespace Lisp
                        TypeId typeId=TypeTraits<Cons>::typeId);
     inline void forEachChild(std::function<void(const Cell&)> func) const;
     inline void grey();
+    inline bool greyChildren();
+    inline bool unsetNonCollectibleChildren();
   private:
     Cell car;
     Cell cdr;
@@ -90,6 +93,11 @@ namespace Lisp
 ////////////////////////////////////////////////////////////////////////////////
 inline Lisp::Cons::Cons() : car(Lisp::nil), cdr(Lisp::nil)
 {
+}
+
+inline Lisp::TypeId Lisp::Cons::getTypeId() const
+{
+  return TypeTraits<Cons>::typeId;
 }
 
 inline Lisp::Object Lisp::Cons::getCar() const
@@ -182,6 +190,26 @@ inline void Lisp::Cons::unroot()
 inline void Lisp::Cons::root()
 {
   Collectible::rootInternal<Cons>();
+}
+
+inline bool Lisp::Cons::greyChildren()
+{
+  getCarCell().grey();
+  getCdrCell().grey();
+  return true;
+}
+
+inline bool Lisp::Cons::unsetNonCollectibleChildren()
+{
+  if(!car.isA<Collectible>())
+  {
+    unsetCar();
+  }
+  if(!cdr.isA<Collectible>())
+  {
+    unsetCdr();
+  }
+  return true;
 }
 
 inline void Lisp::Cons::grey()

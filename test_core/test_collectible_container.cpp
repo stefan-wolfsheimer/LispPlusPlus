@@ -46,7 +46,7 @@ using UnmanagedCollectibleContainer = Lisp::UnmanagedCollectibleContainer<Entity
 
 TEST_CASE("collectible_container_life_cycle", "[CollectibleContainer]")
 {
-  CollectibleContainer container(Color::Black, nullptr);
+  CollectibleContainer container(Color::Black, true, nullptr);
   REQUIRE(container.empty());
   REQUIRE(container.size() == 0);
   REQUIRE(container.getColor() == Color::Black);
@@ -77,7 +77,7 @@ TEST_CASE("collectible_container_life_cycle", "[CollectibleContainer]")
 
 TEST_CASE("move_collectible_container_to_unmanaged", "[CollectibleContainer]")
 {
-  CollectibleContainer container(Color::Black, nullptr);
+  CollectibleContainer container(Color::Black, true, nullptr);
   UnmanagedCollectibleContainer unmanaged;
   Entity ent1;
   Entity ent2;

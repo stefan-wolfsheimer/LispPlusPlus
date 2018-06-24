@@ -271,61 +271,58 @@ bool Lisp::SimConsFactory::selectRemoveCons(std::size_t numberOfConses,
 }
 
 std::vector<std::pair<Lisp::Cons*, unsigned short> >
-Lisp::SimConsFactory::getFreeEdges(std::shared_ptr<GarbageCollector> factory)
+Lisp::SimConsFactory::getFreeEdges(std::shared_ptr<GarbageCollector> coll)
 {
   using ConsPair = std::pair<Cons*, unsigned short>;
   using Cons = Lisp::Cons;
   using Nil = Lisp::Nil;
-
   std::vector<ConsPair> freeEdges;
-  for(auto cell : factory->getReachable())
-  {
-    if(cell.isA<Cons>())
-    {
-      if(cell.as<Cons>()->getCarCell().isA<Nil>())
+  coll->forEachReachable([&freeEdges](const Cell & cell) {
+      if(cell.isA<Cons>())
       {
-        freeEdges.push_back(ConsPair(cell.as<Cons>(), carIndex));
+        if(cell.as<Cons>()->getCarCell().isA<Nil>())
+        {
+          freeEdges.push_back(ConsPair(cell.as<Cons>(), carIndex));
+        }
+        if(cell.as<Cons>()->getCdrCell().isA<Nil>())
+        {
+          freeEdges.push_back(ConsPair(cell.as<Cons>(), cdrIndex));
+        }
       }
-      if(cell.as<Cons>()->getCdrCell().isA<Nil>())
-      {
-        freeEdges.push_back(ConsPair(cell.as<Cons>(), cdrIndex));
-      }
-    }
-  }
+  });
   return freeEdges;
 }
 
-void Lisp::SimConsFactory::stepConses(std::shared_ptr<GarbageCollector> factory,
+void Lisp::SimConsFactory::stepConses(std::shared_ptr<GarbageCollector> coll,
                                       std::list<SharedObject> & rootConses)
 {
   using Cons = Lisp::Cons;
   using Nil = Lisp::Nil;
   using ConsPair = std::pair<Cons*, unsigned short>;
-  auto freeEdges = getFreeEdges(factory);
+  auto freeEdges = getFreeEdges(coll);
   std::vector<Cons *> nonRootConses;
-  for(auto cell : factory->getReachable())
-  {
-    if(cell.isA<Cons>() && !cell.as<Cons>()->isRoot())
-    {
-      nonRootConses.push_back(cell.as<Cons>());
-    }
-  }
+  coll->forEachReachable([&nonRootConses](const Cell & cell) {
+      if(cell.isA<Cons>() && !cell.as<Cons>()->isRoot())
+      {
+        nonRootConses.push_back(cell.as<Cons>());
+      }
+    });
   if(freeEdges.size() > 0 && selectAddCons(nonRootConses.size(),
                                            targetNumBulkConses))
   {
     std::size_t i = rand() % freeEdges.size();
     if(freeEdges[i].second == carIndex)
     {
-      freeEdges[i].first->setCar(Object(factory->makeCons(Lisp::nil, Lisp::nil)));
+      freeEdges[i].first->setCar(Object(coll->makeCons(Lisp::nil, Lisp::nil)));
     }
     else
     {
-      freeEdges[i].first->setCdr(Object(factory->makeCons(Lisp::nil, Lisp::nil)));
+      freeEdges[i].first->setCdr(Object(coll->makeCons(Lisp::nil, Lisp::nil)));
     }
   }
   else if(selectRemoveCons(nonRootConses.size(), targetNumBulkConses))
   {
-    CollectibleGraph graph(*factory);
+    CollectibleGraph graph(*coll);
     std::size_t i = rand() % nonRootConses.size();
     auto cons = nonRootConses[i];
     auto node = graph.findNode(cons);

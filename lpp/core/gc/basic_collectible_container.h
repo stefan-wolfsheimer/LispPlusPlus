@@ -13,6 +13,7 @@ namespace Lisp
   {
   public:
     CollectibleContainer(Color _color,
+                         bool _isRoot,
                          GarbageCollector * _gc);
     inline Color getColor() const;
     inline GarbageCollector * getCollector() const;
@@ -30,14 +31,17 @@ namespace Lisp
 
     void collect();
   private:
-    friend class GarbageCollector;
+    template<typename X>
+    friend class ColorMap;
+
+    friend class GarbageCollector; //@tood remove this friendship
     // if color is non root then otherElements is fromRootColor
     CollectibleContainer<void> * otherElements;
     CollectibleContainer<void> * greyElements;
     CollectibleContainer<void> * toElements;
     GarbageCollector * gc;
     Color color;
-
+    bool _isRoot;
   };
 }
 
@@ -61,9 +65,11 @@ inline Lisp::CollectibleContainer<T> * Lisp::CollectibleContainer<void>::getToCo
 }
 
 inline Lisp::CollectibleContainer<void>::CollectibleContainer(Color _color,
+                                                              bool __isRoot,
                                                               GarbageCollector * _gc)
-  : color(_color), gc(_gc)
-{}
+  : color(_color), gc(_gc), _isRoot(__isRoot)
+{
+}
 
 
 inline Lisp::Color Lisp::CollectibleContainer<void>::getColor() const
@@ -80,15 +86,12 @@ inline Lisp::GarbageCollector * Lisp::CollectibleContainer<void>::getCollector()
 
 inline bool Lisp::CollectibleContainer<void>::isRoot() const
 {
-  return
-    color == Color::WhiteRoot ||
-    color == Color::BlackRoot ||
-    color == Color::GreyRoot;
+  return _isRoot;
 }
 
 inline bool Lisp::CollectibleContainer<void>::isGrey() const
 {
-  return color == Color::GreyRoot || color == Color::Grey;
+  return color == Color::Grey;
 }
 
 

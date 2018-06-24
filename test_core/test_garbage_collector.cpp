@@ -59,14 +59,21 @@ static const std::size_t error = std::numeric_limits<std::size_t>::max() - 1;
 
 // helper functions
 static std::shared_ptr<GarbageCollector> makeCollector(std::size_t pageSize=12);
-static std::size_t getNumCollectible(std::shared_ptr<GarbageCollector> collector, Color color);
-static std::size_t getNumCollectible(std::shared_ptr<GarbageCollector> collector);
+
+static std::size_t getNumCollectible(std::shared_ptr<GarbageCollector> coll);
+static std::size_t getNumRootCollectible(std::shared_ptr<GarbageCollector> coll);
+static std::size_t getNumBulkCollectible(std::shared_ptr<GarbageCollector> coll);
+static std::size_t getNumCollectible(std::shared_ptr<GarbageCollector> coll, Color color);
+static std::size_t getNumRootCollectible(std::shared_ptr<GarbageCollector> coll, Color color);
+static std::size_t getNumBulkCollectible(std::shared_ptr<GarbageCollector> coll, Color color);
 
 static std::pair<Color, std::size_t> operator==(Color, std::size_t);
-static bool checkConses(std::shared_ptr<GarbageCollector> factory,
+static bool checkCollectible(std::shared_ptr<GarbageCollector> factory,
+                        const std::vector<std::pair<Color, std::size_t> > & rootConses,
                         const std::vector<std::pair<Color, std::size_t> > & conses);
-static bool checkConses(std::shared_ptr<GarbageCollector> factory,
+static bool checkCollectible(std::shared_ptr<GarbageCollector> factory,
                         std::size_t total,
+                        const std::vector<std::pair<Color, std::size_t> > & rootConses,
                         const std::vector<std::pair<Color, std::size_t> > & conses);
 
 static std::unordered_set<Cell> Set();
@@ -84,21 +91,15 @@ SCENARIO("no cons allocated", "[ConsFactory]")
   GIVEN("An empty cons factory")
   {
     auto coll = makeCollector(8);
-    THEN("there is no cons for any color")
+     THEN("there is no cons for any color")
     {
-      REQUIRE(getNumCollectible(coll, Color::White) == 0u);
-      REQUIRE(getNumCollectible(coll, Color::Grey) == 0u);
-      REQUIRE(getNumCollectible(coll, Color::Black) == 0u);
-      REQUIRE(getNumCollectible(coll, Color::WhiteRoot) == 0u);
-      REQUIRE(getNumCollectible(coll, Color::GreyRoot) == 0u);
-      REQUIRE(getNumCollectible(coll, Color::BlackRoot) == 0u);
+      REQUIRE(getNumCollectible(coll) == 0u);
       REQUIRE(coll->numDisposedCollectible() == 0u);
       REQUIRE(coll->numVoidCollectible() == 0u);
     }
-    THEN("the from color is white")
+    THEN("state is in first cycle")
     {
-      REQUIRE(coll->getFromColor() == Color::White);
-      REQUIRE(coll->getFromRootColor() == Color::WhiteRoot);
+      REQUIRE(coll->getConsCycles() == 0);
     }
   }
 }
@@ -119,7 +120,7 @@ SCENARIO("one cons without children", "[GarbageCollector]")
     {
       REQUIRE(cons);
       REQUIRE(cons->isRoot());
-      REQUIRE(cons->getColor() == coll->getFromRootColor());
+      REQUIRE(cons->getColor() == Color::White);
       REQUIRE(cons->getRefCount() == 1u);
     }
     THEN("it has no parents")
@@ -128,12 +129,12 @@ SCENARIO("one cons without children", "[GarbageCollector]")
     }
     THEN("it is reachable")
     {
-      REQUIRE(Set(coll->getReachable()) == Set(Cell(cons)));
+      REQUIRE(Set(coll->get(&GarbageCollector::forEachReachable)) == Set(Cell(cons)));
     }
     THEN("there is 1 root cons with from-color and 7 void conses")
     {
       REQUIRE(coll->numVoidCollectible() == 7u);
-      REQUIRE(checkConses(coll, 8u, { coll->getFromRootColor() == 1u}));
+      REQUIRE(checkCollectible(coll, 8u, { Color::White == 1u}, {}));
     }
     WHEN("the cons is unrooted")
     {
@@ -142,16 +143,16 @@ SCENARIO("one cons without children", "[GarbageCollector]")
       THEN("it is a leaf cons with from-color, ref-count 0")
       {
         REQUIRE_FALSE(cons->isRoot());
-        REQUIRE(cons->getColor() == coll->getFromColor());
+        REQUIRE(cons->getColor() == Color::White);
       }
       THEN("there is 1 leaf conses with from-color and 7 void conses")
       {
         REQUIRE(coll->numVoidCollectible() == 7u);
-        REQUIRE(checkConses(coll, 8u, { coll->getFromColor() == 1u }));
+        REQUIRE(checkCollectible(coll, 8u, {}, { Color::White == 1u }));
       }
       THEN("there is no reachable cons")
       {
-        REQUIRE(Set(coll->getReachable()) == Set());
+        REQUIRE(Set(coll->get(&GarbageCollector::forEachReachable)) == Set());
       }
     }
   }
@@ -199,13 +200,13 @@ SCENARIO("a cons with 2 children", "[GarbageCollector]")
   {
     auto coll = makeCollector(8);
     auto cons = coll->makeCons(Object(coll->makeCons(Lisp::nil, Lisp::nil)),
-                                  Object(coll->makeCons(Lisp::nil, Lisp::nil)));
+                               Object(coll->makeCons(Lisp::nil, Lisp::nil)));
     CollectibleGraph graph(*coll);
     THEN("it is in root set, has from-color and ref count 1")
     {
       REQUIRE(cons);
       REQUIRE(cons->isRoot());
-      REQUIRE(cons->getColor() == coll->getFromRootColor());
+      REQUIRE(cons->getColor() == Color::White);
       REQUIRE(cons->getRefCount() == 0u);
     }
     THEN("the parent of its children is the cons")
@@ -216,14 +217,14 @@ SCENARIO("a cons with 2 children", "[GarbageCollector]")
     }
     THEN("the cons and its children are reachable")
     {
-      REQUIRE(Set(coll->getReachable()) == Set(Cell(cons),
-                                                  cons->getCarCell(),
-                                                  cons->getCdrCell()));
+      REQUIRE(Set(coll->get(&GarbageCollector::forEachReachable)) == Set(Cell(cons),
+                                                                         cons->getCarCell(),
+                                                                         cons->getCdrCell()));
     }
     THEN("there is 1 root cons with from-color and 7 void conses")
     {
       REQUIRE(coll->numVoidCollectible() == 5u);
-      REQUIRE(checkConses(coll, 8u, { coll->getFromRootColor() == 1u, coll->getFromColor() == 2u}));
+      REQUIRE(checkCollectible(coll, 8u, { Color::White == 1u}, {Color::White == 2u}));
     }
     WHEN("There are references to its children")
     {
@@ -239,13 +240,13 @@ SCENARIO("a cons with 2 children", "[GarbageCollector]")
         THEN("there are 3 conses with root-from-color and 5 void conses")
         {
           REQUIRE(coll->numVoidCollectible() == 5u);
-          REQUIRE(checkConses(coll, 8u, { coll->getFromRootColor()==3u }));
+          REQUIRE(checkCollectible(coll, 8u, { Color::White == 3u }, {}));
         }
       }
       THEN("finally there is cons with root-from-clor and 2 conses with to-color")
       {
         REQUIRE(coll->numVoidCollectible() == 5u);
-        REQUIRE(checkConses(coll, 8u, { coll->getFromRootColor()==1u, coll->getFromColor() == 2u}));
+        REQUIRE(checkCollectible(coll, 8u, { Color::White == 1u}, { Color::White == 2u}));
       }
     }
   }
@@ -263,28 +264,29 @@ SCENARIO("3 conses with 4 children", "[GarbageCollector]")
 
     auto coll = makeCollector(8);
     Object cons1(coll->makeCons(Object(coll->makeCons(Lisp::nil,
-                                                            Lisp::nil)),
+                                                      Lisp::nil)),
                                    Object(coll->makeCons(Lisp::nil,
-                                                            Lisp::nil))));
+                                                         Lisp::nil))));
     Object cons2(coll->makeCons(Object(coll->makeCons(Lisp::nil,
-                                                            Lisp::nil)),
-                               Object(coll->makeCons(Lisp::nil,
-                                                        Lisp::nil))));
+                                                      Lisp::nil)),
+                                Object(coll->makeCons(Lisp::nil,
+                                                      Lisp::nil))));
     CollectibleGraph graph(*coll);
-    THEN("there are 2 conses with from-root-color and 4 conses with from-color")
+    THEN("there are 2 white root conses and 4 white bulk conses")
     {
       REQUIRE(coll->numVoidCollectible() == 2u);
-      REQUIRE(checkConses(coll, 8u, { coll->getFromRootColor()==2u,
-                                      coll->getFromColor() == 4u}));
+      REQUIRE(checkCollectible(coll, 8u,
+                               { Color::White == 2u},
+                               { Color::White == 4u}));
     }
     THEN("there are 6 reachable conses")
     {
-      REQUIRE(Set(coll->getReachable()) == Set(cons1,
-                                                 cons1.as<Cons>()->getCarCell(),
-                                                 cons1.as<Cons>()->getCdrCell(),
-                                                 cons2,
-                                                 cons2.as<Cons>()->getCarCell(),
-                                                 cons2.as<Cons>()->getCdrCell()));
+      REQUIRE(Set(coll->get(&GarbageCollector::forEachReachable)) == Set(cons1,
+                                                                         cons1.as<Cons>()->getCarCell(),
+                                                                         cons1.as<Cons>()->getCdrCell(),
+                                                                         cons2,
+                                                                         cons2.as<Cons>()->getCarCell(),
+                                                                         cons2.as<Cons>()->getCdrCell()));
     }
     WHEN("there are 2 conses with 4 children")
     {
@@ -296,22 +298,23 @@ SCENARIO("3 conses with 4 children", "[GarbageCollector]")
 
       Object cons3(coll->makeCons(cons2.as<Cons>()->getCar(), Lisp::nil));
       CollectibleGraph graph(*coll);
-      THEN("there are 2 conses with from-root-color and 4 conses with from-color")
+      THEN("there are 2 white root conses  and 4 white bulk conses")
       {
         REQUIRE(coll->numVoidCollectible() == 1u);
-        REQUIRE(checkConses(coll, 8u, { coll->getFromRootColor()==3u,
-                                        coll->getFromColor() == 4u}));
+        REQUIRE(checkCollectible(coll, 8u,
+                                 { Color::White == 3u},
+                                 { Color::White == 4u}));
       }
       THEN("all children of cons1, cons2 and cons3 are reachable")
       {
-        REQUIRE(Set(coll->getReachable()) == Set(cons1,
-                                                    cons1.as<Cons>()->getCarCell(),
-                                                    cons1.as<Cons>()->getCdrCell(),
-                                                    cons2,
-                                                    cons2.as<Cons>()->getCarCell(),
-                                                    cons2.as<Cons>()->getCdrCell(),
-                                                    cons3,
-                                                    cons3.as<Cons>()->getCarCell()));
+        REQUIRE(Set(coll->get(&GarbageCollector::forEachReachable)) == Set(cons1,
+                                                                           cons1.as<Cons>()->getCarCell(),
+                                                                           cons1.as<Cons>()->getCdrCell(),
+                                                                           cons2,
+                                                                           cons2.as<Cons>()->getCarCell(),
+                                                                           cons2.as<Cons>()->getCdrCell(),
+                                                                           cons3,
+                                                                           cons3.as<Cons>()->getCarCell()));
       }
       WHEN("cons2 is unset")
       {
@@ -325,21 +328,31 @@ SCENARIO("3 conses with 4 children", "[GarbageCollector]")
         THEN("there are 2 root conses and 3 leafes")
         {
           REQUIRE(coll->numVoidCollectible() == 1u);
-          REQUIRE(checkConses(coll, 8u, { coll->getFromRootColor()==2u, coll->getFromColor() == 5u}));
-          REQUIRE(Set(coll->getReachable()) == Set(cons1,
-                                                      cons1.as<Cons>()->getCarCell(),
-                                                      cons1.as<Cons>()->getCdrCell(),
-                                                      cons3.as<Cons>(),
-                                                      cons3.as<Cons>()->getCarCell()));
+          REQUIRE(checkCollectible(coll, 8u,
+                                   { Color::White == 2u },
+                                   { Color::White == 5u }));
+          REQUIRE(Set(coll->get(&GarbageCollector::forEachReachable)) == Set(cons1,
+                                                                             cons1.as<Cons>()->getCarCell(),
+                                                                             cons1.as<Cons>()->getCdrCell(),
+                                                                             cons3.as<Cons>(),
+                                                                             cons3.as<Cons>()->getCarCell()));
         }
         WHEN("cycle garbage collector")
         {
-          REQUIRE(coll->getFromColor() == Color::White);
+          REQUIRE(coll->getConsCycles() == 0);
           coll->cycleCollector();
-          THEN("there are 2 from-root-color and 3 to-color conses")
+          //@todo REQUIRE(coll->getConsCycles() == 1);
+          THEN("there are 2 root conses and 3 leafes")
           {
+            REQUIRE(Set(coll->get(&GarbageCollector::forEachReachable)) == Set(cons1,
+                                                                               cons1.as<Cons>()->getCarCell(),
+                                                                               cons1.as<Cons>()->getCdrCell(),
+                                                                               cons3.as<Cons>(),
+                                                                               cons3.as<Cons>()->getCarCell()));
+            REQUIRE(checkCollectible(coll, 8u,
+                                     { Color::White == 2u },
+                                     { Color::White == 3u }));
             REQUIRE(coll->numVoidCollectible() == 3u);
-            REQUIRE(checkConses(coll, 8u, { coll->getFromRootColor()==2u, coll->getToColor() == 3u }));
           }
         }
       }
@@ -354,8 +367,8 @@ SCENARIO("copy cons object with object copy constructor", "[GarbageCollector]")
     auto coll = makeCollector(8);
     Object cons1(coll->makeCons(Object(coll->makeCons(Lisp::nil,
                                                       Lisp::nil)),
-                                   Object(coll->makeCons(Lisp::nil,
-                                                         Lisp::nil))));
+                                Object(coll->makeCons(Lisp::nil,
+                                                      Lisp::nil))));
     WHEN("there is no copy")
     {
       THEN("ref count is 1")
@@ -383,7 +396,7 @@ SCENARIO("copy cons object with object copy constructor", "[GarbageCollector]")
       THEN("there is one root cons and 2 leafs")
       {
         REQUIRE(coll->numVoidCollectible() == 5u);
-        REQUIRE(checkConses(coll, 8u, { coll->getFromRootColor()==1u, coll->getFromColor() == 2u}));
+        REQUIRE(checkCollectible(coll, 8u, { Color::White == 1u}, { Color::White == 2u}));
       }
       WHEN("copy is unset")
       {
@@ -395,7 +408,7 @@ SCENARIO("copy cons object with object copy constructor", "[GarbageCollector]")
         THEN("there is one root cons and 2 leafs")
         {
           REQUIRE(coll->numVoidCollectible() == 5u);
-          REQUIRE(checkConses(coll, 8u, { coll->getFromRootColor()==1u, coll->getFromColor() == 2u}));
+          REQUIRE(checkCollectible(coll, 8u, { Color::White == 1u}, { Color::White == 2u}));
         }
         WHEN("both conses are unset")
         {
@@ -404,7 +417,7 @@ SCENARIO("copy cons object with object copy constructor", "[GarbageCollector]")
           THEN("there is no root and 3 leaf conses")
           {
             REQUIRE(coll->numVoidCollectible() == 5u);
-            REQUIRE(checkConses(coll, 8u, { coll->getFromRootColor()==0u, coll->getFromColor() == 3u}));
+            REQUIRE(checkCollectible(coll, 8u, { Color::White == 0u}, { Color::White == 3u}));
           }
           WHEN("cycle garbage location")
           {
@@ -444,18 +457,20 @@ SCENARIO("copy cons object with object assignement operator", "[GarbageCollector
       THEN("there is 1 root cons and 5 leaf")
       {
         REQUIRE(coll->numVoidCollectible() == 2u);
-        REQUIRE(checkConses(coll, 8u, { coll->getFromRootColor()==1u, coll->getFromColor() == 5u}));
+        REQUIRE(checkCollectible(coll,
+                                 8u,
+                                 { Color::White == 1u},
+                                 { Color::White == 5u}));
       }
       WHEN("cycle garbage collector")
       {
         coll->cycleCollector();
-        THEN("there is no root and 3 leaf conses")
+        THEN("there is 1 root and 2 leaf conses")
         {
           REQUIRE(coll->numVoidCollectible() == 5u);
-          REQUIRE(checkConses(coll,
-                              8u,
-                              { coll->getFromRootColor()==1u,
-                                coll->getToColor() == 2u}));
+          REQUIRE(checkCollectible(coll, 8u,
+                                   { Color::White == 1u},
+                                   { Color::White == 2u}));
         }
       }
     }
@@ -485,7 +500,7 @@ SCENARIO("one array without elements", "[GarbageCollector]")
     {
       REQUIRE(array);
       REQUIRE(array->isRoot());
-      REQUIRE(array->getColor() == coll->getFromRootColor());
+      REQUIRE(array->getColor() == Color::White);
       REQUIRE(array->getRefCount() == 1u);
     }
     THEN("it has no parents")
@@ -503,7 +518,7 @@ SCENARIO("one array without elements", "[GarbageCollector]")
       THEN("it is a leaf cons with from-color, ref-count 0")
       {
         REQUIRE_FALSE(array->isRoot());
-        REQUIRE(array->getColor() == coll->getFromColor());
+        REQUIRE(array->getColor() == Color::White);
       }
       THEN("there is no reachable array")
       {
@@ -520,19 +535,17 @@ SCENARIO("recycle ConsContainer", "[GarbageCollector]")
   auto container = coll->makeContainer();
   GIVEN("a container with 3 conses")
   {
-    Color color = coll->getFromRootColor();
-    REQUIRE(container->getColor() == color);
+    REQUIRE(container->getColor() == Color::White);
     coll->stepCollector();
     coll->stepCollector();
-    REQUIRE(coll->getFromRootColor() !=  color);
-    REQUIRE(container->getColor() == coll->getFromRootColor());
+    REQUIRE(container->getColor() == Color::White);
     coll->disableCollector();
     container->pushCons(coll->makeCons(Lisp::nil, Lisp::nil));
     container->pushCons(coll->makeCons(Lisp::nil, Lisp::nil));
     container->pushCons(coll->makeCons(Lisp::nil, Lisp::nil));
-    REQUIRE((*container)[0]->getColor() == coll->getFromRootColor());
-    REQUIRE((*container)[1]->getColor() == coll->getFromRootColor());
-    REQUIRE((*container)[2]->getColor() == coll->getFromRootColor());
+    REQUIRE((*container)[0]->getColor() == Color::White);
+    REQUIRE((*container)[1]->getColor() == Color::White);
+    REQUIRE((*container)[2]->getColor() == Color::White);
     REQUIRE((*container)[0]->getIndex() == 0);
     REQUIRE((*container)[1]->getIndex() == 1);
     REQUIRE((*container)[2]->getIndex() == 2);
@@ -640,6 +653,7 @@ SCENARIO("recycle ConsContainer", "[GarbageCollector]")
   }
 }
 #endif
+
 //////////////////////////////////////////////////////////
 /// implementation
 //////////////////////////////////////////////////////////
@@ -649,35 +663,64 @@ static std::shared_ptr<GarbageCollector> makeCollector(std::size_t pageSize)
 }
 
 
-static std::size_t getNumCollectible(std::shared_ptr<GarbageCollector> collector)
+inline std::size_t getNumCollectible(std::shared_ptr<GarbageCollector> coll)
 {
-  std::vector<Color> v({Color::White,
-                        Color::Grey,
-                        Color::Black,
-                        Color::WhiteRoot,
-                        Color::GreyRoot,
-                        Color::BlackRoot});
-  std::size_t ret = 0;
-  for(auto color : v)
+  auto nBulk = getNumBulkCollectible(coll);
+  auto nRoot = getNumRootCollectible(coll);
+  if(nBulk == error || nRoot == error)
   {
-    auto n = getNumCollectible(collector, color);
-    if(n == error || n == undef)
-    {
-      return n;
-    }
-    ret += n;
+    return error;
   }
-  //@todo remove this checks and test em separately
-  ret += collector->numVoidCollectible() + collector->numDisposedCollectible();
-  return ret;
+  return nBulk + nRoot;
 }
 
-
-static std::size_t getNumCollectible(std::shared_ptr<GarbageCollector> factory,
-                                     Color color)
+inline std::size_t getNumRootCollectible(std::shared_ptr<GarbageCollector> coll)
 {
-  std::size_t ret = factory->numCollectible(color);
-  bool colorOfConsesEqual = factory->checkSanity(color);
+  auto nWhite = getNumRootCollectible(coll, Color::White);
+  auto nGrey = getNumRootCollectible(coll, Color::Grey);
+  auto nBlack = getNumRootCollectible(coll, Color::Black);
+  if(nWhite == error || nGrey == error || nBlack == error)
+  {
+    return error;
+  }
+  return nWhite + nGrey + nBlack;
+}
+
+inline std::size_t getNumBulkCollectible(std::shared_ptr<GarbageCollector> coll)
+{
+  auto nWhite = getNumBulkCollectible(coll, Color::White);
+  auto nGrey = getNumBulkCollectible(coll, Color::Grey);
+  auto nBlack = getNumBulkCollectible(coll, Color::Black);
+  if(nWhite == error || nGrey == error || nBlack == error)
+  {
+    return error;
+  }
+  return nWhite + nGrey + nBlack;
+}
+
+inline std::size_t getNumCollectible(std::shared_ptr<GarbageCollector> coll, Color color)
+{
+  auto nBulk = getNumBulkCollectible(coll, color);
+  auto nRoot = getNumRootCollectible(coll, color);
+  if(nBulk == error || nRoot == error)
+  {
+    return error;
+  }
+  return nBulk + nRoot;
+}
+
+inline std::size_t getNumRootCollectible(std::shared_ptr<GarbageCollector> coll, Color color)
+{
+  std::size_t ret = coll->numRootCollectible(color);
+  bool colorOfConsesEqual = coll->checkRootSanity(color);
+  CHECK(colorOfConsesEqual);
+  return colorOfConsesEqual ? ret : error;
+}
+
+inline std::size_t getNumBulkCollectible(std::shared_ptr<GarbageCollector> coll, Color color)
+{
+  std::size_t ret = coll->numBulkCollectible(color);
+  bool colorOfConsesEqual = coll->checkBulkSanity(color);
   CHECK(colorOfConsesEqual);
   return colorOfConsesEqual ? ret : error;
 }
@@ -687,28 +730,39 @@ std::pair<Color, std::size_t> operator==(Color color, std::size_t n)
   return std::pair<Color, std::size_t>(color, n);
 }
 
-bool checkConses(std::shared_ptr<GarbageCollector> factory,
-                 std::size_t total,
-                 const std::vector<std::pair<Color, std::size_t> > & conses)
+bool checkCollectible(std::shared_ptr<GarbageCollector> coll,
+                      std::size_t total,
+                      const std::vector<std::pair<Color, std::size_t> > & root,
+                      const std::vector<std::pair<Color, std::size_t> > & bulk)
 {
-  std::size_t num_conses = getNumCollectible(factory);
-  CHECK(num_conses == total);
-  if(num_conses != total)
+  std::size_t n = getNumCollectible(coll) + coll->numVoidCollectible() + coll->numDisposedCollectible();
+  CHECK(n == total);
+  if(n != total)
   {
     return false;
   }
-  return checkConses(factory, conses);
+  return checkCollectible(coll, root, bulk);
 }
 
 
-bool checkConses(std::shared_ptr<GarbageCollector> factory,
-                 const std::vector<std::pair<Color, std::size_t> > & conses)
+bool checkCollectible(std::shared_ptr<GarbageCollector> coll,
+                      const std::vector<std::pair<Color, std::size_t> > & root,
+                      const std::vector<std::pair<Color, std::size_t> > & bulk)
 {
-  for(auto p : conses)
+  for(auto p : bulk)
   {
-    std::size_t num_conses = getNumCollectible(factory, p.first);
-    CHECK(num_conses == p.second);
-    if(num_conses != p.second)
+    std::size_t n = getNumBulkCollectible(coll, p.first);
+    CHECK(n == p.second);
+    if(n != p.second)
+    {
+      return false;
+    }
+  }
+  for(auto p : root)
+  {
+    std::size_t n = getNumRootCollectible(coll, p.first);
+    CHECK(n == p.second);
+    if(n != p.second)
     {
       return false;
     }

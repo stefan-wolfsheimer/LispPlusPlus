@@ -34,13 +34,12 @@ either expressed or implied, of the FreeBSD Project.
 #include <lpp/core/types/type_id.h>
 #include <lpp/core/types/managed_type.h>
 
-//@todo rename to cell.h
-
 namespace Lisp
 {
   class Cons;
   class Object;
   class Container;
+  class Collectible;
 
   class Cell
   {
@@ -50,7 +49,7 @@ namespace Lisp
     Cell(const Cell & rhs);
     Cell(const Object & rhs);
     Cell(IntegerType rhs);
-    Cell(Container * rhs, TypeId typeId);
+    Cell(Collectible * rhs, TypeId typeId);
     
     template<typename T>
     Cell(T * obj);
@@ -142,6 +141,13 @@ template<typename T>
 inline Lisp::Cell::Cell(T * obj)
 {
   init(obj, Lisp::TypeTraits<T>::typeId);
+}
+
+inline Lisp::Cell::Cell(Collectible * rhs, TypeId _typeId)
+  : typeId(_typeId)
+{
+  typeId = _typeId;
+  data.ptr = reinterpret_cast<BasicType*>(rhs);
 }
 
 inline void Lisp::Cell::init(Lisp::ManagedType * obj,

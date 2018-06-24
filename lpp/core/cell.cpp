@@ -44,12 +44,6 @@ Lisp::Cell::Cell(const Object & rhs)
   }
 }
 
-Cell::Cell(Container * rhs, TypeId typeId)
-{
-  typeId = typeId;
-  data.ptr = rhs;
-}
-
 Cell::~Cell()
 {
   unset();
