@@ -31,23 +31,13 @@ IF(CMAKE_BUILD_TYPE MATCHES Debug)
       test_core/test_string.cpp
       test_core/test_cons_pages.cpp
       test_core/test_collectible_container.cpp
-      test_core/test_garbage_collector.cpp
       test_core/test_cons.cpp
+      test_core/test_array.cpp
+      test_core/test_garbage_collector.cpp
       test_core/test_symbol_factory.cpp
       test_core/test_vm.cpp
       test_core/test_builtin_function.cpp
       test_core/test_compile_eval.cpp
-      CliArgs/tests/test_argument.cpp
-      CliArgs/tests/test_flag.cpp
-      CliArgs/tests/test_multiple_flag.cpp
-      CliArgs/tests/test_value.cpp
-      CliArgs/tests/test_multiple_value.cpp
-      CliArgs/tests/test_parser.cpp
-      CSVPlusPlus/test/test_builder.cpp
-      CSVPlusPlus/test/test_cell.cpp
-      CSVPlusPlus/test/test_reader.cpp
-      CSVPlusPlus/test/test_row.cpp
-      CSVPlusPlus/test/test_specification.cpp
       )
     target_link_libraries(runtest Catch Core Simul)
 ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)

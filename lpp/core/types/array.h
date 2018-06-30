@@ -29,6 +29,8 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
+#include <vector>
+#include <lpp/core/cell.h>
 #include <lpp/core/types/container.h>
 
 namespace Lisp
@@ -36,9 +38,57 @@ namespace Lisp
   class Array : public Container
   {
   public:
+    inline std::size_t size() const;
+    inline const Cell & at(std::size_t pos) const;
+    inline const Cell & operator[](std::size_t pos) const;
+    inline void forEachChild(std::function<void(const Cell&)> func) const;
+
+    inline void set(std::size_t pos, const Cell & rhs);
+    inline void set(std::size_t pos, Cell && rhs);
+
+    inline void append(const Object & rhs);
+
+    template<typename... ARGS>
+    inline void append(const Object & a, ARGS... rest);
+
+
     virtual TypeId getTypeId() const override;
     virtual bool greyChildren() override;
+  private:
+    std::vector<Lisp::Cell> data;
   };
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Implementation
+//
+////////////////////////////////////////////////////////////////////////////////
+inline std::size_t Lisp::Array::size() const
+{
+  return data.size();
+}
+
+inline const Lisp::Cell & Lisp::Array::at(std::size_t pos) const
+{
+  return data.at(pos);
+}
+
+inline const Lisp::Cell & Lisp::Array::operator[](std::size_t pos) const
+{
+  return data[pos];
+}
+
+inline void Lisp::Array::append(const Object & rhs)
+{
+  data.push_back(rhs);
+}
+
+template<typename... ARGS>
+void Lisp::Array::append(const Object & a, ARGS... rest)
+{
+  append(a);
+  append(rest...);
 }
 
 #if 0
@@ -57,23 +107,7 @@ namespace Lisp
   {
   public:
     using Color = Lisp::Color;
-    using const_iterator = std::vector<Cell>::const_iterator;
-    using const_reverse_iterator = std::vector<Cell>::const_reverse_iterator;
-    using size_type = std::vector<Cell>::size_type;
-    using difference_type = std::vector<Cell>::difference_type;
-    using reference = std::vector<Cell>::reference;
-    using const_reference = std::vector<Cell>::const_reference;
-    using pointer = std::vector<Cell>::pointer;
-    using const_pointer = std::vector<Cell>::const_pointer;
-    inline const_iterator cbegin() const;
-    inline const_iterator cend() const;
-    inline const_reverse_iterator crbegin() const;
-    inline const_reverse_iterator crend() const;
-    inline const_reference at(size_type pos) const;
-    inline const_reference operator[](size_type pos) const;
 
-    inline void push_back(const Cell & rhs);
-    inline void push_back(Cell && rhs);
 
     //inline Color getColor() const;
     inline std::size_t getGcTop() const;
@@ -99,36 +133,6 @@ namespace Lisp
 //  gcTop = 0;
 //}
 
-inline Lisp::Array::const_iterator Lisp::Array::cbegin() const
-{
-  return data.cbegin();
-}
-
-inline Lisp::Array::const_iterator Lisp::Array::cend() const
-{
-  return data.cend();
-}
-
-inline Lisp::Array::const_reverse_iterator Lisp::Array::crbegin() const
-{
-  return data.crbegin();
-}
-
-inline Lisp::Array::const_reverse_iterator Lisp::Array::crend() const
-{
-  return data.crend();
-}
-
-inline Lisp::Array::const_reference Lisp::Array::at(size_type pos) const
-{
-  return data.at(pos);
-}
-
-inline Lisp::Array::const_reference
-Lisp::Array::operator[]( size_type pos ) const
-{
-  return data[pos];
-}
 
 inline void Lisp::Array::push_back(const Cell & rhs)
 {

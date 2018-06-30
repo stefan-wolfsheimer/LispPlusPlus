@@ -30,8 +30,9 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
 #include <memory>
+#include <lpp/core/object.h>
 #include <lpp/core/gc/garbage_collector.h>
-#include "object.h"
+#include <lpp/core/types/array.h>
 #include "types/lisp_function_interface.h"
 
 namespace Lisp
@@ -53,6 +54,11 @@ namespace Lisp
     template<typename... ARGS>
     Object list(Object && a, ARGS... rest);
 
+    inline Object array();
+
+    template<typename... ARGS>
+    inline Object array(ARGS... rest);
+    
     Object symbol(const std::string & name);
     //void setq(const std::string & name, const Object & obj);
     //void setq(const Object & obj, const Object & rhs);
@@ -113,6 +119,19 @@ template<typename... ARGS>
 Lisp::Object Lisp::Vm::list(Lisp::Object && a, ARGS... rest)
 {
   return cons(a, std::move(list(rest...)));
+}
+
+inline Lisp::Object Lisp::Vm::array()
+{
+  return consFactory->make<Lisp::Array>();
+}
+
+template<typename... ARGS>
+inline Lisp::Object Lisp::Vm::array(ARGS... rest)
+{
+  Object ret(consFactory->make<Lisp::Array>());
+  ret.as<Array>()->append(rest...);
+  return ret;
 }
 
 inline void Lisp::Vm::push(const Object & rhs)

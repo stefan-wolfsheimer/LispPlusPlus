@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2017, Stefan Wolfsheimer
+Copyright (c) 2018, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -28,77 +28,55 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#pragma once
-#include <cstdint>
-#include "cell.h"
-#include "config.h"
+#include <catch.hpp>
+#include <lpp/core/vm.h>
+#include <lpp/core/types/array.h>
+#include <lpp/core/cell.h>
 
-namespace Lisp
+using Cell = Lisp::Cell;
+using Array = Lisp::Array;
+using Collectible = Lisp::Collectible;
+using Container = Lisp::Collectible;
+using Object = Lisp::Object;
+
+TEST_CASE("nil_is_not_a_array", "[Array]")
 {
-  class Object : public Cell
-  {
-  public:
-    Object();
-    Object(const Object & rhs);
-    Object(Object && rhs);
-    explicit Object(const Cell & rhs);
-
-    template<typename T>
-    Object(T * obj);
-    static Object nil();
-    static Object undefined();
-
-    Object & operator=(const Object & rhs);
-    Object & operator=(Object && rhs);
- 
-    ~Object();
-
-  protected:
-    void init(Cons * cons, TypeId _typeId);
-    void init(Container * cons, TypeId _typeId);
-    inline void init(ManagedType * managedType, TypeId _typeId);
-  private:
-    inline void unsetCons();
-  };
-
-  extern Object nil;
-  extern Object undefined;
+  REQUIRE_FALSE(Lisp::nil.isA<Array>());
+  REQUIRE_FALSE(Lisp::nil.isA<Container>());
 }
 
-inline Lisp::Object::Object() : Lisp::Cell()
+TEST_CASE("nil_as_array_is_pullptr", "[Array]")
 {
+  REQUIRE(Lisp::nil.as<Array>() == nullptr);
 }
 
-inline Lisp::Object::Object(Object && rhs)
+TEST_CASE("array_is_a_array", "[Array]")
 {
-  typeId = rhs.typeId;
-  data = rhs.data;
-  rhs.typeId = TypeTraits<Nil>::typeId;
+  Lisp::Vm vm;
+  auto obj = vm.array();
+  REQUIRE(obj.isA<Array>());
+  REQUIRE(obj.isA<Container>());
+  REQUIRE(obj.isA<Collectible>());
+  REQUIRE(obj.as<Array>());
 }
 
-template<typename T>
-inline Lisp::Object::Object(T * obj)
+TEST_CASE("array_has_refcount_1", "[Array]")
 {
-  init(obj, TypeTraits<T>::typeId);
+  Lisp::Vm vm;
+  auto obj = vm.array();
+  REQUIRE(obj.as<Array>()->getRefCount() == 1u);
+  REQUIRE(obj.as<Array>()->isRoot());
 }
 
-inline Lisp::Object Lisp::Object::nil()
+TEST_CASE("array_hash", "[Array]")
 {
-  Object ret;
-  ret.typeId = TypeTraits<Nil>::typeId;
-  ret.data.ptr = nullptr;
-  return ret;
-}
-
-inline Lisp::Object Lisp::Object::undefined()
-{
-  Object ret;
-  ret.typeId = TypeTraits<Undefined>::typeId;
-  ret.data.ptr = nullptr;
-  return ret;
-}
-
-inline void Lisp::Object::init(ManagedType * managedType, TypeId _typeId)
-{
-  Cell::init(managedType, _typeId);
+  Lisp::Vm vm;
+  std::hash<Cell> h;
+  std::equal_to<Cell> eq;
+  auto o1 = vm.array();
+  auto o2 = vm.array();
+  REQUIRE(h(o1) == h(o1));
+  REQUIRE(h(o1) != h(o2));
+  REQUIRE(eq(o1, o1));
+  REQUIRE_FALSE(eq(o1, o2));
 }

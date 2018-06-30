@@ -31,6 +31,7 @@ either expressed or implied, of the FreeBSD Project.
 #pragma once
 #include <cstdint>
 #include <functional>
+#include <iostream>
 #include <lpp/core/types/type_id.h>
 #include <lpp/core/types/managed_type.h>
 #include <lpp/core/gc/color.h>
@@ -63,6 +64,7 @@ namespace Lisp
     Cell& operator=(const Object & rhs);
 
     inline TypeId getTypeId() const;
+    std::string getTypeName() const;
 
     template<typename T>
     inline bool isA() const;
@@ -89,6 +91,8 @@ namespace Lisp
     inline void init(ManagedType * managedType, TypeId _typeId);
   };
 }
+
+std::ostream & operator<<(std::ostream & ost, const Lisp::Cell & cell);
 
 //////////////////////////////////////////////////////////////////////
 //

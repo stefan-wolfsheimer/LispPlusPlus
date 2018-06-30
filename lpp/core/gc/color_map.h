@@ -84,7 +84,9 @@ Lisp::ColorMap<T>::ColorMap(GarbageCollector * p)
   greyRoot  = new CollectibleContainer<T>(Lisp::Color::Grey,  true,  p);
   blackRoot = new CollectibleContainer<T>(Lisp::Color::Black, true,  p);
 
-  whiteRoot->otherElements = white;
+  // we don't know if another object still refers to unrooted objects
+  // -> never transition from root to white
+  whiteRoot->otherElements = grey;
   greyRoot->otherElements  = grey;
   blackRoot->otherElements = black;
   white->otherElements     = whiteRoot;
@@ -157,7 +159,9 @@ inline bool Lisp::ColorMap<T>::step()
     T * obj = whiteRoot->back();
     if(obj->greyChildren())
     {
+      assert(obj->checkIndex());
       blackRoot->move(obj);
+      assert(obj->checkIndex());
     }
     return false;
   }
@@ -167,7 +171,9 @@ inline bool Lisp::ColorMap<T>::step()
     T * obj = greyRoot->back();
     if(obj->greyChildren())
     {
+      assert(obj->checkIndex());
       blackRoot->move(obj);
+      assert(obj->checkIndex());
     }
     return false;
   }
@@ -177,7 +183,9 @@ inline bool Lisp::ColorMap<T>::step()
     T * obj = grey->back();
     if(obj->greyChildren())
     {
+      assert(obj->checkIndex());
       black->move(obj);
+      assert(obj->checkIndex());
     }
     return false;
   }
@@ -208,6 +216,9 @@ inline void Lisp::ColorMap<T>::swap()
   white->color = Color::White;
   whiteRoot->color = Color::White;
 
+  whiteRoot->otherElements = grey;
+  blackRoot->otherElements = black;
+
   whiteRoot->greyElements  = greyRoot;
   blackRoot->greyElements  = nullptr;
   white->greyElements      = grey;
@@ -224,7 +235,7 @@ inline void Lisp::ColorMap<T>::swap()
   grey->toElements         = blackRoot;
   black->toElements        = nullptr;
 
-  assert(whiteRoot->otherElements == white);
+  assert(whiteRoot->otherElements == grey);
   assert(greyRoot->otherElements == grey);
   assert(blackRoot->otherElements == black);
   assert(white->otherElements == whiteRoot);

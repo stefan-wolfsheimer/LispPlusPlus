@@ -164,12 +164,6 @@ template<typename T>
 inline void Lisp::CollectibleContainer<T>::root(T * obj)
 {
   assert(!obj->isRoot());
-  if(obj->index >= elements.size())
-  {
-    std::cout << obj->index << std::endl;
-    std::cout << elements.size() << std::endl;
-    std::cout << obj->getColor() << std::endl;
-  }
   assert(obj->index < elements.size());
   assert(obj == elements[obj->index]);
   remove(obj);

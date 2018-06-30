@@ -188,13 +188,16 @@ std::vector<SimConsFactoryRecord> SimConsFactory::run()
     {
       SimConsFactoryRecord rec;
       stepRootConses(factory, rootConses);
+      assert(factory->numRootCollectible() == rootConses.size());
       for(std::size_t j = 0; j < numBulkConsesSteps; j++)
       {
         stepConses(factory, rootConses);
+        assert(factory->numRootCollectible() == rootConses.size());
       }
       for(std::size_t j = 0; j < numEdgeRewireSteps; j++)
       {
         stepEdge(factory);
+        assert(factory->numRootCollectible() == rootConses.size());
       }
       CollectibleGraph graph(*factory);
       rec.step = i;
@@ -377,6 +380,7 @@ void SimConsFactory::stepEdge(std::shared_ptr<GarbageCollector> factory)
           {
             freeEdges[i].first->setCdr(cell.as<Cons>());
           }
+          std::cout << "yyy" << std::endl;
         }
       }
     }
@@ -402,6 +406,7 @@ void SimConsFactory::stepEdge(std::shared_ptr<GarbageCollector> factory)
           {
             parent.as<Cons>()->unsetCdr();
           }
+          std::cout << "xxx" << std::endl;
         }
       }
     }

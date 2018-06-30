@@ -70,6 +70,10 @@ void Cell::unset()
   }
 }
 
+std::string Cell::getTypeName() const
+{
+}
+
 void Cell::forEachChild(std::function<void(const Cell&)> func) const
 {
   if(isA<Cons>())
@@ -159,4 +163,26 @@ bool Lisp::Cell::checkIndex() const
   }
 }
 
-
+std::ostream & operator<<(std::ostream & ost, const Lisp::Cell & cell)
+{
+  // @todo: implement meta type with introspection and streaming interface
+  if(cell.isA<Cons>())
+  {
+    ost << "[CONS " "#" << cell.as<Cons>() << " ";
+    if(cell.as<Cons>()->isRoot())
+    {
+      ost << " ROOT " << cell.as<Cons>()->getRefCount() << " ";
+    }
+    ost << cell.as<Cons>()->getColor()  << "]";
+  }
+  else if(cell.isA<Lisp::Nil>())
+  {
+    ost << "[Nil]";
+  }
+  else
+  {
+    //@todo more types
+    ost << "[BasicType]";
+  }
+  return ost;
+}

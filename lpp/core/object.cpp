@@ -110,20 +110,24 @@ void Object::unsetCons()
     assert(isRoot());
     assert(getRefCount() > 0u);
     assert(checkIndex());
+    auto coll = static_cast<Cons*>(data.ptr)->getCollector();
     static_cast<Cons*>(data.ptr)->unroot();
-    //@todo: activate when GC step has been debugged 
-    //static_cast<Cons*>(data.ptr)->getCollector()->step();
-    //static_cast<Cons*>(data.ptr)->getCollector()->recycle();
+    assert(checkIndex());
+    coll->step();
+    assert(static_cast<Cons*>(data.ptr)->getCollector()->checkSanity());
+    assert(checkIndex());
+    coll->recycle();
+    assert(checkIndex());
   }
   else if(isA<Container>())
   {
     assert(isRoot());
     assert(getRefCount() > 0u);
     assert(checkIndex());
+    auto coll = static_cast<Container*>(data.ptr)->getCollector();
     static_cast<Container*>(data.ptr)->unroot();
-    //@todo: activate when GC step has been debugged 
-    //static_cast<Container*>(data.ptr)->getCollector()->step();
-    //static_cast<Container*>(data.ptr)->getCollector()->recycle();
+    coll->step();
+    coll->recycle();
   }
 }
 
@@ -131,6 +135,12 @@ void Object::init(Cons * cons, TypeId _typeId)
 {
   Cell::init(cons, _typeId);
   cons->incRefCount();
+}
+
+void Object::init(Container * container, TypeId _typeId)
+{
+  Cell::init(container, _typeId);
+  container->incRefCount();
 }
 
 Object Lisp::nil(Object::nil());
