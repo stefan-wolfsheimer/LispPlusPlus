@@ -62,13 +62,6 @@ static const std::size_t error = std::numeric_limits<std::size_t>::max() - 1;
 // helper functions
 static std::shared_ptr<GarbageCollector> makeCollector(std::size_t pageSize=12);
 
-static std::size_t getNumCollectible(std::shared_ptr<GarbageCollector> coll);
-static std::size_t getNumRootCollectible(std::shared_ptr<GarbageCollector> coll);
-static std::size_t getNumBulkCollectible(std::shared_ptr<GarbageCollector> coll);
-static std::size_t getNumCollectible(std::shared_ptr<GarbageCollector> coll, Color color);
-static std::size_t getNumRootCollectible(std::shared_ptr<GarbageCollector> coll, Color color);
-static std::size_t getNumBulkCollectible(std::shared_ptr<GarbageCollector> coll, Color color);
-
 static std::pair<Color, std::size_t> operator==(Color, std::size_t);
 
 static std::vector<std::pair<Color, std::size_t> > fillMissingColor(const std::vector<std::pair<Color, std::size_t> > & input);
@@ -96,7 +89,7 @@ SCENARIO("cons_life_cycle", "[GarbageCollector]")
   GIVEN("An empty cons factory")
   {
     auto coll = makeCollector(8);
-    REQUIRE(getNumCollectible(coll) == 0u);
+    REQUIRE(checkCollectible(coll, 0u, {}, {}));
     REQUIRE(coll->numDisposedCollectible() == 0u);
     REQUIRE(coll->numVoidCollectible() == 0u);
     REQUIRE(coll->getCycles() == 0);
@@ -806,69 +799,6 @@ static std::shared_ptr<GarbageCollector> makeCollector(std::size_t pageSize)
   return ret;
 }
 
-
-inline std::size_t getNumCollectible(std::shared_ptr<GarbageCollector> coll)
-{
-  auto nBulk = getNumBulkCollectible(coll);
-  auto nRoot = getNumRootCollectible(coll);
-  if(nBulk == error || nRoot == error)
-  {
-    return error;
-  }
-  return nBulk + nRoot;
-}
-
-inline std::size_t getNumRootCollectible(std::shared_ptr<GarbageCollector> coll)
-{
-  auto nWhite = getNumRootCollectible(coll, Color::White);
-  auto nGrey = getNumRootCollectible(coll, Color::Grey);
-  auto nBlack = getNumRootCollectible(coll, Color::Black);
-  if(nWhite == error || nGrey == error || nBlack == error)
-  {
-    return error;
-  }
-  return nWhite + nGrey + nBlack;
-}
-
-inline std::size_t getNumBulkCollectible(std::shared_ptr<GarbageCollector> coll)
-{
-  auto nWhite = getNumBulkCollectible(coll, Color::White);
-  auto nGrey = getNumBulkCollectible(coll, Color::Grey);
-  auto nBlack = getNumBulkCollectible(coll, Color::Black);
-  if(nWhite == error || nGrey == error || nBlack == error)
-  {
-    return error;
-  }
-  return nWhite + nGrey + nBlack;
-}
-
-inline std::size_t getNumCollectible(std::shared_ptr<GarbageCollector> coll, Color color)
-{
-  auto nBulk = getNumBulkCollectible(coll, color);
-  auto nRoot = getNumRootCollectible(coll, color);
-  if(nBulk == error || nRoot == error)
-  {
-    return error;
-  }
-  return nBulk + nRoot;
-}
-
-inline std::size_t getNumRootCollectible(std::shared_ptr<GarbageCollector> coll, Color color)
-{
-  std::size_t ret = coll->numRootCollectible(color);
-  bool colorOfConsesEqual = coll->checkRootSanity(color);
-  CHECK(colorOfConsesEqual);
-  return colorOfConsesEqual ? ret : error;
-}
-
-inline std::size_t getNumBulkCollectible(std::shared_ptr<GarbageCollector> coll, Color color)
-{
-  std::size_t ret = coll->numBulkCollectible(color);
-  bool colorOfConsesEqual = coll->checkBulkSanity(color);
-  CHECK(colorOfConsesEqual);
-  return colorOfConsesEqual ? ret : error;
-}
-
 std::pair<Color, std::size_t> operator==(Color color, std::size_t n)
 {
   return std::pair<Color, std::size_t>(color, n);
@@ -924,30 +854,25 @@ bool checkCollectible(std::shared_ptr<GarbageCollector> coll,
                       const std::vector<std::pair<Color, std::size_t> > & root,
                       const std::vector<std::pair<Color, std::size_t> > & bulk)
 {
-  CHECK(asString(std::vector<std::pair<Color, std::size_t> >({
-          Color::White == getNumBulkCollectible(coll, Color::White),
-          Color::Grey  == getNumBulkCollectible(coll, Color::Grey),
-          Color::Black == getNumBulkCollectible(coll, Color::Black)})) == asString(fillMissingColor(bulk)));
-  CHECK(asString(std::vector<std::pair<Color, std::size_t> >({
-          Color::White == getNumRootCollectible(coll, Color::White),
-          Color::Grey  == getNumRootCollectible(coll, Color::Grey),
-          Color::Black == getNumRootCollectible(coll, Color::Black)})) == asString(fillMissingColor(root)));
+  bool sanity = true;
+  std::vector<std::pair<Color, std::size_t> >givenRoot = {
+    Color::White == coll->numRootCollectible(Color::White),
+    Color::Grey  == coll->numRootCollectible(Color::Grey),
+    Color::Black == coll->numRootCollectible(Color::Black) };
+  std::vector<std::pair<Color, std::size_t> >givenBulk = {
+    Color::White == coll->numBulkCollectible(Color::White),
+    Color::Grey  == coll->numBulkCollectible(Color::Grey),
+    Color::Black == coll->numBulkCollectible(Color::Black) };
 
-  if(std::vector<std::pair<Color, std::size_t> >({
-        Color::White == getNumBulkCollectible(coll, Color::White),
-        Color::Grey  == getNumBulkCollectible(coll, Color::Grey),
-        Color::Black == getNumBulkCollectible(coll, Color::Black)}) != fillMissingColor(bulk))
-  {
-    return false;
-  }
-  if(std::vector<std::pair<Color, std::size_t> >({
-        Color::White == getNumRootCollectible(coll, Color::White),
-        Color::Grey  == getNumRootCollectible(coll, Color::Grey),
-        Color::Black == getNumRootCollectible(coll, Color::Black)}) != fillMissingColor(root))
-  {
-    return false;
-  }
-  return true;
+  CHECK((sanity &= coll->checkRootSanity(Color::Black)));
+  CHECK((sanity &= coll->checkRootSanity(Color::Grey)));
+  CHECK((sanity &= coll->checkRootSanity(Color::White)));
+  CHECK((sanity &= coll->checkBulkSanity(Color::Black)));
+  CHECK((sanity &= coll->checkBulkSanity(Color::Grey)));
+  CHECK((sanity &= coll->checkBulkSanity(Color::White)));
+  CHECK((sanity &= ( asString(givenRoot) == asString(fillMissingColor(root)))));
+  CHECK((sanity &= ( asString(givenBulk) == asString(fillMissingColor(bulk)))));
+  return sanity;
 }
 
 std::unordered_set<Cell> Set()
