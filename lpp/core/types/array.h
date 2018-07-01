@@ -30,7 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
 #include <vector>
-#include <lpp/core/cell.h>
+#include <lpp/core/object.h>
 #include <lpp/core/types/container.h>
 
 namespace Lisp
@@ -38,23 +38,30 @@ namespace Lisp
   class Array : public Container
   {
   public:
+    template<typename... ARGS>
+    Array(ARGS... rest);
     inline std::size_t size() const;
-    inline const Cell & at(std::size_t pos) const;
-    inline const Cell & operator[](std::size_t pos) const;
-    inline void forEachChild(std::function<void(const Cell&)> func) const;
+    inline const Cell & atCell(std::size_t pos) const;
+    inline Object at(std::size_t pos) const;
+    inline Object operator[](std::size_t pos) const;
 
-    inline void set(std::size_t pos, const Cell & rhs);
-    inline void set(std::size_t pos, Cell && rhs);
+    inline void set(std::size_t pos, const Object & rhs);
+    inline void set(std::size_t pos, Object && rhs);
 
+    inline void append();
     inline void append(const Object & rhs);
 
     template<typename... ARGS>
     inline void append(const Object & a, ARGS... rest);
 
-
+    virtual void forEachChild(std::function<void(const Cell&)> func) const override;
     virtual TypeId getTypeId() const override;
     virtual bool greyChildren() override;
+    inline std::size_t getGcPosition() const;
+    virtual void resetGcPosition() override;
+    virtual bool recycleNextChild() override;
   private:
+    std::size_t gcPosition;
     std::vector<Lisp::Cell> data;
   };
 }
@@ -64,23 +71,54 @@ namespace Lisp
 // Implementation
 //
 ////////////////////////////////////////////////////////////////////////////////
+template<typename... ARGS>
+inline Lisp::Array::Array(ARGS... rest)
+{
+  gcPosition = 0u;
+  append(rest...);
+}
+  
 inline std::size_t Lisp::Array::size() const
 {
   return data.size();
 }
 
-inline const Lisp::Cell & Lisp::Array::at(std::size_t pos) const
+inline const Lisp::Cell & Lisp::Array::atCell(std::size_t pos) const
 {
   return data.at(pos);
 }
 
-inline const Lisp::Cell & Lisp::Array::operator[](std::size_t pos) const
+inline Lisp::Object Lisp::Array::at(std::size_t pos) const
 {
-  return data[pos];
+  return Object(data.at(pos));
+}
+
+inline Lisp::Object Lisp::Array::operator[](std::size_t pos) const
+{
+  return Object(data[pos]);
+}
+
+inline void Lisp::Array::set(std::size_t pos, const Object & rhs)
+{
+  assert(pos < data.size());
+  data[pos] = rhs;
+  data[pos].grey();
+}
+
+inline void Lisp::Array::set(std::size_t pos, Object && rhs)
+{
+  assert(pos < data.size());
+  data[pos] = rhs;
+  data[pos].grey();
+}
+
+inline void Lisp::Array::append()
+{
 }
 
 inline void Lisp::Array::append(const Object & rhs)
 {
+  rhs.grey();
   data.push_back(rhs);
 }
 
@@ -89,6 +127,11 @@ void Lisp::Array::append(const Object & a, ARGS... rest)
 {
   append(a);
   append(rest...);
+}
+
+inline std::size_t Lisp::Array::getGcPosition() const
+{
+  return gcPosition;
 }
 
 #if 0

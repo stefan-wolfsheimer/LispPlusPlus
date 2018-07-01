@@ -62,20 +62,23 @@ CollectibleGraph::CollectibleGraph(const GarbageCollector & collector)
     todo.erase(node);
     done.insert(node);
     node->getCell().forEachChild([&done, &node, &todo, this](const Cell& child) {
-        auto itr = nodes.find(child);
-        if(itr == nodes.end())
+        if(child.isA<Collectible>())
         {
-          throw std::logic_error("node hasnt been added");
-        }
-        node->children.insert(itr->second.get());
-        itr->second->parents.insert(node.get());
-        edges.insert(std::make_pair(Pair(node->getCell(), child),
-                                    std::make_shared<CollectibleEdge>(node.get(),
-                                                                      itr->second.get())));
-        if(todo.find(itr->second) == todo.end() &&
-           done.find(itr->second) == done.end())
-        {
-          todo.insert(itr->second);
+          auto itr = nodes.find(child);
+          if(itr == nodes.end())
+          {
+            throw std::logic_error("node hasnt been added");
+          }
+          node->children.insert(itr->second.get());
+          itr->second->parents.insert(node.get());
+          edges.insert(std::make_pair(Pair(node->getCell(), child),
+                                      std::make_shared<CollectibleEdge>(node.get(),
+                                                                        itr->second.get())));
+          if(todo.find(itr->second) == todo.end() &&
+             done.find(itr->second) == done.end())
+          {
+            todo.insert(itr->second);
+          }
         }
     });
   }

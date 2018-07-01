@@ -83,8 +83,7 @@ namespace Lisp
     inline const_iterator cbegin();
     inline const_iterator cend();
 
-    //todo: remove virtual
-    virtual ~ConsPages();
+    ~ConsPages();
 
     inline std::size_t getPageSize() const;
     inline std::size_t getNumAllocated() const;

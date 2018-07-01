@@ -80,6 +80,10 @@ void Cell::forEachChild(std::function<void(const Cell&)> func) const
   {
     as<Cons>()->forEachChild(func);
   }
+  else if(isA<Container>())
+  {
+    as<Container>()->forEachChild(func);
+  }
 }
 
 void Cell::grey() const
@@ -174,6 +178,10 @@ std::ostream & operator<<(std::ostream & ost, const Lisp::Cell & cell)
       ost << " ROOT " << cell.as<Cons>()->getRefCount() << " ";
     }
     ost << cell.as<Cons>()->getColor()  << "]";
+  }
+  else if(cell.isA<Lisp::Container>())
+  {
+    ost << "[Container]";
   }
   else if(cell.isA<Lisp::Nil>())
   {

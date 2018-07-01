@@ -40,7 +40,10 @@ namespace Lisp
   public:
     virtual ~Container(){}
     virtual TypeId getTypeId() const = 0;
+    virtual void forEachChild(std::function<void(const Cell&)> func) const = 0;
     virtual bool greyChildren() = 0;
+    virtual void resetGcPosition() = 0;
+    virtual bool recycleNextChild() = 0;
   protected:
   };
 }

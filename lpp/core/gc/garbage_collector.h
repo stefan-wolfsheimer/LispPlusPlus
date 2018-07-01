@@ -62,8 +62,8 @@ namespace Lisp
     inline Cons * makeCons(const Object & car, Object && cdr);
     inline Cons * makeCons(Object && car, Object && cdr);
 
-    template<typename C>
-    inline C * make();
+    template<typename C,  typename... ARGS>
+    inline C * make(ARGS... rest);
 
     inline std::size_t numCollectible() const;
     inline std::size_t numRootCollectible() const;
@@ -110,7 +110,7 @@ namespace Lisp
   private:
     ColorMap<Cons> consMap;
     ColorMap<Container> containerMap;
-    
+    Container * toBeRecycled;
     ConsPages consPages;
     unsigned short int garbageSteps;
     unsigned short int recycleSteps;
@@ -139,6 +139,7 @@ inline Lisp::GarbageCollector::GarbageCollector(std::size_t consPageSize,
   : consPages(consPageSize),
     consMap(this),
     containerMap(this),
+    toBeRecycled(nullptr),
     garbageSteps(_garbageSteps),
     recycleSteps(_recycleSteps),
     backGarbageSteps(_garbageSteps),
@@ -205,12 +206,12 @@ inline void Lisp::GarbageCollector::initContainer(Container * container)
   containerMap.add(container);
 }
 
-template<typename C>
-inline C * Lisp::GarbageCollector::make()
+template<typename C, typename... ARGS>
+inline C * Lisp::GarbageCollector::make(ARGS... rest)
 {
   step();
   recycle();
-  C * ret = new C;
+  C * ret = new C(rest...);
   initContainer(ret);
   return ret;
 }

@@ -259,9 +259,9 @@ SCENARIO("a cons with 2 children", "[GarbageCollector]")
   GIVEN("A cons coll with 2 children")
   {
     auto coll = makeCollector(8);
-    auto obj = std::make_shared<Object>(coll->makeCons(Object(coll->makeCons(Lisp::nil, Lisp::nil)),
-                                                       Object(coll->makeCons(Lisp::nil, Lisp::nil))));
-    auto cons = obj->as<Cons>();
+    auto obj = Object(coll->makeCons(Object(coll->makeCons(Lisp::nil, Lisp::nil)),
+                                     Object(coll->makeCons(Lisp::nil, Lisp::nil))));
+    auto cons = obj.as<Cons>();
     CollectibleGraph graph(*coll);
     REQUIRE(cons);
     REQUIRE(cons->isRoot());
@@ -287,6 +287,8 @@ SCENARIO("a cons with 2 children", "[GarbageCollector]")
         REQUIRE(cdr.as<Cons>()->getRefCount() == 1u);
         REQUIRE(coll->numVoidCollectible() == 5u);
         REQUIRE(checkCollectible(coll, 0u, { Color::White == 3u }, {}));
+        REQUIRE(Parents(graph, car) == Set(obj));
+        REQUIRE(Parents(graph, cdr) == Set(obj));
       }
       REQUIRE(coll->numVoidCollectible() == 5u);
       REQUIRE(checkCollectible(coll,
@@ -360,7 +362,7 @@ SCENARIO("a cons with 2 children", "[GarbageCollector]")
         THEN("setting other child to itself and gc step is executed")
         {
           REQUIRE(checkCollectible(coll, 0u, {Color::White == 1u}, {Color::Grey == 2u}));
-          cons->setCdr(*obj);
+          cons->setCdr(obj);
           REQUIRE(checkCollectible(coll, 0u, {Color::Black == 1u}, {Color::White == 0u, Color::Grey == 2}));
           coll->enableCollector();
           coll->enableRecycling();
@@ -551,35 +553,6 @@ SCENARIO("copy cons object with object assignement operator", "[GarbageCollector
   }
 }
 
-SCENARIO("one array without elements", "[GarbageCollector]")
-{
-  /*@todo implement Array */
-  auto coll = makeCollector(8);
-  GIVEN("A root array")
-  {
-    auto obj = Object(coll->make<Array>());
-    auto array = obj.as<Array>();
-    CollectibleGraph graph(*coll);
-    REQUIRE(array->isRoot());
-    REQUIRE(array->getColor() == Color::White);
-    REQUIRE(array->getRefCount() == 1u);
-    array->append(coll->makeCons(Lisp::nil, Lisp::nil),
-                  Object(1),
-                  coll->makeCons(Lisp::nil, Lisp::nil),
-                  Object(3),
-                  coll->makeCons(Lisp::nil, Lisp::nil));
-    REQUIRE(array->at(0).isA<Cons>());
-    REQUIRE(array->at(0).isRoot() == false);
-    REQUIRE(array->at(0).getColor() == Color::Grey);
-    REQUIRE(array->at(2).isA<Cons>());
-    REQUIRE(array->at(2).isRoot() == false);
-    REQUIRE(array->at(2).getColor() == Color::Grey);
-    REQUIRE(array->at(4).isA<Cons>());
-    REQUIRE(array->at(4).isRoot() == false);
-    REQUIRE(array->at(4).getColor() == Color::Grey);
-  }
-}
-
 TEST_CASE("automatic collection with lots of temporary objects", "[GarbageCollector]")
 {
   auto coll = makeCollector(512);
@@ -624,169 +597,342 @@ TEST_CASE("automatic collection with lots of temporary objects", "[GarbageCollec
   REQUIRE(coll->checkSanity());
 }
 
-#if 0
-SCENARIO("one array without elements", "[GarbageCollector]")
+////////////////////////////////////////////////////////////////////////////////
+//
+// Array tests
+//
+////////////////////////////////////////////////////////////////////////////////
+SCENARIO("one array with cons children", "[GarbageCollector]")
 {
+  auto coll = makeCollector(8);
   GIVEN("A root array")
   {
-    CollectibleGraph graph(*coll);
-    THEN("it is in root set, has from-color and ref count 1")
+    auto cons1 = Object(coll->makeCons(Object(coll->makeCons(Lisp::nil, Lisp::nil)),
+                                       Object(coll->makeCons(Lisp::nil, Lisp::nil))));
+    REQUIRE(cons1.getColor() == Color::White);
+    REQUIRE(cons1.as<Cons>()->getCarCell().getColor() == Color::Grey);
+    REQUIRE(cons1.as<Cons>()->getCarCell().getColor() == Color::Grey);
+    auto obj = Object(coll->make<Array>());
+    auto array = obj.as<Array>();
+    REQUIRE(array->isRoot());
+    REQUIRE(array->getColor() == Color::White);
+    REQUIRE(array->getRefCount() == 1u);
+    array->append(coll->makeCons(Lisp::nil, Lisp::nil),
+                  Object(1),
+                  coll->makeCons(Lisp::nil, Lisp::nil),
+                  Object(3),
+                  coll->makeCons(Lisp::nil, Lisp::nil));
+    REQUIRE(array->atCell(0).isA<Cons>());
+    REQUIRE(array->atCell(0).isRoot() == false);
+    REQUIRE(array->atCell(0).getColor() == Color::Grey);
+    REQUIRE(array->atCell(2).isA<Cons>());
+    REQUIRE(array->atCell(2).isRoot() == false);
+    REQUIRE(array->atCell(2).getColor() == Color::Grey);
+    REQUIRE(array->atCell(4).isA<Cons>());
+    REQUIRE(array->atCell(4).isRoot() == false);
+    REQUIRE(array->atCell(4).getColor() == Color::Grey);
+    REQUIRE(Set(coll->get(&GarbageCollector::forEachReachable)) == Set(Cell(array),
+                                                                       array->atCell(0),
+                                                                       array->atCell(2),
+                                                                       array->atCell(4),
+                                                                       cons1,
+                                                                       cons1.as<Cons>()->getCarCell(),
+                                                                       cons1.as<Cons>()->getCdrCell()));
+    WHEN("There are references to its children")
     {
-      REQUIRE(array);
-      REQUIRE(array->isRoot());
-      REQUIRE(array->getColor() == Color::White);
-      REQUIRE(array->getRefCount() == 1u);
-    }
-    THEN("it has no parents")
-    {
-      arrayHasParents(graph, array);
-    }
-    THEN("it is reachable")
-    {
-      REQUIRE(coll->getReachableArraysAsSet() == setOfArrays(array));
-    }
-    WHEN("the cons is unrooted")
-    {
-      obj.reset();
-      CollectibleGraph graph(*coll);
-      THEN("it is a leaf cons with from-color, ref-count 0")
       {
-        REQUIRE_FALSE(array->isRoot());
-        REQUIRE(array->getColor() == Color::White);
+        auto child2 = array->at(0);
+        auto child4 = array->at(4);
+        CollectibleGraph graph(*coll);
+        REQUIRE(array->atCell(0).isRoot());
+        REQUIRE(array->atCell(4).isRoot());
+        REQUIRE(array->atCell(0).getRefCount() == 1u);
+        REQUIRE(array->atCell(4).getRefCount() == 1u);
+        REQUIRE(checkCollectible(coll, 0u, { Color::White == 4u }, { Color::Grey == 3u}));
+        REQUIRE(Parents(graph, child2) == Set(obj));
+        REQUIRE(Parents(graph, child4) == Set(obj));
       }
-      THEN("there is no reachable array")
+      REQUIRE(array->atCell(0).isRoot() == false);
+      REQUIRE(array->atCell(4).isRoot() == false);
+      REQUIRE(array->atCell(0).getRefCount() == 0u);
+      REQUIRE(array->atCell(4).getRefCount() == 0u);
+      REQUIRE(checkCollectible(coll, 0u, { Color::White == 2u }, { Color::Grey == 5u}));
+    }
+    WHEN("collected stepwise")
+    {
+      REQUIRE(array->getGcPosition() == 0u);
+      coll->enableCollector();
+      coll->enableRecycling();
+
+      //////////////////////////
+      coll->step();
+      REQUIRE(coll->getCycles() == 0u);
+      REQUIRE(array->getGcPosition() == 1u);
+      REQUIRE(cons1.getColor() == Color::Black);
+      REQUIRE(cons1.as<Cons>()->getCarCell().getColor() == Color::Grey);
+      REQUIRE(cons1.as<Cons>()->getCdrCell().getColor() == Color::Grey);
+      REQUIRE(checkCollectible(coll, 0u,
+                               { Color::White == 1u, Color::Black == 1u },
+                               { Color::White == 0u, Color::Grey == 5u }));
+      //////////////////////////
+      coll->step();
+      REQUIRE(coll->getCycles() == 0u);
+      REQUIRE(array->getGcPosition() == 2u);
+      REQUIRE(checkCollectible(coll, 0u,
+                               { Color::White == 1u, Color::Black == 1u },
+                               { Color::Black == 1u, Color::Grey == 4u}));
+      //////////////////////////
+      coll->step();
+      REQUIRE(coll->getCycles() == 0u);
+      REQUIRE(array->getGcPosition() == 3u);
+      REQUIRE(checkCollectible(coll, 0u,
+                               { Color::White == 1u, Color::Black == 1u },
+                               { Color::Black == 2u, Color::Grey == 3u}));
+      //////////////////////////
+      coll->step();
+      REQUIRE(coll->getCycles() == 0u);
+      REQUIRE(array->getGcPosition() == 4u);
+      REQUIRE(checkCollectible(coll, 0u,
+                               { Color::White == 1u, Color::Black == 1u },
+                               { Color::Black == 3u, Color::Grey == 2u }));
+
+      /////////////////////////
+      coll->disableCollector();
+      array->set(1, Object(coll->makeCons(Lisp::nil, Lisp::nil)));
+      coll->enableCollector();
+      REQUIRE(array->atCell(1).getColor() == Color::Grey);
+      
+      
+      //////////////////////////
+      coll->step();
+      REQUIRE(coll->getCycles() == 0u);
+      REQUIRE(array->getGcPosition() == 0u);
+      REQUIRE(checkCollectible(coll, 0u,
+                               { Color::Black == 2u },
+                               { Color::Black == 4u, Color::Grey == 2u }));
+
+      //////////////////////////
+      coll->step();
+      REQUIRE(coll->getCycles() == 0u);
+      REQUIRE(array->getGcPosition() == 0u);
+      REQUIRE(checkCollectible(coll, 0u,
+                               { Color::Black == 2u },
+                               { Color::Black == 5u, Color::Grey == 1u }));
+
+      //////////////////////////
+      coll->step();
+      REQUIRE(coll->getCycles() == 0u);
+      REQUIRE(array->getGcPosition() == 0u);
+      REQUIRE(checkCollectible(coll, 0u,
+                               { Color::Black == 2u },
+                               { Color::Black == 6u }));
+
+      //////////////////////////
+      coll->step();
+      REQUIRE(coll->getCycles() == 1u);
+      REQUIRE(array->getGcPosition() == 0u);
+      REQUIRE(checkCollectible(coll, 0u,
+                               { Color::White == 2u },
+                               { Color::White == 6u }));
+
+      //////////////////////////
+      obj = Lisp::nil;
+      cons1 = Lisp::nil;
+      REQUIRE(checkCollectible(coll, 0u,
+                               { },
+                               { Color::White == 2, Color::Grey == 4, Color::Black == 2 }));
+      coll->step();
+      REQUIRE(checkCollectible(coll, 0u,
+                               { },
+                               { Color::White == 1, Color::Grey == 4, Color::Black == 3 }));
+      coll->step();
+      REQUIRE(checkCollectible(coll, 0u,
+                               { },
+                               { Color::White == 1, Color::Grey == 3, Color::Black == 4 }));
+      coll->step();
+      REQUIRE(checkCollectible(coll, 0u,
+                               { },
+                               { Color::Grey == 2, Color::Black == 6 }));
+      coll->step();
+      REQUIRE(checkCollectible(coll, 0u,
+                               { },
+                               { Color::Grey == 1, Color::Black == 7 }));
+      coll->step();
+      REQUIRE(checkCollectible(coll, 0u,
+                               { },
+                               { Color::Black == 8 }));
+      coll->step();
+      REQUIRE(checkCollectible(coll, 0u,
+                               { },
+                               { Color::White == 8 }));
+      coll->step();
+      REQUIRE(checkCollectible(coll, 8u, {}, {}));
+
+      for(std::size_t i = 0; i < 8u; ++i)
       {
-        REQUIRE(coll->getReachableArraysAsSet() == setOfArrays());
+        coll->recycle();
       }
+      REQUIRE(checkCollectible(coll, 0u, {}, {}));
+    }
+    WHEN("recycled")
+    {
+      obj = Lisp::nil;
+      cons1 = Lisp::nil;
+      REQUIRE(Set(coll->get(&GarbageCollector::forEachReachable)) == Set());
+      REQUIRE(array->getGcPosition() == 0u);
+      coll->enableCollector();
+      coll->enableRecycling();
+      coll->cycle();
+      REQUIRE(coll->getCycles() == 1u);
+      REQUIRE(checkCollectible(coll, {}, {}));
     }
   }
 }
 
-
-SCENARIO("recycle ConsContainer", "[GarbageCollector]")
+SCENARIO("a cons with 2 array children", "[GarbageCollector]")
 {
-  auto coll = std::make_shared<GarbageCollector>(8, 1);
-  auto container = coll->makeContainer();
-  GIVEN("a container with 3 conses")
+  /*
+              o
+             / \
+            o   o 
+  */
+  GIVEN("A cons coll with 2 children")
   {
-    REQUIRE(container->getColor() == Color::White);
-    coll->stepCollector();
-    coll->stepCollector();
-    REQUIRE(container->getColor() == Color::White);
-    coll->disableCollector();
-    container->pushCons(coll->makeCons(Lisp::nil, Lisp::nil));
-    container->pushCons(coll->makeCons(Lisp::nil, Lisp::nil));
-    container->pushCons(coll->makeCons(Lisp::nil, Lisp::nil));
-    REQUIRE((*container)[0]->getColor() == Color::White);
-    REQUIRE((*container)[1]->getColor() == Color::White);
-    REQUIRE((*container)[2]->getColor() == Color::White);
-    REQUIRE((*container)[0]->getIndex() == 0);
-    REQUIRE((*container)[1]->getIndex() == 1);
-    REQUIRE((*container)[2]->getIndex() == 2);
-    WHEN("all conses have been marked")
+    auto coll = makeCollector(8);
+    auto obj = Object(coll->makeCons(Object(coll->make<Array>(Lisp::nil, Lisp::nil)),
+                                     Object(coll->make<Array>(Lisp::nil, Lisp::nil))));
+    auto cons = obj.as<Cons>();
+    REQUIRE(cons->isRoot());
+    REQUIRE(cons->getColor() == Color::White);
+    REQUIRE(cons->getRefCount() == 1u);
+
+    CollectibleGraph graph(*coll);
+    REQUIRE(cons);
+    REQUIRE(cons->isRoot());
+    REQUIRE(cons->getColor() == Color::White);
+    REQUIRE(cons->getRefCount() == 1u);
+    REQUIRE(Parents(graph, cons) == Set());
+    REQUIRE(Parents(graph, cons->getCarCell()) == Set(Cell(cons)));
+    REQUIRE(Parents(graph, cons->getCdrCell()) == Set(Cell(cons)));
+    REQUIRE(Set(coll->get(&GarbageCollector::forEachReachable)) == Set(Cell(cons),
+                                                                       cons->getCarCell(),
+                                                                       cons->getCdrCell()));
+    REQUIRE(coll->numVoidCollectible() == 7u);
+    REQUIRE(checkCollectible(coll, 0u,
+                             { Color::White == 1u},
+                             { Color::Grey == 2u}));
+
+    WHEN("There are references to its children")
     {
-      coll->enableCollector();
-      REQUIRE((*container)[0]->getColor() == coll->getFromRootColor());
-      REQUIRE((*container)[1]->getColor() == coll->getFromRootColor());
-      REQUIRE((*container)[2]->getColor() == coll->getFromRootColor());
-      REQUIRE(container->getGcTop() == 0);
-      coll->stepCollector();
-      REQUIRE((*container)[0]->getColor() == coll->getToRootColor());
-      REQUIRE((*container)[1]->getColor() == coll->getFromRootColor());
-      REQUIRE((*container)[2]->getColor() == coll->getFromRootColor());
-      REQUIRE(container->getGcTop() == 1);
-      coll->stepCollector();
-      REQUIRE((*container)[0]->getColor() == coll->getToRootColor());
-      REQUIRE((*container)[1]->getColor() == coll->getToRootColor());
-      REQUIRE((*container)[2]->getColor() == coll->getFromRootColor());
-      REQUIRE(container->getGcTop() == 2);
-      coll->stepCollector();
-      REQUIRE((*container)[0]->getColor() == coll->getToRootColor());
-      REQUIRE((*container)[1]->getColor() == coll->getToRootColor());
-      REQUIRE((*container)[2]->getColor() == coll->getToRootColor());
-      REQUIRE(container->getGcTop() == 3);
-      color = coll->getFromRootColor();
-      THEN("container is marked")
       {
-	REQUIRE(container->getColor() == color);
-	coll->stepCollector(); // mark container
-	REQUIRE(container->getColor() != color);
-	REQUIRE(container->getGcTop() == 0);
-	coll->stepCollector(); // swap colors
-	REQUIRE(container->getGcTop() == 0);
-	REQUIRE(coll->getToRootColor() == color);
-	REQUIRE((*container)[0]->getColor() == coll->getFromRootColor());
-	REQUIRE((*container)[1]->getColor() == coll->getFromRootColor());
-	REQUIRE((*container)[2]->getColor() == coll->getFromRootColor());
+        auto car = cons->getCar();
+        auto cdr = cons->getCdr();
+        CollectibleGraph graph(*coll);
+        REQUIRE(car.as<Array>()->getRefCount() == 1u);
+        REQUIRE(cdr.as<Array>()->getRefCount() == 1u);
+        REQUIRE(coll->numVoidCollectible() == 7u);
+        REQUIRE(checkCollectible(coll, 0u, { Color::White == 3u }, {}));
+        REQUIRE(Parents(graph, car) == Set(obj));
+        REQUIRE(Parents(graph, cdr) == Set(obj));
       }
-      THEN("adding conses to marked container")
+      REQUIRE(coll->numVoidCollectible() == 7u);
+      REQUIRE(checkCollectible(coll,
+                               0u,
+                               { Color::White == 1u},
+                               { Color::Grey == 2u}));
+      THEN("GarbageCollector::cycle() does not remove it")
       {
-	REQUIRE(container->getColor() == color);
-	coll->stepCollector(); // mark container
-	REQUIRE(container->getColor() != color);
-	REQUIRE(container->getColor() == coll->getToRootColor());
-	coll->disableCollector();
-	container->pushCons(coll->makeCons(Lisp::nil, Lisp::nil));
-	REQUIRE((*container)[0]->getColor() == coll->getToRootColor());
-	REQUIRE((*container)[1]->getColor() == coll->getToRootColor());
-	REQUIRE((*container)[2]->getColor() == coll->getToRootColor());
-	REQUIRE((*container)[3]->getColor() == coll->getToRootColor());
-	REQUIRE(container->getGcTop() == 0);
-	coll->enableCollector();
-	coll->stepCollector(); // swap colors
-	REQUIRE(container->getGcTop() == 0);
-	REQUIRE(coll->getToRootColor() == color);
-	REQUIRE((*container)[0]->getColor() == coll->getFromRootColor());
-	REQUIRE((*container)[1]->getColor() == coll->getFromRootColor());
-	REQUIRE((*container)[2]->getColor() == coll->getFromRootColor());
-	REQUIRE((*container)[3]->getColor() == coll->getFromRootColor());
+        coll->cycle();
+        REQUIRE(coll->getCycles() == 1u);
+        REQUIRE(checkCollectible(coll, 0u, {Color::White == 1u}, {Color::White == 2u}));
       }
-    }
-    WHEN("part of conses have been marked")
-    {
-      coll->enableCollector();
-      coll->stepCollector();
-      coll->stepCollector();
-      REQUIRE((*container)[0]->getColor() == coll->getToRootColor());
-      REQUIRE((*container)[1]->getColor() == coll->getToRootColor());
-      REQUIRE((*container)[2]->getColor() == coll->getFromRootColor());
-      REQUIRE(container->getGcTop() == 2);
-      REQUIRE(container->getColor() == coll->getFromRootColor());
-      THEN("adding cons at the end has from color")
+      THEN("GarbageCollector::step() does not remove it")
       {
-	coll->disableCollector();
-	container->pushCons(coll->makeCons(Lisp::nil, Lisp::nil));
-	REQUIRE((*container)[3]->getColor() == coll->getFromRootColor());
-	REQUIRE((*container)[1]->getColor() == coll->getToRootColor());
-	container->setCons(1, coll->makeCons(Lisp::nil, Lisp::nil));
-	container->setCons(3, coll->makeCons(Lisp::nil, Lisp::nil));
-	REQUIRE((*container)[0]->getColor() == coll->getToRootColor());
-	REQUIRE((*container)[1]->getColor() == coll->getToRootColor());
-	REQUIRE((*container)[2]->getColor() == coll->getFromRootColor());
-	REQUIRE((*container)[3]->getColor() == coll->getToRootColor());
         coll->enableCollector();
-        coll->stepCollector();
-        REQUIRE(container->getGcTop() == 3);
-        REQUIRE((*container)[2]->getColor() == coll->getToRootColor());
-        REQUIRE(container->getColor() == coll->getFromRootColor());
-        color = container->getColor();
-        coll->stepCollector();
-        REQUIRE(container->getGcTop() == 4);
-        REQUIRE(container->getColor() == color);
-        coll->stepCollector();
-        REQUIRE(container->getColor() != color);
-        REQUIRE(container->getColor() == coll->getToRootColor());
-        coll->stepCollector();
-        REQUIRE(container->getColor() == coll->getFromRootColor());
-	REQUIRE((*container)[0]->getColor() == coll->getFromRootColor());
-	REQUIRE((*container)[1]->getColor() == coll->getFromRootColor());
-	REQUIRE((*container)[2]->getColor() == coll->getFromRootColor());
-	REQUIRE((*container)[3]->getColor() == coll->getFromRootColor());
+        coll->enableRecycling();
+        REQUIRE(coll->getCycles() == 0u);
+        coll->step();
+        REQUIRE(coll->getCycles() == 0u);
+        REQUIRE(checkCollectible(coll, 0u, {Color::Black==1}, {Color::Grey==2}));
+        coll->step();
+        REQUIRE(coll->getCycles() == 0u);
+        REQUIRE(checkCollectible(coll, 0u, {Color::Black==1}, {Color::Grey==1, Color::Black==1}));
+        coll->step();
+        REQUIRE(coll->getCycles() == 0u);
+        REQUIRE(checkCollectible(coll, 0u, {Color::Black==1}, {Color::Black==1, Color::Grey==1}));
+        coll->step();
+        REQUIRE(coll->getCycles() == 0u);
+        REQUIRE(checkCollectible(coll, 0u, {Color::Black==1}, {Color::Black==2}));
+        coll->step();
+        REQUIRE(coll->getCycles() == 1u);
+        REQUIRE(checkCollectible(coll, 0u, {Color::White==1}, {Color::White==2}));
+      }  
+      THEN("unsetting one child")
+      {
+        cons->unsetCar();
+        REQUIRE(Set(coll->get(&GarbageCollector::forEachReachable)) == Set(Cell(cons),
+                                                                           cons->getCdrCell()));
+        REQUIRE(checkCollectible(coll, 0u, {Color::White==1}, {Color::Grey==2}));
+        THEN("GarbageCollector::cycle() does remove it")
+        {
+          coll->cycle();
+          REQUIRE(coll->getCycles() == 1u);
+          REQUIRE(coll->numVoidCollectible() == 7u);
+          REQUIRE(checkCollectible(coll, 1u, {Color::White == 1u}, {Color::White == 1u}));
+        }
+        THEN("GarbageCollector::step() does remove it")
+        {
+          REQUIRE(checkCollectible(coll, 0u, {Color::White==1}, {Color::Grey==2}));
+          coll->enableCollector();
+          coll->enableRecycling();
+
+          for(std::size_t c = coll->getCycles(); coll->getCycles() == c;)
+          {
+            coll->step();
+          }
+          REQUIRE(checkCollectible(coll, 0u, { Color::White == 1u }, { Color::White == 2}));
+          for(std::size_t c = coll->getCycles(); coll->getCycles() == c;)
+          {
+            coll->step();
+          }
+          REQUIRE(checkCollectible(coll, 1u, { Color::White == 1u }, { Color::White == 1}));
+          coll->recycle();
+          REQUIRE(checkCollectible(coll, 0u, { Color::White == 1u }, { Color::White == 1}));
+        }
+        THEN("setting other child to itself and gc step is executed")
+        {
+          REQUIRE(checkCollectible(coll, 0u, {Color::White == 1u}, {Color::Grey == 2u}));
+          cons->setCdr(obj);
+          REQUIRE(Set(coll->get(&GarbageCollector::forEachReachable)) == Set(Cell(cons)));
+
+          REQUIRE(checkCollectible(coll, 0u, {Color::Black == 1u}, {Color::White == 0u, Color::Grey == 2}));
+          coll->enableCollector();
+          coll->enableRecycling();
+
+          for(std::size_t c = coll->getCycles(); coll->getCycles() == c;)
+          {
+            coll->step();
+          }
+          REQUIRE(checkCollectible(coll, 0u, {Color::White == 1u}, { Color::White == 2}));
+          for(std::size_t c = coll->getCycles(); coll->getCycles() == c;)
+          {
+            coll->step();
+          }
+          REQUIRE(coll->getCycles() == 2u);
+          REQUIRE(checkCollectible(coll, 2u, {Color::White == 1u}, {}));
+          REQUIRE(checkCollectible(coll, 2u, {Color::White == 1u}, {}));
+          coll->recycle();
+          REQUIRE(checkCollectible(coll, 1u, {Color::White == 1u}, {}));
+          coll->recycle();
+          REQUIRE(checkCollectible(coll, 1u, {Color::White == 1u}, {}));
+          coll->recycle();
+          REQUIRE(checkCollectible(coll, 0u, {Color::White == 1u}, {}));
+        } 
       }
-    }
+    } 
   }
 }
-#endif
+
 
 //////////////////////////////////////////////////////////
 /// implementation
@@ -854,25 +1000,32 @@ bool checkCollectible(std::shared_ptr<GarbageCollector> coll,
                       const std::vector<std::pair<Color, std::size_t> > & root,
                       const std::vector<std::pair<Color, std::size_t> > & bulk)
 {
-  bool sanity = true;
-  std::vector<std::pair<Color, std::size_t> >givenRoot = {
-    Color::White == coll->numRootCollectible(Color::White),
-    Color::Grey  == coll->numRootCollectible(Color::Grey),
-    Color::Black == coll->numRootCollectible(Color::Black) };
-  std::vector<std::pair<Color, std::size_t> >givenBulk = {
-    Color::White == coll->numBulkCollectible(Color::White),
-    Color::Grey  == coll->numBulkCollectible(Color::Grey),
-    Color::Black == coll->numBulkCollectible(Color::Black) };
+  auto givenRoot = asString(std::vector<std::pair<Color, std::size_t> >({
+        Color::White == coll->numRootCollectible(Color::White),
+        Color::Grey  == coll->numRootCollectible(Color::Grey),
+        Color::Black == coll->numRootCollectible(Color::Black) }));
+  auto givenBulk = asString(std::vector<std::pair<Color, std::size_t> >({
+       Color::White == coll->numBulkCollectible(Color::White),
+       Color::Grey  == coll->numBulkCollectible(Color::Grey),
+       Color::Black == coll->numBulkCollectible(Color::Black)}));
 
-  CHECK((sanity &= coll->checkRootSanity(Color::Black)));
-  CHECK((sanity &= coll->checkRootSanity(Color::Grey)));
-  CHECK((sanity &= coll->checkRootSanity(Color::White)));
-  CHECK((sanity &= coll->checkBulkSanity(Color::Black)));
-  CHECK((sanity &= coll->checkBulkSanity(Color::Grey)));
-  CHECK((sanity &= coll->checkBulkSanity(Color::White)));
-  CHECK((sanity &= ( asString(givenRoot) == asString(fillMissingColor(root)))));
-  CHECK((sanity &= ( asString(givenBulk) == asString(fillMissingColor(bulk)))));
-  return sanity;
+  CHECK(coll->checkRootSanity(Color::Black));
+  CHECK(coll->checkRootSanity(Color::Grey));
+  CHECK(coll->checkRootSanity(Color::White));
+  CHECK(coll->checkBulkSanity(Color::Black));
+  CHECK(coll->checkBulkSanity(Color::Grey));
+  CHECK(coll->checkBulkSanity(Color::White));
+  CHECK(givenRoot == asString(fillMissingColor(root)));
+  CHECK(givenBulk == asString(fillMissingColor(bulk)));
+  return
+    coll->checkRootSanity(Color::Black) &
+    coll->checkRootSanity(Color::Grey) &
+    coll->checkRootSanity(Color::White) &
+    coll->checkBulkSanity(Color::Black) &
+    coll->checkBulkSanity(Color::Grey) &
+    coll->checkBulkSanity(Color::White) &
+    ( givenRoot == asString(fillMissingColor(root))) &
+    ( givenBulk == asString(fillMissingColor(bulk)));
 }
 
 std::unordered_set<Cell> Set()

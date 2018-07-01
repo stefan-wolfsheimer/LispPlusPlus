@@ -109,23 +109,48 @@ void GarbageCollector::cycle()
   Cons * cons;
   while((cons = consMap.popDisposed()))
   {
-    cons->unsetNonCollectibleChildren();
+    cons->recycleNextChild();
     consPages.recycle(cons);
-  }
+  } 
 }
 
 void Lisp::GarbageCollector::recycle()
 {
-  /* @todo recycle contaienr, create tmp. object in garbageCollector
-     if object is null -> popBack
-     if not null unsetNonCollectibleChildren
-     if return true -> delete obj */
   std::size_t i = recycleSteps;
   Cons * cons;
   while(i && (cons = consMap.popDisposed()))
   {
-    cons->unsetNonCollectibleChildren();
+    cons->recycleNextChild();
     consPages.recycle(cons);
     i--;
+  }
+  while(i)
+  {
+    if(!toBeRecycled)
+    {
+      toBeRecycled = containerMap.popDisposed();
+      if(toBeRecycled)
+      {
+        toBeRecycled->resetGcPosition();
+        if(toBeRecycled->recycleNextChild())
+        {
+          delete toBeRecycled;
+          toBeRecycled = nullptr;
+        }
+      }
+      else
+      {
+        break;
+      }
+    }
+    else
+    {
+      if(toBeRecycled->recycleNextChild())
+      {
+        delete toBeRecycled;
+        toBeRecycled = nullptr;
+      }
+    }
+    --i;
   }
 }

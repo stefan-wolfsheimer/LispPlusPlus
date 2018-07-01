@@ -36,6 +36,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <lpp/core/types/collectible.h>
 #include <lpp/core/types/type_id.h>
 #include <lpp/core/object.h>
+#include <lpp/core/types/array.h>
 
 namespace Lisp
 {
@@ -60,13 +61,17 @@ namespace Lisp
     inline void unsetCdr();
     inline void setCar(const Object & rhs);
     inline void setCdr(const Object & rhs);
-    inline void setCar(Cons * cons,
-                       TypeId typeId=TypeTraits<Cons>::typeId);
-    inline void setCdr(Cons * cons,
-                       TypeId typeId=TypeTraits<Cons>::typeId);
+
+    //@todo: make this private
+    template<typename T>
+    inline bool setCar(T * cons, TypeId typeId=TypeTraits<Cons>::typeId);
+
+    template<typename T>
+    inline bool setCdr(T * cons, TypeId typeId=TypeTraits<Cons>::typeId);
+
     inline void forEachChild(std::function<void(const Cell&)> func) const;
     inline bool greyChildren();
-    inline bool unsetNonCollectibleChildren();
+    inline bool recycleNextChild();
   private:
     Cell car;
     Cell cdr;
@@ -127,48 +132,52 @@ inline void Lisp::Cons::unsetCdr()
 
 inline void Lisp::Cons::setCar(const Object & rhs)
 {
-  Lisp::Cons * cons = rhs.as<Cons>();
-  // @todo: case container 
-  if(cons)
+  if(!setCar<Cons>(rhs.as<Cons>()))
   {
-    setCar(cons, rhs.typeId);
-  }
-  else
-  {
-    // set non-cons
-    car = rhs;
+    if(!setCar<Container>(rhs.as<Container>()))
+    {
+      car = rhs;
+    }
   }
 }
 
 inline void Lisp::Cons::setCdr(const Object & rhs)
 {
-  // @todo: case container 
-  Lisp::Cons * cons = rhs.as<Cons>();
-  if(cons)
+  if(!setCdr<Cons>(rhs.as<Cons>()))
   {
-    setCdr(cons, rhs.typeId);
-  }
-  else
-  {
-    // set non-cons
-    cdr = rhs;
+    if(!setCdr<Container>(rhs.as<Container>()))
+    {
+      cdr = rhs;
+    }
   }
 }
 
-inline void Lisp::Cons::setCar(Cons * cons, TypeId _typeId)
+template<typename T>
+inline bool Lisp::Cons::setCar(T * collectible, TypeId _typeId)
 {
-  car = Lisp::nil;
-  car.typeId = _typeId; 
-  car.data.ptr = cons;
-  gcStep();
+  if(collectible)
+  {
+    car = Lisp::nil;
+    car.typeId = _typeId; 
+    car.data.ptr = collectible;
+    gcStep();
+    return true;
+  }
+  return false;
 }
 
-inline void Lisp::Cons::setCdr(Cons * cons, TypeId _typeId)
+template<typename T>
+inline bool Lisp::Cons::setCdr(T * collectible, TypeId _typeId)
 {
-  cdr = Lisp::nil;
-  cdr.typeId = _typeId;
-  cdr.data.ptr = cons;
-  gcStep();
+  if(collectible)
+  {
+    cdr = Lisp::nil;
+    cdr.typeId = _typeId;
+    cdr.data.ptr = collectible;
+    gcStep();
+    return true;
+  }
+  return false;
 }
 
 inline void Lisp::Cons::forEachChild(std::function<void(const Cell&)> func) const
@@ -184,7 +193,7 @@ inline bool Lisp::Cons::greyChildren()
   return true;
 }
 
-inline bool Lisp::Cons::unsetNonCollectibleChildren()
+inline bool Lisp::Cons::recycleNextChild()
 {
   if(!car.isA<Collectible>())
   {

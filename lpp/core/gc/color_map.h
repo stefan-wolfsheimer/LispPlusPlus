@@ -53,7 +53,6 @@ namespace Lisp
     inline void swap();
     inline void swap(const std::unordered_set<T*> & tobekept);
     inline T * popDisposed();
-
     inline void forEachBulk(Color color,
                             std::function<void(const Cell &)> func) const;
     inline void forEachRoot(Color color,
