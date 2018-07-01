@@ -133,14 +133,16 @@ void Object::unsetCons()
 
 void Object::init(Cons * cons, TypeId _typeId)
 {
+  assert(cons->isRoot());
+  assert(cons->getRefCount() == 1u);
   Cell::init(cons, _typeId);
-  cons->incRefCount();
 }
 
 void Object::init(Container * container, TypeId _typeId)
 {
+  assert(container->isRoot());
+  assert(container->getRefCount() == 1u);
   Cell::init(container, _typeId);
-  container->incRefCount();
 }
 
 Object Lisp::nil(Object::nil());

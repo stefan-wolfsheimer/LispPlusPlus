@@ -91,7 +91,7 @@ std::shared_ptr<Lisp::GarbageCollector> Lisp::Vm::getConsFactory() const
 inline Lisp::Object Lisp::Vm::cons(const Lisp::Object & _car,
                                    const Lisp::Object & _cdr)
 {
-  return Lisp::Object(consFactory->makeCons(_car, _cdr));
+  return Lisp::Object(consFactory->makeRootCons(_car, _cdr));
 }
 
 inline Lisp::Object Lisp::Vm::list()
@@ -123,13 +123,13 @@ Lisp::Object Lisp::Vm::list(Lisp::Object && a, ARGS... rest)
 
 inline Lisp::Object Lisp::Vm::array()
 {
-  return consFactory->make<Lisp::Array>();
+  return consFactory->makeRoot<Lisp::Array>();
 }
 
 template<typename... ARGS>
 inline Lisp::Object Lisp::Vm::array(ARGS... rest)
 {
-  Object ret(consFactory->make<Lisp::Array>());
+  Object ret(consFactory->makeRoot<Lisp::Array>());
   ret.as<Array>()->append(rest...);
   return ret;
 }

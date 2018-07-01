@@ -45,6 +45,7 @@ namespace Lisp
 
     template<typename T>
     Object(T * obj);
+
     static Object nil();
     static Object undefined();
 

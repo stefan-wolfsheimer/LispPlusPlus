@@ -53,17 +53,25 @@ namespace Lisp
                      unsigned short _garbageSteps=1,
                      unsigned short _recycleSteps=1);
 
+    inline Cons * makeCons(const Cell & car, const Cell & cdr);
+    inline Cons * makeCons(Cell && car, const Cell & cdr);
+    inline Cons * makeCons(const Cell & car, Cell && cdr);
+    inline Cons * makeCons(Cell && car, Cell && cdr);
+
     /**
      * Allocate and initialize a new Cons object in the root set.
      * Reference count is 0.
      */
-    inline Cons * makeCons(const Object & car, const Object & cdr);
-    inline Cons * makeCons(Object && car, const Object & cdr);
-    inline Cons * makeCons(const Object & car, Object && cdr);
-    inline Cons * makeCons(Object && car, Object && cdr);
+    inline Cons * makeRootCons(const Cell & car, const Cell & cdr);
+    inline Cons * makeRootCons(Cell && car, const Cell & cdr);
+    inline Cons * makeRootCons(const Cell & car, Cell && cdr);
+    inline Cons * makeRootCons(Cell && car, Cell && cdr);
 
     template<typename C,  typename... ARGS>
     inline C * make(ARGS... rest);
+
+    template<typename C,  typename... ARGS>
+    inline C * makeRoot(ARGS... rest);
 
     inline std::size_t numCollectible() const;
     inline std::size_t numRootCollectible() const;
@@ -123,7 +131,7 @@ namespace Lisp
     void forEachContainer(const CollectibleContainer<Container> & containers,
                           std::function<void(const Cell &)> func) const;
     inline Cons * makeCons();
-    inline void initContainer(Container *);
+    inline Cons * makeRootCons();
     inline bool checkSanity(Color color, bool root) const;
   };
 }
@@ -158,12 +166,22 @@ inline Lisp::Cons * Lisp::GarbageCollector::makeCons()
   step();
   recycle();
   Cons * ret = consPages.next();
-  ret->setRefCount(0u);
+  ret->setRefCount(1u);
   consMap.add(ret);
   return ret;
 }
 
-inline Lisp::Cons * Lisp::GarbageCollector::makeCons(const Object & car, const Object & cdr)
+inline Lisp::Cons * Lisp::GarbageCollector::makeRootCons()
+{
+  step();
+  recycle();
+  Cons * ret = consPages.next();
+  ret->setRefCount(1u);
+  consMap.addRoot(ret);
+  return ret;
+}
+
+inline Lisp::Cons * Lisp::GarbageCollector::makeCons(const Cell & car, const Cell & cdr)
 {
   Cons * ret = makeCons();
   ret->car = car;
@@ -171,7 +189,7 @@ inline Lisp::Cons * Lisp::GarbageCollector::makeCons(const Object & car, const O
   return ret;
 }
 
-inline Lisp::Cons * Lisp::GarbageCollector::makeCons(const Object & car, Object && cdr)
+inline Lisp::Cons * Lisp::GarbageCollector::makeCons(const Cell & car, Cell && cdr)
 {
   Cons * ret = makeCons();
   ret->car = car;
@@ -179,7 +197,7 @@ inline Lisp::Cons * Lisp::GarbageCollector::makeCons(const Object & car, Object 
   return ret;
 }
 
-inline Lisp::Cons * Lisp::GarbageCollector::makeCons(Object && car, const Object & cdr)
+inline Lisp::Cons * Lisp::GarbageCollector::makeCons(Cell && car, const Cell & cdr)
 {
   Cons * ret = makeCons();
   ret->car = car;
@@ -187,34 +205,74 @@ inline Lisp::Cons * Lisp::GarbageCollector::makeCons(Object && car, const Object
   return ret;
 }
 
-inline Lisp::Cons * Lisp::GarbageCollector::makeCons(Object && car, Object && cdr)
+inline Lisp::Cons * Lisp::GarbageCollector::makeCons(Cell && car, Cell && cdr)
 {
   Cons * ret = makeCons();
   ret->car = car;
   ret->cdr = cdr;
   return ret;
 }
+
+inline Lisp::Cons * Lisp::GarbageCollector::makeRootCons(const Cell & car, const Cell & cdr)
+{
+  Cons * ret = makeRootCons();
+  ret->car = car;
+  ret->cdr = cdr;
+  return ret;
+}
+
+inline Lisp::Cons * Lisp::GarbageCollector::makeRootCons(Cell && car, const Cell & cdr)
+{
+  Cons * ret = makeRootCons();
+  ret->car = car;
+  ret->cdr = cdr;
+  return ret;
+}
+
+inline Lisp::Cons * Lisp::GarbageCollector::makeRootCons(const Cell & car, Cell && cdr)
+{
+  Cons * ret = makeRootCons();
+  ret->car = car;
+  ret->cdr = cdr;
+  return ret;
+}
+
+inline Lisp::Cons * Lisp::GarbageCollector::makeRootCons(Cell && car, Cell && cdr)
+{
+  Cons * ret = makeRootCons();
+  ret->car = car;
+  ret->cdr = cdr;
+  return ret;
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 //
 // Container
 //
 ////////////////////////////////////////////////////////////////////////////////
-inline void Lisp::GarbageCollector::initContainer(Container * container)
-{
-  container->setRefCount(0u);
-  containerMap.add(container);
-}
-
 template<typename C, typename... ARGS>
 inline C * Lisp::GarbageCollector::make(ARGS... rest)
 {
   step();
   recycle();
   C * ret = new C(rest...);
-  initContainer(ret);
+  ret->setRefCount(1u);
+  containerMap.add(ret);
   return ret;
 }
+
+template<typename C,  typename... ARGS>
+inline C * Lisp::GarbageCollector::makeRoot(ARGS... rest)
+{
+  step();
+  recycle();
+  C * ret = new C(rest...);
+  ret->setRefCount(1u);
+  containerMap.addRoot(ret);
+  return ret;
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 //

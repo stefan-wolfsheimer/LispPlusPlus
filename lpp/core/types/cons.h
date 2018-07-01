@@ -59,8 +59,8 @@ namespace Lisp
     inline const Cell & getCdrCell() const;
     inline void unsetCar();
     inline void unsetCdr();
-    inline void setCar(const Object & rhs);
-    inline void setCdr(const Object & rhs);
+    inline void setCar(const Cell & rhs);
+    inline void setCdr(const Cell & rhs);
 
     //@todo: make this private
     template<typename T>
@@ -130,7 +130,7 @@ inline void Lisp::Cons::unsetCdr()
   cdr = Lisp::nil;
 }
 
-inline void Lisp::Cons::setCar(const Object & rhs)
+inline void Lisp::Cons::setCar(const Cell & rhs)
 {
   if(!setCar<Cons>(rhs.as<Cons>()))
   {
@@ -141,7 +141,7 @@ inline void Lisp::Cons::setCar(const Object & rhs)
   }
 }
 
-inline void Lisp::Cons::setCdr(const Object & rhs)
+inline void Lisp::Cons::setCdr(const Cell & rhs)
 {
   if(!setCdr<Cons>(rhs.as<Cons>()))
   {
@@ -157,6 +157,7 @@ inline bool Lisp::Cons::setCar(T * collectible, TypeId _typeId)
 {
   if(collectible)
   {
+    collectible->grey();
     car = Lisp::nil;
     car.typeId = _typeId; 
     car.data.ptr = collectible;
@@ -171,6 +172,7 @@ inline bool Lisp::Cons::setCdr(T * collectible, TypeId _typeId)
 {
   if(collectible)
   {
+    collectible->grey();
     cdr = Lisp::nil;
     cdr.typeId = _typeId;
     cdr.data.ptr = collectible;

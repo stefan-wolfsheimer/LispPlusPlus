@@ -39,11 +39,11 @@ using Object = Lisp::Object;
 
 TEST_CASE("compile_builtin_function", "[BuiltinFunction]")
 {
-  Vm vm;
-  auto code = vm.list(Object(new BuiltinFunction([](Vm &){})),
-                      Object(1),
-                      Object(2),
-                      Object(3));
+  //Vm vm;
+  //auto code = vm.list(Object(new BuiltinFunction([](Vm &){})),
+  //Object(1),
+  //Object(2),
+  //Object(3));
   //auto program = vm.compile(code);
   //vm.eval(program);
   //REQUIRE(vm.value().isA<Integer>());

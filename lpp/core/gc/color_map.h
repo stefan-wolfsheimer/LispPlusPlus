@@ -45,7 +45,8 @@ namespace Lisp
   public:
     ColorMap(GarbageCollector * _parent);
     ~ColorMap();
-    inline void add(T * obj) {   whiteRoot->add(obj); }
+    inline void add(T * obj);
+    inline void addRoot(T * obj);
     inline std::size_t size(Color color) const;
     inline std::size_t rootSize(Color color) const;
     inline std::size_t numDisposed() const;
@@ -117,6 +118,18 @@ Lisp::ColorMap<T>::~ColorMap()
   delete white;
   delete grey;
   delete black;
+}
+
+template<typename T>
+inline void Lisp::ColorMap<T>::add(T * obj)
+{
+  white->add(obj);
+}
+
+template<typename T>
+inline void Lisp::ColorMap<T>::addRoot(T * obj)
+{
+  whiteRoot->add(obj);
 }
 
 template<typename T>

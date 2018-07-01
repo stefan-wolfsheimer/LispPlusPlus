@@ -45,14 +45,14 @@ namespace Lisp
     inline Object at(std::size_t pos) const;
     inline Object operator[](std::size_t pos) const;
 
-    inline void set(std::size_t pos, const Object & rhs);
-    inline void set(std::size_t pos, Object && rhs);
+    inline void set(std::size_t pos, const Cell & rhs);
+    inline void set(std::size_t pos, Cell && rhs);
 
     inline void append();
-    inline void append(const Object & rhs);
+    inline void append(const Cell & rhs);
 
     template<typename... ARGS>
-    inline void append(const Object & a, ARGS... rest);
+    inline void append(const Cell & a, ARGS... rest);
 
     virtual void forEachChild(std::function<void(const Cell&)> func) const override;
     virtual TypeId getTypeId() const override;
@@ -90,7 +90,7 @@ inline const Lisp::Cell & Lisp::Array::atCell(std::size_t pos) const
 
 inline Lisp::Object Lisp::Array::at(std::size_t pos) const
 {
-  return Object(data.at(pos));
+  return Object(atCell(pos));
 }
 
 inline Lisp::Object Lisp::Array::operator[](std::size_t pos) const
@@ -98,14 +98,14 @@ inline Lisp::Object Lisp::Array::operator[](std::size_t pos) const
   return Object(data[pos]);
 }
 
-inline void Lisp::Array::set(std::size_t pos, const Object & rhs)
+inline void Lisp::Array::set(std::size_t pos, const Cell & rhs)
 {
   assert(pos < data.size());
   data[pos] = rhs;
   data[pos].grey();
 }
 
-inline void Lisp::Array::set(std::size_t pos, Object && rhs)
+inline void Lisp::Array::set(std::size_t pos, Cell && rhs)
 {
   assert(pos < data.size());
   data[pos] = rhs;
@@ -116,14 +116,14 @@ inline void Lisp::Array::append()
 {
 }
 
-inline void Lisp::Array::append(const Object & rhs)
+inline void Lisp::Array::append(const Cell & rhs)
 {
   rhs.grey();
   data.push_back(rhs);
 }
 
 template<typename... ARGS>
-void Lisp::Array::append(const Object & a, ARGS... rest)
+void Lisp::Array::append(const Cell & a, ARGS... rest)
 {
   append(a);
   append(rest...);
@@ -133,84 +133,3 @@ inline std::size_t Lisp::Array::getGcPosition() const
 {
   return gcPosition;
 }
-
-#if 0
-#pragma once
-#include <cstdint>
-#include <vector>
-#include <assert.h>
-#include <lpp/core/cell.h>
-
-
-namespace Lisp
-{
-  class Cons;
-
-  class Array : public Container
-  {
-  public:
-    using Color = Lisp::Color;
-
-
-    //inline Color getColor() const;
-    inline std::size_t getGcTop() const;
-  private:
-    friend class GarbageCollector;
-    //Array(GarbageCollector * _consFactory, Color color, std::size_t _index);
-    std::vector<Lisp::Cell> data;
-    std::size_t gcTop;
-    //GarbageCollector * consFactory;
-    //Color color;
-    //std::size_t index;
-  };
-}
-
-/******************************************************************************
- * Implementation
- ******************************************************************************/
-//inline Lisp::Array::Array(GarbageCollector * _consFactory,
-//                          Color _color,
-//                          std::size_t _index)
-//  : consFactory(_consFactory), color(_color), index(_index)
-//{
-//  gcTop = 0;
-//}
-
-
-inline void Lisp::Array::push_back(const Cell & rhs)
-{
-  /*if(rhs.isA<Lisp::Cons>())
-  {
-    rhs.as<Cons>()->root();
-    if(color == consFactory->getToRootColor())
-    {
-      consFactory->gcStep(rhs.as<Cons>());
-    }
-    }*/
-  data.push_back(rhs);
-}
-
-inline void Lisp::Array::push_back(Cell && rhs)
-{
-  /*if(rhs.isA<Lisp::Cons>())
-  {
-    rhs.as<Cons>()->root();
-    if(color == consFactory->getToRootColor())
-    {
-      consFactory->gcStep(rhs.as<Cons>());
-    }
-    }*/
-  data.push_back(rhs);
-}
-
-
-//inline Lisp::Color Lisp::Array::getColor() const
-//{
-//  return color;
-//}
-
-inline std::size_t Lisp::Array::getGcTop() const
-{
-  return gcTop;
-}
-#endif
