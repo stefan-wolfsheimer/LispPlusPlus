@@ -1,6 +1,7 @@
 #pragma once
 #include <assert.h>
 #include <functional>
+#include <lpp/core/config.h>
 #include <lpp/core/types/type_id.h>
 #include <lpp/core/gc/color.h>
 #include <lpp/core/gc/collectible_container.h>

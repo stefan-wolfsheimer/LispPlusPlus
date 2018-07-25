@@ -105,7 +105,7 @@ Lisp::ColorMap<T>::ColorMap(GarbageCollector * p)
   greyRoot->toElements     = blackRoot;
   blackRoot->toElements    = nullptr;
   white->toElements        = grey;
-  grey->toElements         = blackRoot;
+  grey->toElements         = black;
   black->toElements        = nullptr;
 }
 

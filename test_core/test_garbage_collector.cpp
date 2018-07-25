@@ -934,6 +934,15 @@ SCENARIO("a cons with 2 array children", "[GarbageCollector]")
   }
 }
 
+TEST_CASE("simul", "[GarbageCollector]")
+{
+  auto coll = makeCollector(8);
+  coll->enableCollector();
+  coll->enableRecycling();
+  auto obj = std::make_shared<Object>(coll->makeRootCons(Lisp::nil, Lisp::nil));
+  obj->as<Cons>()->setCar(Cell(coll->make<Array>()));
+  
+}
 
 //////////////////////////////////////////////////////////
 /// implementation
@@ -1052,7 +1061,6 @@ std::unordered_set<Cell> Set(const std::vector<Cell> & cells)
   return std::unordered_set<Cell>(cells.begin(), cells.end());
 }
 
-// todo: replace cons* with cell
 static std::unordered_set<Cell> Parents(const CollectibleGraph & graph,
                                         const Cell & cell)
 {

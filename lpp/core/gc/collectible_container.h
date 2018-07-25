@@ -32,6 +32,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <vector>
 #include <assert.h>
 #include <lpp/core/gc/color.h>
+#include <lpp/core/config.h>
 
 namespace Lisp
 {
@@ -114,6 +115,7 @@ inline void Lisp::CollectibleContainer<T>::add(T * obj)
   obj->container = this;
   elements.push_back(obj);
 }
+
 template<typename T>
 inline void Lisp::CollectibleContainer<T>::move(T * obj)
 {

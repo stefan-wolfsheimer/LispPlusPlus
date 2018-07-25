@@ -64,10 +64,11 @@ namespace Lisp
 
     //@todo: make this private
     template<typename T>
-    inline bool setCar(T * cons, TypeId typeId=TypeTraits<Cons>::typeId);
+    inline bool setCar(T * cons, TypeId typeId);
 
+    //@todo: make this private
     template<typename T>
-    inline bool setCdr(T * cons, TypeId typeId=TypeTraits<Cons>::typeId);
+    inline bool setCdr(T * cons, TypeId typeId);
 
     inline void forEachChild(std::function<void(const Cell&)> func) const;
     inline bool greyChildren();
@@ -132,9 +133,9 @@ inline void Lisp::Cons::unsetCdr()
 
 inline void Lisp::Cons::setCar(const Cell & rhs)
 {
-  if(!setCar<Cons>(rhs.as<Cons>()))
+  if(!setCar<Cons>(rhs.as<Cons>(), rhs.getTypeId()))
   {
-    if(!setCar<Container>(rhs.as<Container>()))
+    if(!setCar<Container>(rhs.as<Container>(), rhs.getTypeId()))
     {
       car = rhs;
     }
@@ -143,9 +144,9 @@ inline void Lisp::Cons::setCar(const Cell & rhs)
 
 inline void Lisp::Cons::setCdr(const Cell & rhs)
 {
-  if(!setCdr<Cons>(rhs.as<Cons>()))
+  if(!setCdr<Cons>(rhs.as<Cons>(), rhs.getTypeId()))
   {
-    if(!setCdr<Container>(rhs.as<Container>()))
+    if(!setCdr<Container>(rhs.as<Container>(), rhs.getTypeId()))
     {
       cdr = rhs;
     }
@@ -159,7 +160,7 @@ inline bool Lisp::Cons::setCar(T * collectible, TypeId _typeId)
   {
     collectible->grey();
     car = Lisp::nil;
-    car.typeId = _typeId; 
+    car.typeId = _typeId;
     car.data.ptr = collectible;
     gcStep();
     return true;
@@ -190,8 +191,8 @@ inline void Lisp::Cons::forEachChild(std::function<void(const Cell&)> func) cons
 
 inline bool Lisp::Cons::greyChildren()
 {
-  getCarCell().grey();
-  getCdrCell().grey();
+  car.grey();
+  cdr.grey();
   return true;
 }
 
@@ -210,8 +211,8 @@ inline bool Lisp::Cons::recycleNextChild()
 
 inline void Lisp::Cons::gcStep()
 {
-  getCarCell().grey();
-  getCdrCell().grey();
+  car.grey();
+  cdr.grey();
   auto toContainer = getContainer()->getToContainer();
   if(toContainer)
   {
