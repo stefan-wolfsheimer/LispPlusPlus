@@ -43,8 +43,11 @@ IF(CMAKE_BUILD_TYPE MATCHES Debug)
     target_link_libraries(runtest Catch Core Simul)
 ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
 
-add_executable(sim_cons_factory sim_cons_factory.cpp)
-target_link_libraries(sim_cons_factory Simul Core)
+add_library(Simul INTERFACE)
+target_include_directories(Catch INTERFACE test)
+
+add_executable(gc_sim gc_sim.cpp)
+target_link_libraries(gc_sim Simul Core)
 
 add_subdirectory (lpp/core)
-add_subdirectory (simul)
+# add_subdirectory (lpp/simul)
