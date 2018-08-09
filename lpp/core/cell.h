@@ -99,47 +99,53 @@ std::ostream & operator<<(std::ostream & ost, const Lisp::Cell & cell);
 // hash function for Lisp::Cell
 //
 //////////////////////////////////////////////////////////////////////
-template<>
-class std::hash<Lisp::Cell>
+namespace std
 {
-public:
-  std::size_t operator()(const Lisp::Cell & c) const
+  template<>
+  class hash<::Lisp::Cell>
   {
-    if(c.isA<const Lisp::Collectible>())
+  public:
+    size_t operator()(const ::Lisp::Cell & c) const
     {
-      static std::hash<const Lisp::Collectible*> hasher;
-      return hasher(c.as<const Lisp::Collectible>());
+      if(c.isA<const ::Lisp::Collectible>())
+      {
+        static hash<const ::Lisp::Collectible*> hasher;
+        return hasher(c.as<const ::Lisp::Collectible>());
+      }
+      else if(c.isA<::Lisp::Nil>())
+      {
+        return 0u;
+      }
     }
-    else if(c.isA<Lisp::Nil>())
-    {
-      return 0u;
-    }
-  }
-};
+  };
+}
 
 //////////////////////////////////////////////////////////////////////
 //
 // equal_to for Lisp::Cell
 //
 //////////////////////////////////////////////////////////////////////
-template<>
-class std::equal_to<Lisp::Cell>
+namespace std
 {
-public:
-  std::size_t operator()(const Lisp::Cell & a, const Lisp::Cell & b) const
+  template<>
+  class equal_to<::Lisp::Cell>
   {
-    if(a.isA<const Lisp::Collectible>() && b.isA<const Lisp::Collectible>())
+  public:
+    size_t operator()(const ::Lisp::Cell & a, const ::Lisp::Cell & b) const
     {
-      static std::equal_to<const Lisp::Collectible*> eq;
-      return eq(a.as<Lisp::Collectible>(), b.as<Lisp::Collectible>());
+      if(a.isA<const ::Lisp::Collectible>() && b.isA<const ::Lisp::Collectible>())
+      {
+        static equal_to<const Lisp::Collectible*> eq;
+        return eq(a.as<::Lisp::Collectible>(), b.as<::Lisp::Collectible>());
+      }
+      else if(a.isA<::Lisp::Nil>() && b.isA<::Lisp::Nil>())
+      {
+        return true;
+      }
+      return false;
     }
-    else if(a.isA<Lisp::Nil>() && b.isA<Lisp::Nil>())
-    {
-      return true;
-    }
-    return false;
-  }
-};
+  };
+}
 
 //////////////////////////////////////////////////////////////////////
 //
