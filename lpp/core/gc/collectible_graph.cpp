@@ -44,24 +44,26 @@ CollectibleGraph::CollectibleGraph(const GarbageCollector & collector)
 {
   std::unordered_set<std::shared_ptr<CollectibleNode>> todo;
   std::unordered_set<std::shared_ptr<CollectibleNode>> done;
-  auto rootNode = std::make_shared<CollectibleNode>(Lisp::nil);
-  nodes[Lisp::nil] = rootNode;
-  collector.forEachReachable([&todo, &rootNode, this](const Cell & child) {
-      auto node = std::make_shared<CollectibleNode>(child);
-      nodes[child] = node;
+  collector.forEachReachable([&todo, this](const Cell & cell) {
+      auto node = std::make_shared<CollectibleNode>(cell);
+      nodes[cell] = node;
+      allNodes.push_back(node);
       todo.insert(node);
-      rootNode->children.insert(node.get());
-      node->parents.insert(rootNode.get());
-      edges.insert(std::make_pair(Pair(Lisp::nil, child),
-                                  std::make_shared<CollectibleEdge>(rootNode.get(),
-                                                                    node.get())));
+      if(cell.isRoot())
+      {
+        rootNodes.push_back(node);
+      }
+      else
+      {
+        bulkNodes.push_back(node);
+      }
   });
   while(!todo.empty())
   {
     auto node = *todo.begin();
     todo.erase(node);
     done.insert(node);
-    node->getCell().forEachChild([&done, &node, &todo, this](const Cell& child) {
+    node->getCell().forEachChild([&done, &node, &todo, this](const Cell& child, std::size_t index) {
         if(child.isA<Collectible>())
         {
           auto itr = nodes.find(child);
@@ -69,11 +71,12 @@ CollectibleGraph::CollectibleGraph(const GarbageCollector & collector)
           {
             throw std::logic_error("node hasnt been added");
           }
-          node->children.insert(itr->second.get());
-          itr->second->parents.insert(node.get());
-          edges.insert(std::make_pair(Pair(node->getCell(), child),
-                                      std::make_shared<CollectibleEdge>(node.get(),
-                                                                        itr->second.get())));
+          auto edge = std::make_shared<CollectibleEdge>(node.get(),
+                                                        itr->second.get(),
+                                                        index);
+          node->children.push_back(edge.get());
+          itr->second->parents.push_back(edge.get());
+          edges.push_back(edge);
           if(todo.find(itr->second) == todo.end() &&
              done.find(itr->second) == done.end())
           {
@@ -81,20 +84,6 @@ CollectibleGraph::CollectibleGraph(const GarbageCollector & collector)
           }
         }
     });
-  }
-}
-
-std::shared_ptr<CollectibleEdge> CollectibleGraph::findEdge(const Cell & parent,
-                                                            const Cell & child) const
-{
-  auto itr = edges.find(Pair(parent, child));
-  if(itr != edges.end())
-  {
-    return itr->second;
-  }
-  else
-  {
-    return nullptr;
   }
 }
 
@@ -111,27 +100,30 @@ std::shared_ptr<CollectibleNode> CollectibleGraph::findNode(const Cell & cell) c
   }
 }
 
-std::shared_ptr<CollectibleNode> CollectibleGraph::getNode(std::size_t index) const
+std::shared_ptr<CollectibleEdge> CollectibleGraph::getEdge(std::size_t index) const
 {
-  for(auto p : nodes)
+  if(index < edges.size())
   {
-    if(!index)
-    {
-      return p.second;
-    }
-    index--;
+    return edges[index];
+  }
+  else
+  {
+    return nullptr;
   }
 }
 
-std::shared_ptr<CollectibleEdge> CollectibleGraph::getEdge(std::size_t index) const
+void CollectibleGraph::forEachNode(std::function<void(const CollectibleNode & node)> func) const
 {
-    for(auto p : edges)
+  for(auto & p : nodes)
   {
-    if(!index)
-    {
-      return p.second;
-    }
-    index--;
+    func(*p.second);
   }
-  return nullptr;
+}
+
+void CollectibleGraph::forEachNode(std::function<void(const SharedNode & node)> func) const
+{
+  for(auto & p : nodes)
+  {
+    func(p.second);
+  }
 }

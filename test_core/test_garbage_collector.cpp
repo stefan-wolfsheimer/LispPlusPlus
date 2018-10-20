@@ -1067,7 +1067,12 @@ static std::unordered_set<Cell> Parents(const CollectibleGraph & graph,
   auto node = graph.findNode(cell);
   if(node)
   {
-    return node->getParents();
+    std::unordered_set<Cell> ret;
+    for(auto & p : node->getParents())
+    {
+      ret.insert(p.first);
+    }
+    return ret;
   }
   else
   {

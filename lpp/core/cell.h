@@ -81,6 +81,7 @@ namespace Lisp
     std::size_t getRefCount() const;
     bool checkIndex() const;
     void forEachChild(std::function<void(const Cell&)> func) const;
+    inline void forEachChild(std::function<void(const Cell&, std::size_t index)> func) const;
     void grey() const;
 
   protected:
@@ -208,4 +209,12 @@ inline bool Lisp::Cell::operator==(const Lisp::Cell & b) const
   return eq(*this, b);
 }
 
+inline void Lisp::Cell::forEachChild(std::function<void(const Cell&, std::size_t index)> func) const
+{
+  std::size_t index = 0;
+  forEachChild([&index, &func](const Cell& cell) {
+      func(cell, index);
+      index++;
+   });
+}
 

@@ -31,9 +31,8 @@ either expressed or implied, of the FreeBSD Project.
 #pragma once
 #include <lpp/core/gc/garbage_collector.h>
 #include <lpp/core/gc/collectible_graph.h>
-#include <lpp/core/gc/collectible_edge.h>
 #include <lpp/core/gc/collectible_node.h>
-
+#include <lpp/core/gc/collectible_edge.h>
 #include <set>
 #include <map>
 #include <unordered_map>
@@ -51,64 +50,56 @@ namespace Lisp
     inline std::size_t numRoot() const;
     inline std::size_t numBulk() const;
     inline std::size_t numTotal() const;
-    inline std::size_t numChildren() const;
     inline std::size_t numFreeChildren() const;
     inline std::size_t numEdges() const;
-    inline const Cell & getCell(std::size_t index) const;
-    inline std::size_t getCellIndex(const Cell & cell) const;
+    inline std::size_t numVoid() const;
+    inline std::size_t numDisposed() const;
 
-    inline std::size_t addRoot(std::size_t nchildren);
-    inline std::size_t addBulk(std::size_t freeChildIndex, std::size_t ncells);
-    inline std::size_t addBulk(std::pair<std::size_t, std::size_t> freeChild, std::size_t ncells);
 
-    
-    /////////////////////
+    // n in [0, numRoot())
+    inline const Cell & getNthRoot(std::size_t n) const;
 
+    // n in [0, numBulk())
+    inline const Cell & getNthBulk(std::size_t n) const;
+
+    // n in [0, numTotal())
+    inline const Cell & getNthNode(std::size_t n) const;
+
+    inline std::unordered_set<Lisp::Cell> getParents(const Lisp::Cell & cell) const;
+    inline std::vector<std::pair<Lisp::Cell, std::size_t>> getParentIndices(const Lisp::Cell & cell) const;
+
+    inline const Lisp::Cell & addRoot(std::size_t nchildren);
+    inline const Lisp::Cell & addBulk(std::size_t freeChildIndex, std::size_t ncells);
+    inline const Lisp::Cell & addBulk(Lisp::Cell & cell, std::size_t index, std::size_t ncells);
     inline void addEdge(std::size_t freeChildIndex, std::size_t nodeIndex);
-    inline void addEdge(std::pair<std::size_t, std::size_t> freeChild, std::size_t nodeIndex);
-    inline void removeEdge(std::size_t edge);
-    inline void removeEdge(std::pair<std::size_t, std::size_t> edge);
+    inline void addEdge(Cell & cell, std::size_t index, const Cell & child);
+    inline void removeEdge(std::size_t index);
+    inline void removeEdge(Cell & cell, std::size_t index);
+    inline void unroot(std::size_t index);
+    inline void unroot(const Cell & cell);
+
     inline bool checkSanity() const;
     inline void disableCollector();
     inline void disableRecycling();
     inline void enableCollector();
     inline void enableRecycling();
 
-    static std::size_t ROOT() { return std::numeric_limits<std::size_t>::max(); }
-
-    std::shared_ptr<Lisp::CollectibleGraph> getGraph() const;
-    inline void refresh();
   private:
 
-    inline void refreshCell(std::size_t nodeIndex,
-                            const Cell & cell);
-    
+    class Graph : public CollectibleGraph
+    {
+    public:
+      Graph(const GarbageCollector & collector);
+      std::vector<std::pair<std::weak_ptr<CollectibleNode>, std::size_t>> freeChildren;
+    };
+
+    inline const Graph & getGraph() const;
+    inline Cell createNode(std::size_t ncells);
+    inline void setChild(Cell & cell, std::size_t index, const Cell & child);
+
     GarbageCollector gc;
-    mutable std::shared_ptr<Lisp::CollectibleGraph> graph;
-
-    // all objects in the root set
+    mutable std::shared_ptr<Graph> graph;
     std::vector<std::shared_ptr<Object>> root;
-
-    // all reachable cells with ids
-    std::unordered_map<Cell, std::size_t> allInv;
-    std::unordered_map<std::size_t, Cell> all;
-    std::size_t nextCellId;
-
-    // set of cells of nodes that point to another object
-    // first -> index of the node in vector all
-    // second -> index of the cell of the node (for conses 0: car, 1: cdr)
-    std::set<std::pair<std::size_t, std::size_t>> children;
-
-    // set of cell of nodes that are nil
-    // first -> index of the node in vector all
-    // second -> index of the cell of the node (for conses 0: car, 1: cdr)
-    std::set<std::pair<std::size_t, std::size_t>> freeChildren;
-
-    // all edges
-    // first.first: index of the parent in map all
-    // first.second: index of the cell
-    // second:       index of the child in map all
-    std::map<std::pair<std::size_t, std::size_t>, std::size_t> edges;
   };
 }
 
@@ -117,10 +108,23 @@ namespace Lisp
 // Implementation
 //
 ////////////////////////////////////////////////////////////////////////////////
-inline Lisp::GcSim::GcSim()
+inline Lisp::GcSim::Graph::Graph(const GarbageCollector & collector) : CollectibleGraph(collector)
 {
-  nextCellId = 0;
+  freeChildren.clear();
+  forEachNode([this](const CollectibleGraph::SharedNode & node) {
+      std::size_t i = 0;
+      node->getCell().forEachChild([this, node, &i](const Cell & child) {
+          if(child.isA<Nil>())
+          {
+            freeChildren.push_back(std::make_pair(node, i));
+          }
+          i++;
+        });
+    });
 }
+
+inline Lisp::GcSim::GcSim()
+{}
       
 inline std::size_t Lisp::GcSim::numRoot() const
 {
@@ -129,330 +133,264 @@ inline std::size_t Lisp::GcSim::numRoot() const
 
 inline std::size_t Lisp::GcSim::numBulk() const
 {
-  return all.size() - root.size();
+  return getGraph().numNodes() - root.size();
 }
 
 inline std::size_t Lisp::GcSim::numTotal() const
 {
-  return all.size();
+  return getGraph().numNodes();
 }
 
 inline std::size_t Lisp::GcSim::numFreeChildren() const
 {
-  return freeChildren.size();
-}
-
-inline std::size_t Lisp::GcSim::numChildren() const
-{
-  return children.size();
+  return getGraph().freeChildren.size();
 }
 
 inline std::size_t Lisp::GcSim::numEdges() const
 {
-  return edges.size();
+  return getGraph().numEdges();
 }
 
-inline const Lisp::Cell & Lisp::GcSim::getCell(std::size_t index) const
+inline std::size_t Lisp::GcSim::numVoid() const
 {
-  auto itr = all.find(index);
-  if(itr != all.end())
+  return gc.numVoidCollectible();
+}
+
+inline std::size_t Lisp::GcSim::numDisposed() const
+{
+  return gc.numDisposedCollectible();
+}
+
+inline const Lisp::Cell & Lisp::GcSim::getNthRoot(std::size_t n) const
+{
+  return getGraph().getRootNode(n)->getCell();
+}
+
+inline const Lisp::Cell & Lisp::GcSim::getNthBulk(std::size_t n) const
+{
+  return getGraph().getBulkNode(n)->getCell();
+}
+
+inline const Lisp::Cell & Lisp::GcSim::getNthNode(std::size_t n) const
+{
+  return getGraph().getNode(n)->getCell();
+}
+
+inline std::unordered_set<Lisp::Cell> Lisp::GcSim::getParents(const Lisp::Cell & cell) const
+{
+  auto node = getGraph().findNode(cell);
+  if(node)
   {
-    return itr->second;
+    std::unordered_set<Cell> ret;
+    for(auto & p : node->getParents())
+    {
+      ret.insert(p.first);
+    }
+    return ret;
   }
-  return Lisp::nil;
-}
-
-inline std::size_t Lisp::GcSim::getCellIndex(const Lisp::Cell & cell) const
-{
-  auto itr = allInv.find(cell);
-  if(itr != allInv.end())
+  else
   {
-    return itr->second;
+    return std::unordered_set<Cell>();
   }
-  return ROOT();
 }
 
-inline std::size_t Lisp::GcSim::addRoot(std::size_t nchildren)
+inline std::vector<std::pair<Lisp::Cell, std::size_t>> Lisp::GcSim::getParentIndices(const Lisp::Cell & cell) const
 {
-  graph.reset();
+  auto node = getGraph().findNode(cell);
+  if(node)
+  {
+    return node->getParents();
+  }
+  else
+  {
+    return std::vector<std::pair<Lisp::Cell, std::size_t>>();
+  }
+}
+
+inline const Lisp::Cell & Lisp::GcSim::addRoot(std::size_t nchildren)
+{
   std::shared_ptr<Object> obj;
-  std::size_t cellId;
+  root.push_back(std::shared_ptr<Object>());
   if(nchildren == 2)
   {
-    obj = std::make_shared<Object>(gc.makeRootCons(Lisp::nil, Lisp::nil));
+    root.back().reset(new Object(gc.makeRootCons(Lisp::nil, Lisp::nil)));
   }
   else
   {
     auto arr = gc.makeRoot<Array>();
-    //@todo better solution for appending
     for(std::size_t i = 0; i < nchildren; i++)
     {
       arr->append(Lisp::nil);
     }
-    obj = std::make_shared<Object>(arr);
+    root.back().reset(new Object(arr));
   }
-  cellId = nextCellId++;
-  allInv.insert(std::make_pair(*obj, cellId));
-  all.insert(std::make_pair(cellId, *obj));
-  root.push_back(obj);
-  for(std::size_t i = 0; i < nchildren; i++)
-  {
-    freeChildren.insert(std::make_pair(cellId, i));
-  }
-  edges.insert(std::make_pair(std::make_pair(ROOT(), cellId), cellId));
-  return cellId;
+  graph.reset();
+  return *(root.back().get());
 }
 
-inline std::size_t Lisp::GcSim::addBulk(std::size_t freeChildIndex, std::size_t nchildren)
+inline const Lisp::Cell & Lisp::GcSim::addBulk(std::size_t freeChildIndex, std::size_t nchildren)
 {
-  graph.reset();
-  assert(freeChildIndex < freeChildren.size());
-  auto itr = freeChildren.begin();
-  while(freeChildIndex > 0)
-  {
-    freeChildIndex--;
-    itr++;
-  }
-  return addBulk(*itr, nchildren);
+  const Graph & gr(getGraph());
+  assert(freeChildIndex < gr.freeChildren.size());
+  auto node = gr.freeChildren[freeChildIndex].first.lock();
+  auto index = gr.freeChildren[freeChildIndex].second;
+  assert(bool(node));
+  Cell cell(node->getCell());
+  return addBulk(cell, index, nchildren);
 }
 
-
-inline std::size_t Lisp::GcSim::addBulk(std::pair<std::size_t, std::size_t> pair, std::size_t nchildren)
+inline const Lisp::Cell & Lisp::GcSim::addBulk(Lisp::Cell & cell, std::size_t index, std::size_t nchildren)
 {
   graph.reset();
-  const Cell * tobeadded = nullptr;
-  assert(all.find(pair.first) != all.end());
-  if(all[pair.first].isA<Cons>())
+  if(cell.isA<Cons>())
   {
-    auto cons = all[pair.first].as<Cons>();
-    if(pair.second == 0)
+    auto cons = cell.as<Cons>();
+    if(index == 0)
     {
-      cons->setCar(nchildren == 2 ?
-                   Cell(gc.makeCons(Lisp::nil, Lisp::nil)) :
-                   Cell(gc.make<Array>()));
-      tobeadded = &cons->getCarCell();
+      assert(cons->getCarCell().isA<Lisp::Nil>());
+      cons->setCar(createNode(nchildren));
+      return cons->getCarCell();
     }
-    else if(pair.second == 1)
+    else if(index == 1)
     {
-      cons->setCdr(nchildren == 2 ?
-                   Cell(gc.makeCons(Lisp::nil, Lisp::nil)) :
-                   Cell(gc.make<Array>()));
-      tobeadded = &cons->getCdrCell();
+      assert(cons->getCdrCell().isA<Lisp::Nil>());
+      cons->setCdr(createNode(nchildren));
+      return cons->getCdrCell();
     }
     else
     {
       throw std::out_of_range("invalid index (>1) for cons");
     }
   }
-  else if(all[pair.first].isA<Array>())
+  else if(cell.isA<Array>())
   {
-    auto arr = all[pair.first].as<Array>();
-    if(pair.second < arr->size())
+    auto arr = cell.as<Array>();
+    if(index < arr->size())
     {
-      arr->set(pair.second, (nchildren == 2 ?
-                             Cell(gc.makeCons(Lisp::nil, Lisp::nil)) :
-                             Cell(gc.make<Array>())));
-      tobeadded = &arr->atCell(pair.second);
+      assert(arr->atCell(index).isA<Lisp::Nil>());
+      arr->set(index, createNode(nchildren));
+      return arr->atCell(index);
     }
     else
     {
       throw std::out_of_range("index of array out of range");
     }
   }
-  else
-  {
-    throw std::logic_error(std::string("unsupported type '") + all[pair.first].getTypeName() + "'");
-  }
-  if(nchildren != 2)
-  {
-    //@todo better solution for appending
-    for(std::size_t i = 0; i < nchildren; i++)
-    {
-      tobeadded->as<Array>()->append(Lisp::nil);
-    }
-  }
-  freeChildren.erase(pair);
-  children.insert(pair);
-  std::size_t cellId = nextCellId++;
-  edges.insert(std::make_pair(pair, cellId));
-  for(std::size_t i = 0; i < nchildren; i++)
-  {
-    freeChildren.insert(std::make_pair(cellId, i));
-  }
-  all[cellId] = *tobeadded;
-  allInv[*tobeadded] = cellId;
-  return cellId;
 }
 
 inline void Lisp::GcSim::addEdge(std::size_t freeChildIndex, std::size_t nodeIndex)
 {
-  graph.reset();
-  assert(freeChildIndex < freeChildren.size());
-  auto itr = freeChildren.begin();
-  while(freeChildIndex > 0)
-  {
-    freeChildIndex--;
-    itr++;
-  }
-  addEdge(*itr, nodeIndex);
+  getGraph();
+  assert(nodeIndex < getGraph().freeChildren.size());
+  auto p = getGraph().freeChildren[freeChildIndex];
+  auto node = p.first.lock();
+  Cell cell(node->getCell());
+  addEdge(cell, p.second, getNthNode(nodeIndex));
 }
 
-inline void Lisp::GcSim::addEdge(std::pair<std::size_t, std::size_t> pair, std::size_t nodeIndex)
+inline void Lisp::GcSim::addEdge(Cell & cell, std::size_t index, const Cell & child)
 {
+  auto c = getGraph().findNode(cell);
+  setChild(cell, index, child);
   graph.reset();
-  assert(nodeIndex < all.size());
-  assert(all.find(pair.first) != all.end());
-  if(all[pair.first].isA<Cons>())
+}
+
+inline void Lisp::GcSim::removeEdge(std::size_t edge)
+{
+  auto p = getGraph().getEdge(edge);
+  Cell cell(p->getParent());
+  removeEdge(cell, p->getIndex());
+}
+
+inline void Lisp::GcSim::removeEdge(Cell & cell, std::size_t index)
+{
+  auto node = getGraph().findNode(cell);
+  setChild(cell, index, Lisp::nil);
+  graph.reset();
+}
+
+inline const Lisp::GcSim::Graph & Lisp::GcSim::getGraph() const
+{
+  if(!graph)
   {
-    auto cons = all[pair.first].as<Cons>();
-    if(pair.second == 0)
+    graph.reset(new Graph(gc));
+  }
+  return *graph;
+}
+
+inline Lisp::Cell Lisp::GcSim::createNode(std::size_t nchildren)
+{
+  if(nchildren == 2)
+  {
+    return gc.makeCons(Lisp::nil, Lisp::nil);
+  }
+  else
+  {
+    Array * array = gc.make<Array>();
+    for(std::size_t i = 0; i < nchildren; i++)
     {
-      cons->setCar(all[nodeIndex]);
+      array->append(Lisp::nil);
     }
-    else if(pair.second == 1)
+    return array;
+  }
+}
+
+inline void Lisp::GcSim::setChild(Cell & cell, std::size_t index, const Cell & child)
+{
+  if(cell.isA<Cons>())
+  {
+    auto cons = cell.as<Cons>();
+    if(index == 0)
     {
-      cons->setCdr(all[nodeIndex]);
+      cons->setCar(child);
+    }
+    else if(index == 1)
+    {
+      cons->setCdr(child);
     }
     else
     {
       throw std::out_of_range("invalid index (>1) for cons");
     }
   }
-  else if(all[pair.first].isA<Array>())
+  else if(cell.isA<Array>())
   {
-    auto arr = all[pair.first].as<Array>();
-    if(pair.second < arr->size())
+    auto array = cell.as<Array>();
+    if(index < array->size())
     {
-      arr->set(pair.second, Cell(all[nodeIndex]));
+      array->set(index, child);
     }
     else
     {
       throw std::out_of_range("index of array out of range");
     }
   }
-  freeChildren.erase(pair);
-  children.insert(pair);
-  edges.insert(std::make_pair(pair, nodeIndex));
 }
 
-inline void Lisp::GcSim::refreshCell(std::size_t nodeIndex,
-                                     const Cell & cell)
+inline void Lisp::GcSim::unroot(std::size_t index)
 {
-  std::size_t childIndex = 0;
-  cell.forEachChild([this, &childIndex, nodeIndex](const Cell & child) {
-      if(child.isA<Nil>())
-      {
-        freeChildren.insert(std::make_pair(nodeIndex, childIndex));
-      }
-      else
-      {
-        auto p = std::make_pair(nodeIndex, childIndex);
-        auto itr = allInv.find(child);
-        edges.insert(std::make_pair(p, itr->second));
-        children.insert(p);
-      }
-      childIndex++;
-    });
-}
-
-inline void Lisp::GcSim::refresh()
-{
-  std::unordered_map<Cell, std::size_t> tmpInv;
-  std::unordered_map<std::size_t, Cell> tmp;
-  children.clear();
-  freeChildren.clear();
-  edges.clear();
-  gc.forEachReachable([this, &tmpInv, &tmp](const Cell & c){
-      auto itr = allInv.find(c);
-      assert(itr != allInv.end());
-      tmpInv.insert(*itr);
-      tmp.insert(std::make_pair(itr->second, itr->first));
-    });
-  allInv.swap(tmpInv);
-  all.swap(tmp);
-  gc.forEachReachable([this](const Cell & c){
-      auto itr = allInv.find(c);
-      refreshCell(itr->second, itr->first);
-    });
-  for(auto r : root)
-  {
-    auto itr = allInv.find(*r);
-    edges.insert(std::make_pair(std::make_pair(ROOT(), itr->second), itr->second));
-  }
-}
-
-//////////////////////////////////////////
-inline void Lisp::GcSim::removeEdge(std::size_t edge)
-{
+  assert(index < root.size());
+  root[index].swap(root.back());
+  root.pop_back();
   graph.reset();
-  assert(edge < edges.size());
-  auto itr = edges.begin();
-  while(edge > 0)
-  {
-    edge--;
-    itr++;
-  }
-  removeEdge(itr->first);
 }
 
-inline void Lisp::GcSim::removeEdge(std::pair<std::size_t, std::size_t> edge)
+inline void Lisp::GcSim::unroot(const Cell & cell)
 {
-  graph.reset();
-  auto itr = edges.find(edge);
-  if(itr != edges.end())
+  std::equal_to<::Lisp::Cell> eq;
+  for(std::size_t i = 0; i < root.size(); i++)
   {
-    if(itr->first.first == ROOT())
+    if(eq(*root[i], cell))
     {
-      Cell & cell(all[itr->second]);
-      for(std::size_t i = 0; i < root.size(); i++)
-      {
-        if(*root[i] == cell)
-        {
-          root[i] = root.back();
-          root.pop_back();
-          break;
-        }
-      }
-      edges.erase(itr);
+      unroot(i);
+      return;
     }
-    else
-    {
-      auto pair = itr->first;
-      auto nodeIndex = itr->second;
-      if(all[pair.first].isA<Cons>())
-      {
-        auto cons = all[pair.first].as<Cons>();
-        if(pair.second == 0)
-        {
-          cons->setCar(Lisp::nil);
-        }
-        else if(pair.second == 1)
-        {
-          cons->setCdr(Lisp::nil);
-        }
-      }
-      edges.erase(itr);
-    }
-    refresh();
   }
 }
 
 inline bool Lisp::GcSim::checkSanity() const
 {
   bool ret = gc.checkSanity();
-  ret &= (numRoot() + numBulk() == numTotal());
-  for(auto p : all)
-  {
-    auto itr = allInv.find(p.second);
-    if(itr == allInv.end())
-    {
-      ret = false;
-    }
-    else
-    {
-      ret &= (p.first == itr->second && p.second == itr->first);
-    }
-  }
   return ret;
 }
 
@@ -474,13 +412,4 @@ inline void Lisp::GcSim::enableCollector()
 inline void Lisp::GcSim::enableRecycling()
 {
   gc.enableRecycling();
-}
-
-std::shared_ptr<Lisp::CollectibleGraph>  Lisp::GcSim::getGraph() const
-{
-  if(!graph)
-  {
-    graph.reset(new Lisp::CollectibleGraph(gc));
-  }
-  return graph;
 }

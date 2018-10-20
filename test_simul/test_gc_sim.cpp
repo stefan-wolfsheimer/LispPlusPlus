@@ -34,65 +34,105 @@ either expressed or implied, of the FreeBSD Project.
 using GcSim = Lisp::GcSim;
 using Cell = Lisp::Cell;
 
-static std::set<std::size_t> Parents(const GcSim & gcSim, std::size_t index);
-static std::set<std::size_t> Set() { return std::set<std::size_t>(); }
+//static std::set<std::size_t> Parents(const GcSim & gcSim, std::size_t index);
+static std::unordered_set<Lisp::Cell> Set()
+{
+  return std::unordered_set<Lisp::Cell>();
+}
 
 template<typename... A>
-static std::set<std::size_t> Set(std::size_t i, A... rest) { std::set<std::size_t> s = Set(rest...); s.insert(i); return s; }
+static std::unordered_set<Lisp::Cell> Set(const Lisp::Cell & cell, A... rest) {
+  std::unordered_set<Lisp::Cell> s = Set(rest...);
+  s.insert(cell);
+  return s;
+}
 
+inline bool checkNodes(const GcSim & sim,
+                       const std::unordered_set<Lisp::Cell> & rootNodes,
+                       const std::unordered_set<Lisp::Cell> & bulkNodes)
+{
+  bool ret = true;
+  std::unordered_set<Lisp::Cell> _rootNodes;
+  std::unordered_set<Lisp::Cell> _bulkNodes;
+  std::unordered_set<Lisp::Cell> _allNodes;
+  std::unordered_set<Lisp::Cell> _all(rootNodes.begin(), rootNodes.end());
+  _all.insert(bulkNodes.begin(), bulkNodes.end());
+  for(std::size_t i = 0; i < sim.numRoot(); i++)
+  {
+    _rootNodes.insert(sim.getNthRoot(i));
+  }
+  for(std::size_t i = 0; i < sim.numBulk(); i++)
+  {
+    _bulkNodes.insert(sim.getNthBulk(i));
+  }
+  for(std::size_t i = 0; i < sim.numTotal(); i++)
+  {
+    _allNodes.insert(sim.getNthNode(i));
+  }
+  CHECK(sim.numRoot() == rootNodes.size());
+  ret &= (sim.numRoot() == rootNodes.size());
+  CHECK(sim.numBulk() == bulkNodes.size());
+  ret &= sim.numBulk() == bulkNodes.size();
+  CHECK(sim.numTotal() == (bulkNodes.size() + rootNodes.size()));
+  ret &= sim.numTotal() == (bulkNodes.size() + rootNodes.size());
+  CHECK(rootNodes == _rootNodes);
+  ret &= rootNodes == _rootNodes;
+  CHECK(bulkNodes == _bulkNodes);
+  ret &= bulkNodes == _bulkNodes;
+  CHECK(_all == _allNodes);
+  ret &= _all == _allNodes;
+  return ret;
+}
 
 TEST_CASE("gc_sim_cycle", "[GcSim]")
 {
   GcSim sim;
   sim.disableCollector();
-  REQUIRE(sim.numRoot() == 0);
-  REQUIRE(sim.numBulk() == 0);
-  REQUIRE(sim.numChildren() == 0);
+  REQUIRE(checkNodes(sim, Set(), Set()));
   REQUIRE(sim.numFreeChildren() == 0);
   REQUIRE(sim.numEdges() == 0);
   REQUIRE(sim.checkSanity());
 
-  REQUIRE(sim.addRoot(2) == 0);
+  ///////////////////////////////////////////
+  Cell cell0(sim.addRoot(2));
   /*
    * containers       freeChildren
-   * 0: cons          0: (0, 0) -> null
+   * 0 (R): cons      0: (0, 0) -> null
    *                  1: (0, 1) -> null
-   *
    * edges:
-   * 0: R -> 0
    * 
    */
-  REQUIRE(Parents(sim, 0) == Set());
-  REQUIRE(sim.numBulk() == 0);
-  REQUIRE(sim.numRoot() == 1);
-  REQUIRE(sim.numChildren() == 0);
+  REQUIRE(checkNodes(sim, Set(cell0), Set()));
+  REQUIRE(sim.getParents(cell0) == Set());
   REQUIRE(sim.numFreeChildren() == 2);
-  REQUIRE(sim.numEdges() == 1);
+  REQUIRE(sim.numEdges() == 0);
   REQUIRE(sim.checkSanity());
 
-  REQUIRE(sim.addBulk(std::make_pair(0, 0), 0) == 1);
+  ///////////////////////////////////////////
+  Cell cell1(sim.addBulk(cell0, 0, 0));
+  //REQUIRE(sim.addBulk(std::make_pair(0, 0), 0) == 1);
   /*
-   * containers       freeChildren         children
-   * 0: cons          0: (0, 1) -> null    0: (0, 0) -> 1     
+   * containers       freeChildren
+   * 0 (R): cons      0: (0, 1) -> null
    * 1: array         
    *
    * edges:
    * 0: (0, 0) -> 1
-   * 1: R -> 0
    * 
    */
-  REQUIRE(Parents(sim, 0) == Set());
-  REQUIRE(Parents(sim, 1) == Set(0));
-  REQUIRE(sim.numChildren() == 1);
+  REQUIRE(sim.getParents(cell0) == Set());
+  REQUIRE(sim.getParents(cell1) == Set(cell0));
+  REQUIRE(checkNodes(sim, Set(cell0), Set(cell1)));
   REQUIRE(sim.numFreeChildren() == 1);
-  REQUIRE(sim.numEdges() == 2);
+  REQUIRE(sim.numEdges() == 1);
   REQUIRE(sim.checkSanity());
 
-  REQUIRE(sim.addBulk(std::make_pair(0, 1), 3) == 2);
+  ///////////////////////////////////////////
+  Cell cell2(sim.addBulk(cell0, 1, 3));
     /*
-   * containers       freeChildren         children
-   * 0: cons(0,1)                          0: (0, 0) -> 1
-   *                                       1: (0, 1) -> 2
+   * containers       freeChildren
+   * 0 (R): cons(0,1)
+   *
    * 1: array()
    * 2: array(0,1,2)  0: (2, 0) -> null
    *                  1: (2, 1) -> null
@@ -101,59 +141,53 @@ TEST_CASE("gc_sim_cycle", "[GcSim]")
    * edges:
    * 0: (0, 0) -> 1
    * 1: (0, 1) -> 2
-   * 2: R -> 0
    * 
    */
-  REQUIRE(Parents(sim, 0) == Set());
-  REQUIRE(Parents(sim, 1) == Set(0));
-  REQUIRE(Parents(sim, 2) == Set(0));
-
-  REQUIRE(sim.numRoot() == 1);
-  REQUIRE(sim.numBulk() == 2);
-  REQUIRE(sim.numChildren() == 2);
+  REQUIRE(sim.getParents(cell0) == Set());
+  REQUIRE(sim.getParents(cell1) == Set(cell0));
+  REQUIRE(sim.getParents(cell2) == Set(cell0));
+  REQUIRE(checkNodes(sim, Set(cell0), Set(cell1, cell2)));
   REQUIRE(sim.numFreeChildren() == 3);
-  REQUIRE(sim.numEdges() == 3);
+  REQUIRE(sim.numEdges() == 2);
 
-  REQUIRE(sim.addRoot(1) == 3);
+  ///////////////////////////////////////////
+  Cell cell3(sim.addRoot(1));
   /*
-   * containers       freeChildren         children
-   * 0: cons                               0: (0, 0) -> 1
-   *                                       1: (0, 1) -> 2
+   * containers       freeChildren
+   * 0 (R): cons
+   *
    * 1: array 
    * 2: array         0: (2, 0) -> null
    *                  1: (2, 1) -> null
    *                  2: (2, 2) -> null
-   * 3: array         3: (3, 0) -> null
+   * 3 (R): array     3: (3, 0) -> null
    *
    * edges:
    * 0: (0, 0) -> 1
    * 1: (0, 1) -> 2
-   * 2: R -> 0
-   * 3: R -> 3
-   * 
    */
-  REQUIRE(Parents(sim, 0) == Set());
-  REQUIRE(Parents(sim, 1) == Set(0));
-  REQUIRE(Parents(sim, 2) == Set(0));
-  REQUIRE(Parents(sim, 3) == Set());
-
-  REQUIRE(sim.numRoot() == 2);
-  REQUIRE(sim.numBulk() == 2);
-  REQUIRE(sim.numChildren() == 2);
+  REQUIRE(sim.getParents(cell0) == Set());
+  REQUIRE(sim.getParents(cell1) == Set(cell0));
+  REQUIRE(sim.getParents(cell2) == Set(cell0));
+  REQUIRE(sim.getParents(cell3) == Set());
+  REQUIRE(checkNodes(sim,
+                     Set(cell0, cell3),
+                     Set(cell1, cell2)));
   REQUIRE(sim.numFreeChildren() == 4);
-  REQUIRE(sim.numEdges() == 4);
+  REQUIRE(sim.numEdges() == 2);
   REQUIRE(sim.checkSanity());
 
-  REQUIRE(sim.addBulk(std::make_pair(3, 0), 2) == 4);
+  ///////////////////////////////////////////
+  Cell cell4(sim.addBulk(cell3, 0, 2));
   /*
    * containers       freeChildren         children
-   * 0: cons                               0: (0, 0) -> 1
-   *                                       1: (0, 1) -> 2
+   * 0 (R): cons
+   *
    * 1: array 
-   * 2: arra          0: (2, 0) -> null
+   * 2: array         0: (2, 0) -> null
    *                  1: (2, 1) -> null
    *                  2: (2, 2) -> null
-   * 3: array                              2: (3, 0) -> 4
+   * 3 (R): array
    * 4: cons          3: (4, 0) -> null
    *                  4: (4, 1) -> null
    * 
@@ -161,212 +195,242 @@ TEST_CASE("gc_sim_cycle", "[GcSim]")
    * 0: (0, 0) -> 1
    * 1: (0, 1) -> 2
    * 2: (3, 0) -> 4
-   * 3: R -> 0
-   * 4: R -> 3
-   * 
    */
-  REQUIRE(Parents(sim, 0) == Set());
-  REQUIRE(Parents(sim, 1) == Set(0));
-  REQUIRE(Parents(sim, 2) == Set(0));
-  REQUIRE(Parents(sim, 3) == Set());
-  REQUIRE(Parents(sim, 4) == Set(3));
-  REQUIRE(sim.numRoot() == 2);
-  REQUIRE(sim.numBulk() == 3);
-  REQUIRE(sim.numChildren() == 3);
+  REQUIRE(sim.getParents(cell0) == Set());
+  REQUIRE(sim.getParents(cell1) == Set(cell0));
+  REQUIRE(sim.getParents(cell2) == Set(cell0));
+  REQUIRE(sim.getParents(cell3) == Set());
+  REQUIRE(sim.getParents(cell4) == Set(cell3));
+  REQUIRE(checkNodes(sim,
+                     Set(cell0, cell3),
+                     Set(cell1, cell2, cell4)));
   REQUIRE(sim.numFreeChildren() == 5);
-  REQUIRE(sim.numEdges() == 5);
+  REQUIRE(sim.numEdges() == 3);
   REQUIRE(sim.checkSanity());
 
-  sim.addEdge(std::make_pair(4, 1), 0);
+  ///////////////////////////////////////////
+  sim.addEdge(cell4, 1, cell0);
   /*
-   * containers       freeChildren         children
-   * 0: cons                               0: (0, 0) -> 1
-   *                                       1: (0, 1) -> 2
+   * containers       freeChildren
+   * 0 (R): cons
+   *
    * 1: array 
    * 2: arra          0: (2, 0) -> null
    *                  1: (2, 1) -> null
    *                  2: (2, 2) -> null
-   * 3: array                              2: (3, 0) -> 4
-   * 4: cons          3: (4, 0) -> null    3: (4, 1) -> 0
+   * 3 (R): array
+   * 4: cons          3: (4, 0) -> null
    * 
    * edges:
    * 0: (0, 0) -> 1
    * 1: (0, 1) -> 2
    * 2: (3, 0) -> 4
    * 3: (4, 1) -> 0
-   * 4: R -> 0
-   * 5: R -> 3
-   * 
    */
-  REQUIRE(Parents(sim, 0) == Set(4));
-  REQUIRE(Parents(sim, 1) == Set(0));
-  REQUIRE(Parents(sim, 2) == Set(0));
-  REQUIRE(Parents(sim, 3) == Set());
-  REQUIRE(Parents(sim, 4) == Set(3));
-
-  REQUIRE(sim.numRoot() == 2);
-  REQUIRE(sim.numBulk() == 3);
-  REQUIRE(sim.numChildren() == 4);
+  REQUIRE(sim.getParents(cell0) == Set(cell4));
+  REQUIRE(sim.getParents(cell1) == Set(cell0));
+  REQUIRE(sim.getParents(cell2) == Set(cell0));
+  REQUIRE(sim.getParents(cell3) == Set());
+  REQUIRE(sim.getParents(cell4) == Set(cell3));
+  REQUIRE(checkNodes(sim,
+                     Set(cell0, cell3),
+                     Set(cell1, cell2, cell4)));
   REQUIRE(sim.numFreeChildren() == 4);
-  REQUIRE(sim.numEdges() == 6);
+  REQUIRE(sim.numEdges() == 4);
   REQUIRE(sim.checkSanity());
 
-  sim.addEdge(std::make_pair(4, 0), 4);
+  ///////////////////////////////////////////
+  sim.addEdge(cell4, 0, cell4);
   /*
-   * containers       freeChildren         children
-   * 0: cons                               0: (0, 0) -> 1
-   *                                       1: (0, 1) -> 2
-   * 1: array 
-   * 2: arra          0: (2, 0) -> null
-   *                  1: (2, 1) -> null
-   *                  2: (2, 2) -> null
-   * 3: array                              2: (3, 0) -> 4
-   * 4: cons                               3: (4, 1) -> 0
-   *                                       4: (4, 0) -> 4
-   * edges:
-   * 0: (0, 0) -> 1
-   * 1: (0, 1) -> 2
-   * 2: (3, 0) -> 4
-   * 3: (4, 1) -> 0
-   * 4: (4, 0) -> 4
-   * 5: R -> 0
-   * 6: R -> 3
-   * 
-   */
-  REQUIRE(Parents(sim, 0) == Set(4));
-  REQUIRE(Parents(sim, 1) == Set(0));
-  REQUIRE(Parents(sim, 2) == Set(0));
-  REQUIRE(Parents(sim, 3) == Set());
-  REQUIRE(Parents(sim, 4) == Set(3, 4));
-
-  REQUIRE(sim.numRoot() == 2);
-  REQUIRE(sim.numBulk() == 3);
-  REQUIRE(sim.numChildren() == 5);
-  REQUIRE(sim.numFreeChildren() == 3);
-  REQUIRE(sim.numEdges() == 7);
-  REQUIRE(sim.checkSanity());
-
-  sim.removeEdge(std::make_pair(GcSim::ROOT(), 0));
-  /*
-   * containers       freeChildren         children
-   * 0: cons                               0: (0, 0) -> 1
-   *                                       1: (0, 1) -> 2
+   * containers       freeChildren
+   * 0 (R): cons
    * 1: array 
    * 2: array         0: (2, 0) -> null
    *                  1: (2, 1) -> null
    *                  2: (2, 2) -> null
-   * 3: array                              2: (3, 0) -> 4
-   * 4: cons                               3: (4, 1) -> 0
-   *                                       4: (4, 0) -> 4
-   * 
+   * 3 (R): array
+   * 4: cons
+   *
    * edges:
    * 0: (0, 0) -> 1
    * 1: (0, 1) -> 2
    * 2: (3, 0) -> 4
    * 3: (4, 1) -> 0
    * 4: (4, 0) -> 4
-   * 5: R -> 3
    * 
    */
-  REQUIRE(Parents(sim, 0) == Set(4));
-  REQUIRE(Parents(sim, 1) == Set(0));
-  REQUIRE(Parents(sim, 2) == Set(0));
-  REQUIRE(Parents(sim, 3) == Set());
-  REQUIRE(Parents(sim, 4) == Set(3, 4));
-
-  REQUIRE(sim.numRoot() == 1);
-  REQUIRE(sim.numBulk() == 4);
-  REQUIRE(sim.numChildren() == 5);
+  REQUIRE(sim.getParents(cell0) == Set(cell4));
+  REQUIRE(sim.getParents(cell1) == Set(cell0));
+  REQUIRE(sim.getParents(cell2) == Set(cell0));
+  REQUIRE(sim.getParents(cell3) == Set());
+  REQUIRE(sim.getParents(cell4) == Set(cell3, cell4));
+  REQUIRE(checkNodes(sim,
+                     Set(cell0, cell3),
+                     Set(cell1, cell2, cell4)));
   REQUIRE(sim.numFreeChildren() == 3);
-  REQUIRE(sim.numEdges() == 6);
+  REQUIRE(sim.numEdges() == 5);
   REQUIRE(sim.checkSanity());
 
+  ///////////////////////////////////////////
+  REQUIRE(cell0.isRoot());
+  sim.unroot(cell0);
+  REQUIRE_FALSE(cell0.isRoot());
+  /*
+   * containers       freeChildren
+   * 0: cons
+   * 1: array 
+   * 2: array         0: (2, 0) -> null
+   *                  1: (2, 1) -> null
+   *                  2: (2, 2) -> null
+   * 3 (R): array
+   * 4: cons
+   *
+   * edges:
+   * 0: (0, 0) -> 1
+   * 1: (0, 1) -> 2
+   * 2: (3, 0) -> 4
+   * 3: (4, 1) -> 0
+   * 4: (4, 0) -> 4
+   */
+  REQUIRE(sim.getParents(cell0) == Set(cell4));
+  REQUIRE(sim.getParents(cell1) == Set(cell0));
+  REQUIRE(sim.getParents(cell2) == Set(cell0));
+  REQUIRE(sim.getParents(cell3) == Set());
+  REQUIRE(sim.getParents(cell4) == Set(cell3, cell4));
+  REQUIRE(checkNodes(sim,
+                     Set(cell3),
+                     Set(cell0, cell1, cell2, cell4)));
+  REQUIRE(sim.numFreeChildren() == 3);
+  REQUIRE(sim.numEdges() == 5);
+  REQUIRE(sim.getNthRoot(0) == cell3);
+  REQUIRE(sim.checkSanity());
 
-  sim.removeEdge(std::make_pair(0, 0));
+  ///////////////////////////////////////////
+  sim.removeEdge(cell0, 0);
   /*
    * containers       freeChildren         children
    * 0: cons          0: (0, 0) -> null    0: (0, 1) -> 2
    * 2: array         1: (2, 0) -> null
    *                  2: (2, 1) -> null
    *                  3: (2, 2) -> null
-   * 3: array                              1: (3, 0) -> 4
-   * 4: cons                               2: (4, 1) -> 0
-   *                                       3: (4, 0) -> 4
-   * 
+   * 3 (R): array
+   * 4: cons
+   *
    * edges:
    * 0: (0, 1) -> 2
    * 1: (3, 0) -> 4
    * 2: (4, 1) -> 0
    * 3: (4, 0) -> 4
-   * 4: R -> 3
    * 
    */
-  REQUIRE(Parents(sim, 0) == Set(4));
-  REQUIRE(Parents(sim, 1) == Set());
-  REQUIRE(Parents(sim, 2) == Set(0));
-  REQUIRE(Parents(sim, 3) == Set());
-  REQUIRE(Parents(sim, 4) == Set(3, 4));
-
-  REQUIRE(sim.numRoot() == 1);
-  REQUIRE(sim.numBulk() == 3);
+  REQUIRE(sim.getParents(cell0) == Set(cell4));
+  REQUIRE(sim.getParents(cell1) == Set());
+  REQUIRE(sim.getParents(cell2) == Set(cell0));
+  REQUIRE(sim.getParents(cell3) == Set());
+  REQUIRE(sim.getParents(cell4) == Set(cell3, cell4));
+  REQUIRE(checkNodes(sim,
+                     Set(cell3),
+                     Set(cell0, cell2, cell4)));
   REQUIRE(sim.numFreeChildren() == 4);
-  REQUIRE(sim.numChildren() == 4);
+  REQUIRE(sim.numEdges() == 4);
+  REQUIRE(sim.checkSanity());
+
+  ///////////////////////////////////////////
+  sim.addEdge(cell0, 0, cell2);
+  /*
+   * containers       freeChildren         children
+   * 0: cons          1: (2, 0) -> null    0: (0, 1) -> 2
+   * 2: array         2: (2, 1) -> null    0: (0, 0) -> 2
+   *                  3: (2, 2) -> null
+   *
+   * 3 (R): array
+   * 4: cons
+   *
+   * edges:
+   * 0: (0, 1) -> 2
+   * 1: (0, 0) -> 2
+   * 2: (3, 0) -> 4
+   * 3: (4, 1) -> 0
+   * 4: (4, 0) -> 4
+   * 
+   */
+  REQUIRE(sim.getParents(cell0) == Set(cell4));
+  REQUIRE(sim.getParents(cell1) == Set());
+  REQUIRE(sim.getParents(cell2) == Set(cell0));
+  REQUIRE(sim.getParents(cell3) == Set());
+  REQUIRE(sim.getParents(cell4) == Set(cell3, cell4));
+  REQUIRE(checkNodes(sim,
+                     Set(cell3),
+                     Set(cell0, cell2, cell4)));
+  REQUIRE(sim.numFreeChildren() == 3);
   REQUIRE(sim.numEdges() == 5);
   REQUIRE(sim.checkSanity());
 
-  sim.removeEdge(std::make_pair(4, 1));
+  ///////////////////////////////////////////
+  sim.removeEdge(cell0, 1);
   /*
    * containers       freeChildren         children
-   * 3: array                              1: (3, 0) -> 4
-   * 4: cons          2: (4, 1) -> null    3: (4, 0) -> 4                 
+   * 0: cons          0: (0, 1) -> null    0: (0, 0) -> 2
+   * 2: array         1: (2, 0) -> null
+   *                  2: (2, 1) -> null
+   *                  3: (2, 2) -> null
+   * 3 (R): array
+   * 4: cons
+   *
+   * edges:
+   * 0: (0, 1) -> 2
+   * 1: (3, 0) -> 4
+   * 2: (4, 1) -> 0
+   * 3: (4, 0) -> 4
+   * 
+   */
+  REQUIRE(sim.getParents(cell0) == Set(cell4));
+  REQUIRE(sim.getParents(cell1) == Set());
+  REQUIRE(sim.getParents(cell2) == Set(cell0));
+  REQUIRE(sim.getParents(cell3) == Set());
+  REQUIRE(sim.getParents(cell4) == Set(cell3, cell4));
+  REQUIRE(checkNodes(sim,
+                     Set(cell3),
+                     Set(cell0, cell2, cell4)));
+  REQUIRE(sim.numFreeChildren() == 4);
+  REQUIRE(sim.numEdges() == 4);
+  REQUIRE(sim.checkSanity());
+  
+  ///////////////////////////////////////////
+  sim.removeEdge(cell4, 1);
+  /*
+   * containers       freeChildren
+   * 3 (R): array     2: (4, 1) -> null
+   * 4: cons          
    * 
    * edges:
    * 0: (3, 0) -> 4
    * 1: (4, 0) -> 4
-   * 2: R -> 3
    * 
    */
-  REQUIRE(Parents(sim, 0) == Set());
-  REQUIRE(Parents(sim, 1) == Set());
-  REQUIRE(Parents(sim, 2) == Set());
-  REQUIRE(Parents(sim, 3) == Set());
-  REQUIRE(Parents(sim, 4) == Set(3, 4));
-
-  REQUIRE(sim.numRoot() == 1);
-  REQUIRE(sim.numBulk() == 1);
-  REQUIRE(sim.numChildren() == 2);
+  REQUIRE(sim.getParents(cell0) == Set());
+  REQUIRE(sim.getParents(cell1) == Set());
+  REQUIRE(sim.getParents(cell2) == Set());
+  REQUIRE(sim.getParents(cell3) == Set());
+  REQUIRE(sim.getParents(cell4) == Set(cell3, cell4));
+  REQUIRE(checkNodes(sim,
+                     Set(cell3),
+                     Set(cell4)));
   REQUIRE(sim.numFreeChildren() == 1);
-  REQUIRE(sim.numEdges() == 3);
+  REQUIRE(sim.numEdges() == 2);
   REQUIRE(sim.checkSanity());
 
-  sim.removeEdge(std::make_pair(GcSim::ROOT(), 3));
-  REQUIRE(Parents(sim, 0) == Set());
-  REQUIRE(Parents(sim, 1) == Set());
-  REQUIRE(Parents(sim, 2) == Set());
-  REQUIRE(Parents(sim, 3) == Set());
-  REQUIRE(Parents(sim, 4) == Set());
-
-  REQUIRE(sim.numRoot() == 0);
-  REQUIRE(sim.numBulk() == 0);
-  REQUIRE(sim.numChildren() == 0);
+  ///////////////////////////////////////////
+  sim.unroot(cell3);
+  REQUIRE(sim.getParents(cell0) == Set());
+  REQUIRE(sim.getParents(cell1) == Set());
+  REQUIRE(sim.getParents(cell2) == Set());
+  REQUIRE(sim.getParents(cell3) == Set());
+  REQUIRE(sim.getParents(cell4) == Set());
+  REQUIRE(checkNodes(sim,
+                     Set(),
+                     Set()));
   REQUIRE(sim.numFreeChildren() == 0);
   REQUIRE(sim.numEdges() == 0);
   REQUIRE(sim.checkSanity());
-}
-
-
-static std::set<std::size_t> Parents(const GcSim & gcSim, std::size_t index)
-{
-  std::set<std::size_t> ret;
-  auto graph = gcSim.getGraph();
-  auto node = graph->findNode(gcSim.getCell(index));
-  if(node)
-  {
-    auto parents = node->getParents();
-    for(const Cell & cell : parents)
-    {
-      ret.insert(gcSim.getCellIndex(cell));
-    }
-  }
-  return ret;
 }

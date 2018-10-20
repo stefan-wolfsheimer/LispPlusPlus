@@ -31,6 +31,7 @@ either expressed or implied, of the FreeBSD Project.
 #pragma once
 #include <unordered_set>
 #include <lpp/core/gc/collectible_node.h>
+
 namespace Lisp
 {
   class CollectibleNode;
@@ -40,18 +41,22 @@ namespace Lisp
   {
   public:
     CollectibleEdge(CollectibleNode * _parent,
-                    CollectibleNode * _child);
-    Cell getParent() const;
-    Cell getChild() const;
+                    CollectibleNode * _child,
+                    std::size_t _index);
+    inline Cell getParent() const;
+    inline Cell getChild() const;
+    inline std::size_t getIndex() const;
   private:
     const CollectibleNode * child;
     const CollectibleNode * parent;
+    std::size_t index;
   };
 }
 
 inline Lisp::CollectibleEdge::CollectibleEdge(CollectibleNode * _parent,
-                                              CollectibleNode * _child)
-  : child(_child), parent(_parent)
+                                              CollectibleNode * _child,
+                                              std::size_t _index)
+  : child(_child), parent(_parent), index(_index)
 {
 }
 
@@ -63,4 +68,9 @@ inline Lisp::Cell Lisp::CollectibleEdge::getParent() const
 inline Lisp::Cell Lisp::CollectibleEdge::getChild() const
 {
   return child->getCell();
+}
+
+inline std::size_t Lisp::CollectibleEdge::getIndex() const
+{
+  return index;
 }

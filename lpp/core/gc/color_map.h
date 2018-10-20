@@ -244,7 +244,7 @@ inline void Lisp::ColorMap<T>::swap()
   greyRoot->toElements     = blackRoot;
   blackRoot->toElements    = nullptr;
   white->toElements        = grey;
-  grey->toElements         = blackRoot;
+  grey->toElements         = black;
   black->toElements        = nullptr;
 
   assert(whiteRoot->otherElements == grey);
@@ -263,7 +263,7 @@ inline void Lisp::ColorMap<T>::swap()
   assert(greyRoot->toElements == blackRoot);
   assert(blackRoot->toElements == nullptr);
   assert(white->toElements == grey);
-  assert(grey->toElements == blackRoot);
+  assert(grey->toElements == black);
   assert(black->toElements == nullptr);
 }
 

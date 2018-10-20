@@ -44,36 +44,42 @@ namespace Lisp
   class CollectibleGraph
   {
   public:
+    using SharedNode = std::shared_ptr<CollectibleNode>;
+
     CollectibleGraph(const GarbageCollector & collector);
-    std::shared_ptr<CollectibleEdge> findEdge(const Cell & parent,
-                                              const Cell & child) const;
     std::shared_ptr<CollectibleNode> findNode(const Cell & cell) const;
     std::shared_ptr<CollectibleNode> getNode(std::size_t index) const;
+    std::shared_ptr<CollectibleNode> getBulkNode(std::size_t index) const;
+    std::shared_ptr<CollectibleNode> getRootNode(std::size_t index) const;
     std::shared_ptr<CollectibleEdge> getEdge(std::size_t index) const;
+    void forEachNode(std::function<void(const CollectibleNode & node)> func) const;
+    void forEachNode(std::function<void(const SharedNode & node)> func) const;
     inline std::size_t numNodes() const;
     inline std::size_t numEdges() const;
   private:
-    using SharedNode = std::shared_ptr<CollectibleNode>;
-    using Pair = std::pair<Cell, Cell>;
-    struct PairHash
-    {
-      std::size_t operator()(const Pair & p) const
-      {
-        return std::hash<Cell>()(p.first) ^ std::hash<Cell>()(p.second);
-      }
-    };
-    struct PairEq
-    {
-      bool operator()(const Pair & p1, const Pair & p2) const
-      {
-        return std::equal_to<Cell>()(p1.first, p2.first) &&
-               std::equal_to<Cell>()(p1.second, p2.second);
-      }
-    };
     std::unordered_map<Cell, SharedNode> nodes;
-    std::unordered_map<Pair, std::shared_ptr<CollectibleEdge>, PairHash, PairEq> edges;
+    std::vector<std::shared_ptr<CollectibleEdge>> edges;
+    std::vector<SharedNode> rootNodes;
+    std::vector<SharedNode> bulkNodes;
+    std::vector<SharedNode> allNodes;
   };
 }
+
+inline std::shared_ptr<Lisp::CollectibleNode> Lisp::CollectibleGraph::getNode(std::size_t index) const
+{
+  return allNodes.at(index);
+}
+
+inline std::shared_ptr<Lisp::CollectibleNode> Lisp::CollectibleGraph::getBulkNode(std::size_t index) const
+{
+  return bulkNodes.at(index);
+}
+
+inline std::shared_ptr<Lisp::CollectibleNode> Lisp::CollectibleGraph::getRootNode(std::size_t index) const
+{
+  return rootNodes.at(index);
+}
+
 
 inline std::size_t Lisp::CollectibleGraph::numNodes() const
 {

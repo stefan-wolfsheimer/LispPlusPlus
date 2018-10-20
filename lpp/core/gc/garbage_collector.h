@@ -267,6 +267,7 @@ inline C * Lisp::GarbageCollector::makeRoot(ARGS... rest)
 {
   step();
   recycle();
+  /* @todo delete C */
   C * ret = new C(rest...);
   ret->setRefCount(1u);
   containerMap.addRoot(ret);

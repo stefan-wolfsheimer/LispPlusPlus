@@ -29,6 +29,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
+#include <vector>
 #include <lpp/core/cell.h>
 
 namespace Lisp
@@ -40,15 +41,15 @@ namespace Lisp
   public:
     CollectibleNode(const Cell & _cell);
     inline const Cell & getCell() const;
-    inline std::unordered_set<Cell> getParents() const;
-    inline std::unordered_set<Cell> getChildren() const;
+    std::vector<std::pair<Cell, std::size_t>> getParents() const;
+    std::vector<std::pair<Cell, std::size_t>> getChildren() const;
+    inline std::size_t numChildren() const;
   private:
     friend class CollectibleGraph;
     friend class CollectibleEdge;
     Cell cell;
-    std::vector<CollectibleEdge*> edges;
-    std::unordered_set<CollectibleNode*> parents;
-    std::unordered_set<CollectibleNode*> children;
+    std::vector<CollectibleEdge*> parents;
+    std::vector<CollectibleEdge*> children;
   };
 }
 
@@ -64,30 +65,4 @@ inline Lisp::CollectibleNode::CollectibleNode(const Cell & _cell)
 inline const Lisp::Cell & Lisp::CollectibleNode::getCell() const
 {
   return cell;
-}
-
-inline std::unordered_set<Lisp::Cell> Lisp::CollectibleNode::getParents() const
-{
-  std::unordered_set<Lisp::Cell> ret;
-  for(auto p : parents)
-  {
-    if(!p->getCell().isA<Nil>())
-    {
-      ret.insert(p->getCell());
-    }
-  }
-  return ret;
-}
-
-inline std::unordered_set<Lisp::Cell> Lisp::CollectibleNode::getChildren() const
-{
-  std::unordered_set<Lisp::Cell> ret;
-  for(auto p : children)
-  {
-    if(!p->getCell().isA<Nil>())
-    {
-      ret.insert(p->getCell());
-    }
-  }
-  return ret;
 }
