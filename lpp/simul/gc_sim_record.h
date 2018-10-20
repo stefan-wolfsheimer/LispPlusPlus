@@ -29,6 +29,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
+#include <lpp/simul/sim_member.h>
 
 namespace Lisp
 {
@@ -38,61 +39,34 @@ namespace Lisp
     std::size_t numRoot;
     std::size_t numBulk;
     std::size_t numTotal;
-    std::size_t numFreeChildren;
+    std::size_t numLeaves;
     std::size_t numVoid;
     std::size_t numDisposed;
     std::size_t numEdges;
-    double expectedNumEdges;
     double edgeFraction;
   };
 
-  class GcSimFieldBase
+  struct GcSimRecordMembers
   {
-  public:
-    GcSimFieldBase(const std::string & _name) : name(_name) {}
-    virtual ~GcSimFieldBase() {}
+    std::vector<std::shared_ptr<SimulMemberBase<GcSimRecord>>> fields;
 
-    const std::string& getName() const
+    GcSimRecordMembers()
     {
-      return name;
-    }
-  private:
-    std::string name;
-  };
-
-  template<typename T>
-  struct GcSimField : public GcSimFieldBase
-  {
-    typedef T member_type;
-    typedef member_type GcSimRecord::*pointer_to_member_type;
-    GcSimField(pointer_to_member_type member, const std::string & name) : GcSimFieldBase(name)
-    {}
-  };
-
-  struct GcSimRecordFields
-  {
-    std::vector<GcSimFieldBase*> fields;
-
-    GcSimRecordFields()
-    {
-      fields.push_back(new GcSimField<std::size_t>(&GcSimRecord::step, "step"));
-      fields.push_back(new GcSimField<std::size_t>(&GcSimRecord::numRoot, "numRoot"));
-      fields.push_back(new GcSimField<std::size_t>(&GcSimRecord::numBulk, "numBulk"));
-      fields.push_back(new GcSimField<std::size_t>(&GcSimRecord::numTotal, "numTotal"));
-      fields.push_back(new GcSimField<std::size_t>(&GcSimRecord::numFreeChildren, "numFreeChildren"));
-      fields.push_back(new GcSimField<std::size_t>(&GcSimRecord::numVoid, "numVoid"));
-      fields.push_back(new GcSimField<std::size_t>(&GcSimRecord::numDisposed, "numDisposed"));
-      fields.push_back(new GcSimField<std::size_t>(&GcSimRecord::numEdges, "numEdges"));
-      fields.push_back(new GcSimField<double>(&GcSimRecord::expectedNumEdges, "expectedNumEdges"));
-      fields.push_back(new GcSimField<double>(&GcSimRecord::edgeFraction, "edgeFraction"));
+      addField(&GcSimRecord::step, "step");
+      addField(&GcSimRecord::numRoot, "numRoot");
+      addField(&GcSimRecord::numBulk, "numBulk");
+      addField(&GcSimRecord::numTotal, "numTotal");
+      addField(&GcSimRecord::numLeaves, "numLeaves");
+      addField(&GcSimRecord::numVoid, "numVoid");
+      addField(&GcSimRecord::numDisposed, "numDisposed");
+      addField(&GcSimRecord::numEdges, "numEdges");
+      addField(&GcSimRecord::edgeFraction, "edgeFraction");
     }
 
-    ~GcSimRecordFields()
+    template<typename T>
+    inline void addField(T GcSimRecord::*member, const std::string & name)
     {
-      for(auto f : fields)
-      {
-        delete f;
-      }
+      fields.push_back(std::make_shared<SimulMember<GcSimRecord, T>>(member, name));
     }
 
     void streamHeader(std::ostream & ost)
@@ -125,7 +99,7 @@ namespace Lisp
         {
           ost << ",";
         }
-        ost << "f";
+        f->stream(ost, &rec);
       }
     }
   };
@@ -133,7 +107,7 @@ namespace Lisp
 
 inline std::ostream & operator<<(std::ostream & ost, const std::vector<Lisp::GcSimRecord> & series)
 {
-  Lisp::GcSimRecordFields fields;
+  Lisp::GcSimRecordMembers fields;
   fields.streamHeader(ost);
   for(auto rec : series)
   {

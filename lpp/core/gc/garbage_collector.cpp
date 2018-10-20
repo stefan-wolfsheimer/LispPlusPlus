@@ -34,8 +34,6 @@ either expressed or implied, of the FreeBSD Project.
 #include <lpp/core/types/container.h>
 
 using GarbageCollector = Lisp::GarbageCollector;
-using CollectibleGraph = Lisp::CollectibleGraph;
-
 using Cell = Lisp::Cell;
 
 void GarbageCollector::forEachContainer(const CollectibleContainer<Container> & containers,

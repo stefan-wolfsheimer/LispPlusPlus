@@ -30,9 +30,10 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
 #include <lpp/core/gc/garbage_collector.h>
-#include <lpp/core/gc/collectible_graph.h>
-#include <lpp/core/gc/collectible_node.h>
-#include <lpp/core/gc/collectible_edge.h>
+#include <lpp/simul/collectible_graph.h>
+#include <lpp/simul/collectible_edge.h>
+#include <lpp/simul/collectible_node.h>
+
 #include <set>
 #include <map>
 #include <unordered_map>
@@ -50,11 +51,10 @@ namespace Lisp
     inline std::size_t numRoot() const;
     inline std::size_t numBulk() const;
     inline std::size_t numTotal() const;
-    inline std::size_t numFreeChildren() const;
+    inline std::size_t numLeaves() const;
     inline std::size_t numEdges() const;
     inline std::size_t numVoid() const;
     inline std::size_t numDisposed() const;
-
 
     // n in [0, numRoot())
     inline const Cell & getNthRoot(std::size_t n) const;
@@ -85,44 +85,20 @@ namespace Lisp
     inline void enableRecycling();
 
   private:
-
-    class Graph : public CollectibleGraph
-    {
-    public:
-      Graph(const GarbageCollector & collector);
-      std::vector<std::pair<std::weak_ptr<CollectibleNode>, std::size_t>> freeChildren;
-    };
-
-    inline const Graph & getGraph() const;
+    inline const CollectibleGraph & getGraph() const;
     inline Cell createNode(std::size_t ncells);
     inline void setChild(Cell & cell, std::size_t index, const Cell & child);
-
     GarbageCollector gc;
-    mutable std::shared_ptr<Graph> graph;
+    mutable std::shared_ptr<CollectibleGraph> graph;
     std::vector<std::shared_ptr<Object>> root;
   };
 }
 
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 //
 // Implementation
 //
-////////////////////////////////////////////////////////////////////////////////
-inline Lisp::GcSim::Graph::Graph(const GarbageCollector & collector) : CollectibleGraph(collector)
-{
-  freeChildren.clear();
-  forEachNode([this](const CollectibleGraph::SharedNode & node) {
-      std::size_t i = 0;
-      node->getCell().forEachChild([this, node, &i](const Cell & child) {
-          if(child.isA<Nil>())
-          {
-            freeChildren.push_back(std::make_pair(node, i));
-          }
-          i++;
-        });
-    });
-}
-
+///////////////////////////////////////////////////////////////////////////////
 inline Lisp::GcSim::GcSim()
 {}
       
@@ -141,9 +117,9 @@ inline std::size_t Lisp::GcSim::numTotal() const
   return getGraph().numNodes();
 }
 
-inline std::size_t Lisp::GcSim::numFreeChildren() const
+inline std::size_t Lisp::GcSim::numLeaves() const
 {
-  return getGraph().freeChildren.size();
+  return getGraph().numLeaves();
 }
 
 inline std::size_t Lisp::GcSim::numEdges() const
@@ -228,15 +204,15 @@ inline const Lisp::Cell & Lisp::GcSim::addRoot(std::size_t nchildren)
   return *(root.back().get());
 }
 
-inline const Lisp::Cell & Lisp::GcSim::addBulk(std::size_t freeChildIndex, std::size_t nchildren)
+inline const Lisp::Cell & Lisp::GcSim::addBulk(std::size_t leafIndex, std::size_t nchildren)
 {
-  const Graph & gr(getGraph());
-  assert(freeChildIndex < gr.freeChildren.size());
-  auto node = gr.freeChildren[freeChildIndex].first.lock();
-  auto index = gr.freeChildren[freeChildIndex].second;
+  const CollectibleGraph & gr(getGraph());
+  assert(leafIndex < gr.numLeaves());
+  auto p = gr.getLeaf(leafIndex);
+  auto node = p.first.lock();
   assert(bool(node));
   Cell cell(node->getCell());
-  return addBulk(cell, index, nchildren);
+  return addBulk(cell, p.second, nchildren);
 }
 
 inline const Lisp::Cell & Lisp::GcSim::addBulk(Lisp::Cell & cell, std::size_t index, std::size_t nchildren)
@@ -278,12 +254,13 @@ inline const Lisp::Cell & Lisp::GcSim::addBulk(Lisp::Cell & cell, std::size_t in
   }
 }
 
-inline void Lisp::GcSim::addEdge(std::size_t freeChildIndex, std::size_t nodeIndex)
+inline void Lisp::GcSim::addEdge(std::size_t leafIndex, std::size_t nodeIndex)
 {
-  getGraph();
-  assert(nodeIndex < getGraph().freeChildren.size());
-  auto p = getGraph().freeChildren[freeChildIndex];
+  const CollectibleGraph & gr(getGraph());
+  assert(leafIndex < gr.numLeaves());
+  auto p = gr.getLeaf(leafIndex);
   auto node = p.first.lock();
+  assert(bool(node));
   Cell cell(node->getCell());
   addEdge(cell, p.second, getNthNode(nodeIndex));
 }
@@ -309,11 +286,11 @@ inline void Lisp::GcSim::removeEdge(Cell & cell, std::size_t index)
   graph.reset();
 }
 
-inline const Lisp::GcSim::Graph & Lisp::GcSim::getGraph() const
+inline const Lisp::CollectibleGraph & Lisp::GcSim::getGraph() const
 {
   if(!graph)
   {
-    graph.reset(new Graph(gc));
+    graph.reset(new CollectibleGraph(gc));
   }
   return *graph;
 }

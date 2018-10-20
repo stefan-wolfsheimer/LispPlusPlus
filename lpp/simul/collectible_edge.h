@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2017, Stefan Wolfsheimer
+Copyright (c) 2018, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -30,7 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
 #include <unordered_set>
-#include <lpp/core/gc/collectible_node.h>
+#include <lpp/simul/collectible_node.h>
 
 namespace Lisp
 {

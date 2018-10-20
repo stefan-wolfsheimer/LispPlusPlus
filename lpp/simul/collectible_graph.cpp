@@ -30,9 +30,9 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include <stdexcept>
 #include <string>
-#include <lpp/core/gc/collectible_graph.h>
-#include <lpp/core/gc/collectible_node.h>
-#include <lpp/core/gc/collectible_edge.h>
+#include <lpp/simul/collectible_graph.h>
+#include <lpp/simul/collectible_node.h>
+#include <lpp/simul/collectible_edge.h>
 #include <lpp/core/gc/garbage_collector.h>
 #include <lpp/core/types/collectible.h>
 
@@ -82,6 +82,10 @@ CollectibleGraph::CollectibleGraph(const GarbageCollector & collector)
           {
             todo.insert(itr->second);
           }
+        }
+        else
+        {
+          leaves.push_back(std::make_pair(node, index));
         }
     });
   }

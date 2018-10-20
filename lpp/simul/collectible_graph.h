@@ -52,16 +52,19 @@ namespace Lisp
     std::shared_ptr<CollectibleNode> getBulkNode(std::size_t index) const;
     std::shared_ptr<CollectibleNode> getRootNode(std::size_t index) const;
     std::shared_ptr<CollectibleEdge> getEdge(std::size_t index) const;
+    std::pair<std::weak_ptr<CollectibleNode>, std::size_t> getLeaf(std::size_t index) const;
     void forEachNode(std::function<void(const CollectibleNode & node)> func) const;
     void forEachNode(std::function<void(const SharedNode & node)> func) const;
     inline std::size_t numNodes() const;
     inline std::size_t numEdges() const;
+    inline std::size_t numLeaves() const;
   private:
     std::unordered_map<Cell, SharedNode> nodes;
     std::vector<std::shared_ptr<CollectibleEdge>> edges;
     std::vector<SharedNode> rootNodes;
     std::vector<SharedNode> bulkNodes;
     std::vector<SharedNode> allNodes;
+    std::vector<std::pair<std::weak_ptr<CollectibleNode>, std::size_t>> leaves;
   };
 }
 
@@ -80,6 +83,10 @@ inline std::shared_ptr<Lisp::CollectibleNode> Lisp::CollectibleGraph::getRootNod
   return rootNodes.at(index);
 }
 
+inline std::pair<std::weak_ptr<Lisp::CollectibleNode>, std::size_t> Lisp::CollectibleGraph::getLeaf(std::size_t index) const
+{
+  return leaves.at(index);
+}
 
 inline std::size_t Lisp::CollectibleGraph::numNodes() const
 {
@@ -89,5 +96,10 @@ inline std::size_t Lisp::CollectibleGraph::numNodes() const
 inline std::size_t Lisp::CollectibleGraph::numEdges() const
 {
   return edges.size();
+}
+
+inline std::size_t Lisp::CollectibleGraph::numLeaves() const
+{
+  return leaves.size();
 }
 

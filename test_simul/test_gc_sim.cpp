@@ -89,7 +89,7 @@ TEST_CASE("gc_sim_cycle", "[GcSim]")
   GcSim sim;
   sim.disableCollector();
   REQUIRE(checkNodes(sim, Set(), Set()));
-  REQUIRE(sim.numFreeChildren() == 0);
+  REQUIRE(sim.numLeaves() == 0);
   REQUIRE(sim.numEdges() == 0);
   REQUIRE(sim.checkSanity());
 
@@ -104,7 +104,7 @@ TEST_CASE("gc_sim_cycle", "[GcSim]")
    */
   REQUIRE(checkNodes(sim, Set(cell0), Set()));
   REQUIRE(sim.getParents(cell0) == Set());
-  REQUIRE(sim.numFreeChildren() == 2);
+  REQUIRE(sim.numLeaves() == 2);
   REQUIRE(sim.numEdges() == 0);
   REQUIRE(sim.checkSanity());
 
@@ -123,7 +123,7 @@ TEST_CASE("gc_sim_cycle", "[GcSim]")
   REQUIRE(sim.getParents(cell0) == Set());
   REQUIRE(sim.getParents(cell1) == Set(cell0));
   REQUIRE(checkNodes(sim, Set(cell0), Set(cell1)));
-  REQUIRE(sim.numFreeChildren() == 1);
+  REQUIRE(sim.numLeaves() == 1);
   REQUIRE(sim.numEdges() == 1);
   REQUIRE(sim.checkSanity());
 
@@ -147,7 +147,7 @@ TEST_CASE("gc_sim_cycle", "[GcSim]")
   REQUIRE(sim.getParents(cell1) == Set(cell0));
   REQUIRE(sim.getParents(cell2) == Set(cell0));
   REQUIRE(checkNodes(sim, Set(cell0), Set(cell1, cell2)));
-  REQUIRE(sim.numFreeChildren() == 3);
+  REQUIRE(sim.numLeaves() == 3);
   REQUIRE(sim.numEdges() == 2);
 
   ///////////////////////////////////////////
@@ -173,7 +173,7 @@ TEST_CASE("gc_sim_cycle", "[GcSim]")
   REQUIRE(checkNodes(sim,
                      Set(cell0, cell3),
                      Set(cell1, cell2)));
-  REQUIRE(sim.numFreeChildren() == 4);
+  REQUIRE(sim.numLeaves() == 4);
   REQUIRE(sim.numEdges() == 2);
   REQUIRE(sim.checkSanity());
 
@@ -204,7 +204,7 @@ TEST_CASE("gc_sim_cycle", "[GcSim]")
   REQUIRE(checkNodes(sim,
                      Set(cell0, cell3),
                      Set(cell1, cell2, cell4)));
-  REQUIRE(sim.numFreeChildren() == 5);
+  REQUIRE(sim.numLeaves() == 5);
   REQUIRE(sim.numEdges() == 3);
   REQUIRE(sim.checkSanity());
 
@@ -235,7 +235,7 @@ TEST_CASE("gc_sim_cycle", "[GcSim]")
   REQUIRE(checkNodes(sim,
                      Set(cell0, cell3),
                      Set(cell1, cell2, cell4)));
-  REQUIRE(sim.numFreeChildren() == 4);
+  REQUIRE(sim.numLeaves() == 4);
   REQUIRE(sim.numEdges() == 4);
   REQUIRE(sim.checkSanity());
 
@@ -267,7 +267,7 @@ TEST_CASE("gc_sim_cycle", "[GcSim]")
   REQUIRE(checkNodes(sim,
                      Set(cell0, cell3),
                      Set(cell1, cell2, cell4)));
-  REQUIRE(sim.numFreeChildren() == 3);
+  REQUIRE(sim.numLeaves() == 3);
   REQUIRE(sim.numEdges() == 5);
   REQUIRE(sim.checkSanity());
 
@@ -300,7 +300,7 @@ TEST_CASE("gc_sim_cycle", "[GcSim]")
   REQUIRE(checkNodes(sim,
                      Set(cell3),
                      Set(cell0, cell1, cell2, cell4)));
-  REQUIRE(sim.numFreeChildren() == 3);
+  REQUIRE(sim.numLeaves() == 3);
   REQUIRE(sim.numEdges() == 5);
   REQUIRE(sim.getNthRoot(0) == cell3);
   REQUIRE(sim.checkSanity());
@@ -331,7 +331,7 @@ TEST_CASE("gc_sim_cycle", "[GcSim]")
   REQUIRE(checkNodes(sim,
                      Set(cell3),
                      Set(cell0, cell2, cell4)));
-  REQUIRE(sim.numFreeChildren() == 4);
+  REQUIRE(sim.numLeaves() == 4);
   REQUIRE(sim.numEdges() == 4);
   REQUIRE(sim.checkSanity());
 
@@ -362,7 +362,7 @@ TEST_CASE("gc_sim_cycle", "[GcSim]")
   REQUIRE(checkNodes(sim,
                      Set(cell3),
                      Set(cell0, cell2, cell4)));
-  REQUIRE(sim.numFreeChildren() == 3);
+  REQUIRE(sim.numLeaves() == 3);
   REQUIRE(sim.numEdges() == 5);
   REQUIRE(sim.checkSanity());
 
@@ -392,7 +392,7 @@ TEST_CASE("gc_sim_cycle", "[GcSim]")
   REQUIRE(checkNodes(sim,
                      Set(cell3),
                      Set(cell0, cell2, cell4)));
-  REQUIRE(sim.numFreeChildren() == 4);
+  REQUIRE(sim.numLeaves() == 4);
   REQUIRE(sim.numEdges() == 4);
   REQUIRE(sim.checkSanity());
   
@@ -416,7 +416,7 @@ TEST_CASE("gc_sim_cycle", "[GcSim]")
   REQUIRE(checkNodes(sim,
                      Set(cell3),
                      Set(cell4)));
-  REQUIRE(sim.numFreeChildren() == 1);
+  REQUIRE(sim.numLeaves() == 1);
   REQUIRE(sim.numEdges() == 2);
   REQUIRE(sim.checkSanity());
 
@@ -430,7 +430,7 @@ TEST_CASE("gc_sim_cycle", "[GcSim]")
   REQUIRE(checkNodes(sim,
                      Set(),
                      Set()));
-  REQUIRE(sim.numFreeChildren() == 0);
+  REQUIRE(sim.numLeaves() == 0);
   REQUIRE(sim.numEdges() == 0);
   REQUIRE(sim.checkSanity());
 }

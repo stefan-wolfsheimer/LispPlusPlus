@@ -19,6 +19,10 @@ include_directories (${PROJECT_SOURCE_DIR}/CliArgs/include)
 include_directories (${PROJECT_SOURCE_DIR}/CSVPlusPlus/)
 include_directories (${PROJECT_SOURCE_DIR})
 
+add_subdirectory (lpp/core)
+add_subdirectory (lpp/simul)
+
+
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
     message("debug mode")
     add_library(Catch INTERFACE)
@@ -43,11 +47,10 @@ IF(CMAKE_BUILD_TYPE MATCHES Debug)
     target_link_libraries(runtest Catch Core Simul)
 ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
 
-add_library(Simul INTERFACE)
+# add_library(Simul INTERFACE)
+# add_library(Simul)
 target_include_directories(Catch INTERFACE test)
 
 add_executable(gc_sim gc_sim.cpp)
 target_link_libraries(gc_sim Simul Core)
 
-add_subdirectory (lpp/core)
-# add_subdirectory (lpp/simul)

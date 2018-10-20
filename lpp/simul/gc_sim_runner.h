@@ -52,17 +52,18 @@ namespace Lisp
     std::size_t targetNumRoot = 10;
     std::size_t targetNumBulk = 10;
     double targetChildFraction = 0.5;
-    std::size_t numEdgeRewireSteps = 1;
+    std::size_t numEdgeRewireSteps = 5;
     std::size_t numBulkSteps = 3;
     std::size_t garbageSteps = 1; // parameters for GarbageCollector
     std::size_t recycleSteps = 1;
-    std::size_t numSteps = 10000;
+    std::size_t numSteps = 100;
 
     void stepRoot();
     void stepBulk();
     void stepRewire();
     bool selectAdd(std::size_t n, std::size_t target);
     bool selectRemove(std::size_t n, std::size_t target);
+    std::size_t getTargetNumChildren();
   };
 }
 
@@ -93,12 +94,19 @@ std::vector<Lisp::GcSimRecord> Lisp::GcSimRunner<RNGE>::run()
     rec.numRoot = sim.numRoot();
     rec.numBulk = sim.numBulk();
     rec.numTotal = sim.numTotal();
-    rec.numFreeChildren = sim.numFreeChildren();
+    rec.numLeaves = sim.numLeaves();
     rec.numVoid = sim.numVoid();
     rec.numDisposed = sim.numDisposed();
     rec.numEdges = sim.numEdges();
-    //double expectedNumEdges;
-    //double edgeFraction;
+    std::size_t nchildren = sim.numEdges() + sim.numLeaves();
+    if(nchildren)
+    {
+      rec.edgeFraction = (double)sim.numEdges() / nchildren;
+    }
+    else
+    {
+      rec.edgeFraction = 0.0;
+    }
     ret.push_back(rec);
   }
   return ret;
@@ -125,10 +133,10 @@ template<typename RNGE>
 void Lisp::GcSimRunner<RNGE>::stepBulk()
 {
   std::poisson_distribution<int> cellDistribution(meanNumberOfCells);
-  if(sim.numFreeChildren() > 0 && selectAdd(sim.numBulk(), targetNumBulk))
+  if(sim.numLeaves() > 0 && selectAdd(sim.numBulk(), targetNumBulk))
   {
     std::size_t ncells = cellDistribution(generator);
-    std::uniform_int_distribution<int> distribution(0, sim.numFreeChildren() - 1);
+    std::uniform_int_distribution<int> distribution(0, sim.numLeaves() - 1);
     sim.addBulk(distribution(generator), ncells);
   }
   else if(selectRemove(sim.numBulk(), targetNumBulk))
@@ -144,31 +152,34 @@ void Lisp::GcSimRunner<RNGE>::stepBulk()
 }
 
 template<typename RNGE>
+std::size_t Lisp::GcSimRunner<RNGE>::getTargetNumChildren()
+{
+  std::size_t maxChildren = sim.numEdges() + sim.numLeaves();
+  std::size_t minChildren = sim.numBulk();
+  // f = (n - min_children) / (max_children - min_children)
+  // f * (max_children -  min_children) = n - min_children
+  // n = f * (max_children - min_children) + min_children
+  return targetChildFraction * (maxChildren - minChildren) + minChildren;
+}
+
+template<typename RNGE>
 void Lisp::GcSimRunner<RNGE>::stepRewire()
 {
   // return true with p=0.75 if n < target
   static std::bernoulli_distribution accDistribution(0.75f);
   // return true with p=0.25 if n >= target
   static std::bernoulli_distribution rejDistribution(0.25f);
-  std::size_t maxChildren = sim.numEdges() + sim.numFreeChildren();
-  std::size_t minChildren = sim.numBulk();
-  // f = (n - min_children) / (max_children - min_children)
-  // f * (max_children -  min_children) = n - min_children
-  // n = f * (max_children - min_children) + min_children
-  std::size_t targetChildren = targetChildFraction * (maxChildren - minChildren) + minChildren;
-  if(sim.numFreeChildren() && sim.numTotal())
+  if(sim.numLeaves() && sim.numTotal())
   {
-    if((targetChildren < sim.numEdges() && accDistribution(generator)) ||
-       rejDistribution(generator))
+    if((getTargetNumChildren() > sim.numEdges() && accDistribution(generator)) || rejDistribution(generator))
     {
-      sim.addEdge(std::uniform_int_distribution<int>(0, sim.numFreeChildren() - 1)(generator),
+      sim.addEdge(std::uniform_int_distribution<int>(0, sim.numLeaves() - 1)(generator),
                   std::uniform_int_distribution<int>(0, sim.numTotal() - 1)(generator));
     }
   }
   if(sim.numEdges())
   {
-    if((targetChildren > sim.numEdges() && accDistribution(generator)) ||
-       rejDistribution(generator))
+    if((getTargetNumChildren() < sim.numEdges() && accDistribution(generator)) || rejDistribution(generator))
     {
       sim.removeEdge(std::uniform_int_distribution<int>(0, sim.numEdges() - 1)(generator));
     }

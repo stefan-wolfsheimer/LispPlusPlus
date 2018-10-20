@@ -40,9 +40,9 @@ either expressed or implied, of the FreeBSD Project.
 #include <lpp/core/types/array.h>
 #include <lpp/core/object.h>
 
-#include <lpp/core/gc/collectible_graph.h>
-#include <lpp/core/gc/collectible_edge.h>
-#include <lpp/core/gc/collectible_node.h>
+#include <lpp/simul/collectible_graph.h>
+#include <lpp/simul/collectible_edge.h>
+#include <lpp/simul/collectible_node.h>
 
 // helper types
 using GarbageCollector = Lisp::GarbageCollector;
