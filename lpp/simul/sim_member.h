@@ -31,6 +31,7 @@ either expressed or implied, of the FreeBSD Project.
 #pragma once
 #include <string>
 #include <iostream>
+#include <algorithm>
 
 namespace Lisp
 {
@@ -42,6 +43,8 @@ namespace Lisp
     virtual ~SimulMemberBase() {}
     inline const std::string& getName() const;
     virtual void stream(std::ostream & ost, const CLS * obj) const = 0;
+    virtual void sort(std::vector<CLS> & data) const = 0;
+    virtual void copy(CLS * a, const CLS * b) const = 0;
   private:
     std::string name;
   };
@@ -54,6 +57,8 @@ namespace Lisp
     typedef member_type CLS::*pointer_to_member_type;
     SimulMember(pointer_to_member_type member, const std::string & name);
     virtual void stream(std::ostream & ost, const CLS * obj) const override;
+    virtual void sort(std::vector<CLS> & data) const override;
+    virtual void copy(CLS * a, const CLS * b) const override;
   private:
     pointer_to_member_type member;
   };
@@ -84,6 +89,18 @@ void Lisp::SimulMember<CLS, T>::stream(std::ostream & ost, const CLS * obj) cons
   ost << obj->*member;
 }
 
+template<typename CLS, typename T>
+void Lisp::SimulMember<CLS, T>::sort(std::vector<CLS> & data) const
+{
+  std::sort(data.begin(),
+            data.end(),
+            [this](const CLS & a, const CLS & b) -> bool {
+              return a.*member < b.*member;
+            });
+}
 
-///////////////////////////////////////////////////////////////////////////////
-
+template<typename CLS, typename T>
+void Lisp::SimulMember<CLS, T>::copy(CLS * a, const CLS * b) const
+{
+  a->*member = b->*member;
+}

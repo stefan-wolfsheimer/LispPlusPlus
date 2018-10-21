@@ -46,63 +46,63 @@ namespace Lisp
     double edgeFraction;
   };
 
-  struct GcSimRecordMembers
+  class GcSimRecordMembers
   {
-    std::vector<std::shared_ptr<SimulMemberBase<GcSimRecord>>> fields;
-
-    GcSimRecordMembers()
-    {
-      addField(&GcSimRecord::step, "step");
-      addField(&GcSimRecord::numRoot, "numRoot");
-      addField(&GcSimRecord::numBulk, "numBulk");
-      addField(&GcSimRecord::numTotal, "numTotal");
-      addField(&GcSimRecord::numLeaves, "numLeaves");
-      addField(&GcSimRecord::numVoid, "numVoid");
-      addField(&GcSimRecord::numDisposed, "numDisposed");
-      addField(&GcSimRecord::numEdges, "numEdges");
-      addField(&GcSimRecord::edgeFraction, "edgeFraction");
-    }
+  public:
+    GcSimRecordMembers();
 
     template<typename T>
-    inline void addField(T GcSimRecord::*member, const std::string & name)
-    {
-      fields.push_back(std::make_shared<SimulMember<GcSimRecord, T>>(member, name));
-    }
+    inline void addField(T GcSimRecord::*member, const std::string & name);
 
-    void streamHeader(std::ostream & ost)
-    {
-      bool first = true;
-      for(auto f : fields)
-      {
-        if(first)
-        {
-          first = false;
-        }
-        else
-        {
-          ost << ",";
-        }
-        ost << f->getName();
-      }
-    }
+    void streamHeader(std::ostream & ost);
+    void streamRecord(std::ostream & ost, const GcSimRecord & rec);
 
-    void streamRecord(std::ostream & ost, const GcSimRecord & rec)
-    {
-      bool first = true;
-      for(auto f : fields)
-      {
-        if(first)
-        {
-          first = false;
-        }
-        else
-        {
-          ost << ",";
-        }
-        f->stream(ost, &rec);
-      }
-    }
+    std::vector<std::shared_ptr<SimulMemberBase<GcSimRecord>>> members;
   };
+}
+
+inline std::ostream & operator<<(std::ostream & ost, const std::vector<Lisp::GcSimRecord> & series);
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// implementation
+//
+///////////////////////////////////////////////////////////////////////////////
+Lisp::GcSimRecordMembers::GcSimRecordMembers()
+{
+  addField(&GcSimRecord::numRoot, "numRoot");
+  addField(&GcSimRecord::numBulk, "numBulk");
+  addField(&GcSimRecord::numTotal, "numTotal");
+  addField(&GcSimRecord::numLeaves, "numLeaves");
+  addField(&GcSimRecord::numVoid, "numVoid");
+  addField(&GcSimRecord::numDisposed, "numDisposed");
+  addField(&GcSimRecord::numEdges, "numEdges");
+  addField(&GcSimRecord::edgeFraction, "edgeFraction");
+}
+
+template<typename T>
+inline void Lisp::GcSimRecordMembers::addField(T GcSimRecord::*member, const std::string & name)
+{
+  members.push_back(std::make_shared<SimulMember<GcSimRecord, T>>(member, name));
+}
+
+void Lisp::GcSimRecordMembers::streamHeader(std::ostream & ost)
+{
+  ost << "step";
+  for(auto f : members)
+  {
+    ost << "," << f->getName();
+  }
+}
+
+void Lisp::GcSimRecordMembers::streamRecord(std::ostream & ost, const GcSimRecord & rec)
+{
+  ost << rec.step;
+  for(auto f : members)
+  {
+    ost << ",";
+    f->stream(ost, &rec);
+  }
 }
 
 inline std::ostream & operator<<(std::ostream & ost, const std::vector<Lisp::GcSimRecord> & series)
