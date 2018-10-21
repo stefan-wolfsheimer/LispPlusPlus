@@ -4,6 +4,3 @@
 [submodule "Catch2"]
 	path = Catch2
 	url = https://github.com/catchorg/Catch2.git
-[submodule "CSVPlusPlus"]
-	path = CSVPlusPlus
-	url = https://github.com/stefan-wolfsheimer/CSVPlusPlus.git
