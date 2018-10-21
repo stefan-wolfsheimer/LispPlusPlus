@@ -147,7 +147,7 @@ std::ostream & Lisp::Quantile<CLS>::streamRow(std::ostream & ost, std::size_t st
       {
         ost << ",";
       }
-      field->stream(ost, &data[step][i]);
+      field->write(ost, &data[step][i]);
     }
   }
   return ost;

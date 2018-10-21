@@ -40,10 +40,15 @@ namespace Lisp
     std::size_t numBulk;
     std::size_t numTotal;
     std::size_t numLeaves;
-    std::size_t numVoid;
-    std::size_t numDisposed;
     std::size_t numEdges;
     double edgeFraction;
+    // garbage collector stats
+    std::size_t numCycles;
+    std::size_t numAllocated;
+    std::size_t numVoid;
+    std::size_t numDisposed;
+    double fracUnreachable;  // (numCollectible() - numRoot - numBulk) / numCollectible()
+    double fracDisposed;     // disposed conses / (disposed + void)
   };
 
   class GcSimRecordMembers
@@ -74,10 +79,16 @@ Lisp::GcSimRecordMembers::GcSimRecordMembers()
   addField(&GcSimRecord::numBulk, "numBulk");
   addField(&GcSimRecord::numTotal, "numTotal");
   addField(&GcSimRecord::numLeaves, "numLeaves");
-  addField(&GcSimRecord::numVoid, "numVoid");
-  addField(&GcSimRecord::numDisposed, "numDisposed");
   addField(&GcSimRecord::numEdges, "numEdges");
   addField(&GcSimRecord::edgeFraction, "edgeFraction");
+  addField(&GcSimRecord::numVoid, "numVoid");
+  addField(&GcSimRecord::numDisposed, "numDisposed");
+  addField(&GcSimRecord::numCycles, "numCycles");
+  addField(&GcSimRecord::numAllocated, "numAllocated");
+  addField(&GcSimRecord::numVoid, "numVoid");
+  addField(&GcSimRecord::numDisposed, "numDisposed");
+  addField(&GcSimRecord::fracUnreachable, "fracUnreachable");
+  addField(&GcSimRecord::fracDisposed, "fracDisposed");
 }
 
 template<typename T>
@@ -101,7 +112,7 @@ void Lisp::GcSimRecordMembers::streamRecord(std::ostream & ost, const GcSimRecor
   for(auto f : members)
   {
     ost << ",";
-    f->stream(ost, &rec);
+    f->write(ost, &rec);
   }
 }
 

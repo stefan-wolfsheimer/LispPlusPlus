@@ -32,6 +32,8 @@ either expressed or implied, of the FreeBSD Project.
 #include <string>
 #include <iostream>
 #include <algorithm>
+#include <typeinfo>
+#include <typeindex>
 
 namespace Lisp
 {
@@ -42,9 +44,21 @@ namespace Lisp
     SimulMemberBase(const std::string & _name);
     virtual ~SimulMemberBase() {}
     inline const std::string& getName() const;
-    virtual void stream(std::ostream & ost, const CLS * obj) const = 0;
+    virtual void write(std::ostream & ost, const CLS * obj) const = 0;
+    virtual void read(std::istream & ist, CLS * obj) const = 0;
     virtual void sort(std::vector<CLS> & data) const = 0;
     virtual void copy(CLS * a, const CLS * b) const = 0;
+
+    template<typename T>
+    void set(CLS * obj, const T & value);
+
+    template<typename T>
+    const T & get(const CLS * obj);
+
+  protected:
+    virtual void * getImpl(CLS * obj, const std::type_info& ti) const = 0;
+    virtual void setImpl(CLS * obj, const std::type_info& ti, const void * value) const = 0;
+
   private:
     std::string name;
   };
@@ -56,9 +70,12 @@ namespace Lisp
     typedef T member_type;
     typedef member_type CLS::*pointer_to_member_type;
     SimulMember(pointer_to_member_type member, const std::string & name);
-    virtual void stream(std::ostream & ost, const CLS * obj) const override;
+    virtual void write(std::ostream & ost, const CLS * obj) const override;
+    virtual void read(std::istream & ist, CLS * obj) const override;
     virtual void sort(std::vector<CLS> & data) const override;
     virtual void copy(CLS * a, const CLS * b) const override;
+    virtual void * getImpl(CLS * obj, const std::type_info& ti) const override;
+    virtual void setImpl(CLS * obj, const std::type_info& ti, const void * value) const override;
   private:
     pointer_to_member_type member;
   };
@@ -77,6 +94,21 @@ inline const std::string& Lisp::SimulMemberBase<CLS>::getName() const
   return name;
 }
 
+
+template<typename CLS>
+template<typename T>
+void Lisp::SimulMemberBase<CLS>::set(CLS * obj, const T & value)
+{
+  setImpl(obj, typeid(T), (void*)&value);
+}
+
+template<typename CLS>
+template<typename T>
+const T & Lisp::SimulMemberBase<CLS>::get(const CLS * obj)
+{
+  return *static_cast<T*>(getImpl(obj, typeid(T)));
+}
+
 template<typename CLS, typename T>
 Lisp::SimulMember<CLS, T>::SimulMember(pointer_to_member_type _member, const std::string & name)
   : SimulMemberBase<CLS>(name), member(_member)
@@ -84,9 +116,15 @@ Lisp::SimulMember<CLS, T>::SimulMember(pointer_to_member_type _member, const std
 }
 
 template<typename CLS, typename T>
-void Lisp::SimulMember<CLS, T>::stream(std::ostream & ost, const CLS * obj) const
+void Lisp::SimulMember<CLS, T>::write(std::ostream & ost, const CLS * obj) const
 {
   ost << obj->*member;
+}
+
+template<typename CLS, typename T>
+void Lisp::SimulMember<CLS, T>::read(std::istream & ist, CLS * obj) const
+{
+  ist >> obj->*member;
 }
 
 template<typename CLS, typename T>
@@ -103,4 +141,24 @@ template<typename CLS, typename T>
 void Lisp::SimulMember<CLS, T>::copy(CLS * a, const CLS * b) const
 {
   a->*member = b->*member;
+}
+
+template<typename CLS, typename T>
+void * Lisp::SimulMember<CLS, T>::getImpl(CLS * obj, const std::type_info& ti) const
+{
+  if(std::type_index(ti) != std::type_index(typeid(T)))
+  {
+    throw std::bad_cast();
+  }
+  return (void*)(&(obj->*member));
+}
+
+template<typename CLS, typename T>
+void Lisp::SimulMember<CLS, T>::setImpl(CLS * obj, const std::type_info& ti, const void * value) const
+{
+  if(std::type_index(ti) != std::type_index(typeid(T)))
+  {
+    throw std::bad_cast();
+  }
+  obj->*member = *static_cast <const T*>(value);
 }

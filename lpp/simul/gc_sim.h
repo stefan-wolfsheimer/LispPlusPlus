@@ -51,11 +51,16 @@ namespace Lisp
     inline std::size_t numRoot() const;
     inline std::size_t numBulk() const;
     inline std::size_t numTotal() const;
+    inline std::size_t numAllocated() const;
     inline std::size_t numLeaves() const;
     inline std::size_t numEdges() const;
     inline std::size_t numVoid() const;
     inline std::size_t numDisposed() const;
+    inline std::size_t numCycles() const;
 
+    inline void setGarbageSteps(std::size_t steps);
+    inline void setRecycleSteps(std::size_t steps);
+    
     // n in [0, numRoot())
     inline const Cell & getNthRoot(std::size_t n) const;
 
@@ -117,6 +122,11 @@ inline std::size_t Lisp::GcSim::numTotal() const
   return getGraph().numNodes();
 }
 
+inline std::size_t Lisp::GcSim::numAllocated() const
+{
+  return gc.numCollectible();
+}
+
 inline std::size_t Lisp::GcSim::numLeaves() const
 {
   return getGraph().numLeaves();
@@ -135,6 +145,21 @@ inline std::size_t Lisp::GcSim::numVoid() const
 inline std::size_t Lisp::GcSim::numDisposed() const
 {
   return gc.numDisposedCollectible();
+}
+
+inline std::size_t Lisp::GcSim::numCycles() const
+{
+  return gc.getCycles();
+}
+
+inline void Lisp::GcSim::setGarbageSteps(std::size_t steps)
+{
+  gc.setGarbageSteps(steps);
+}
+
+inline void Lisp::GcSim::setRecycleSteps(std::size_t steps)
+{
+  gc.setRecycleSteps(steps);
 }
 
 inline const Lisp::Cell & Lisp::GcSim::getNthRoot(std::size_t n) const

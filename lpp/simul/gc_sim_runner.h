@@ -31,6 +31,7 @@ either expressed or implied, of the FreeBSD Project.
 #pragma once
 #include <lpp/simul/gc_sim.h>
 #include <lpp/simul/gc_sim_record.h>
+#include <lpp/simul/sim_member.h>
 #include <vector>
 
 namespace Lisp
@@ -39,12 +40,16 @@ namespace Lisp
   class GcSimRunner
   {
   public:
-    using random_engine = RNGE;
-    GcSimRunner(const random_engine & _generator);
+    using RandomEngine = RNGE;
+    using MemberType = std::shared_ptr<SimulMemberBase<GcSimRunner<RNGE>>>;
+    
+    GcSimRunner(const RandomEngine & _generator);
     std::vector<Lisp::GcSimRecord> run();
 
+    static std::vector<MemberType> getParameters();
+
   private:
-    random_engine generator;
+    RandomEngine generator;
     Lisp::GcSim sim;
 
     double meanNumberOfCells = 4;
@@ -57,18 +62,23 @@ namespace Lisp
     std::size_t garbageSteps = 1; // parameters for GarbageCollector
     std::size_t recycleSteps = 1;
     std::size_t numSteps = 100;
-
+    
     void stepRoot();
     void stepBulk();
     void stepRewire();
     bool selectAdd(std::size_t n, std::size_t target);
     bool selectRemove(std::size_t n, std::size_t target);
     std::size_t getTargetNumChildren();
+
+    template<typename T>
+    static inline void addField(std::vector<GcSimRunner<RNGE>::MemberType> & res,
+                                T GcSimRunner<RNGE>::*member,
+                                const std::string & name);
   };
 }
 
 template<typename RNGE>
-Lisp::GcSimRunner<RNGE>::GcSimRunner(const random_engine & _generator)
+Lisp::GcSimRunner<RNGE>::GcSimRunner(const RandomEngine & _generator)
   : generator(_generator)
 {
 }
@@ -76,8 +86,10 @@ Lisp::GcSimRunner<RNGE>::GcSimRunner(const random_engine & _generator)
 template<typename RNGE>
 std::vector<Lisp::GcSimRecord> Lisp::GcSimRunner<RNGE>::run()
 {
-  std::vector<Lisp::GcSimRecord> ret;
+  sim.setGarbageSteps(garbageSteps);
+  sim.setRecycleSteps(recycleSteps);
 
+  std::vector<Lisp::GcSimRecord> ret;
   for(std::size_t i = 0; i < numSteps; i++)
   {
     stepRoot();
@@ -95,8 +107,6 @@ std::vector<Lisp::GcSimRecord> Lisp::GcSimRunner<RNGE>::run()
     rec.numBulk = sim.numBulk();
     rec.numTotal = sim.numTotal();
     rec.numLeaves = sim.numLeaves();
-    rec.numVoid = sim.numVoid();
-    rec.numDisposed = sim.numDisposed();
     rec.numEdges = sim.numEdges();
     std::size_t nchildren = sim.numEdges() + sim.numLeaves();
     if(nchildren)
@@ -107,8 +117,55 @@ std::vector<Lisp::GcSimRecord> Lisp::GcSimRunner<RNGE>::run()
     {
       rec.edgeFraction = 0.0;
     }
+    rec.numCycles = sim.numCycles();
+    rec.numVoid = sim.numVoid();
+    rec.numDisposed = sim.numDisposed();
+    rec.numAllocated = sim.numAllocated();
+    if(rec.numAllocated)
+    {
+      rec.fracUnreachable = (double)(rec.numAllocated - rec.numRoot - rec.numBulk) / rec.numAllocated;
+    }
+    else
+    {
+      rec.fracUnreachable = 0.0;
+    }
+    if(rec.numVoid + rec.numDisposed)
+    {
+      rec.fracDisposed = (double)(rec.numDisposed) / (rec.numVoid + rec.numDisposed);
+    }
+    else
+    {
+      rec.fracDisposed = 0.0;
+    }
     ret.push_back(rec);
   }
+  return ret;
+}
+
+template<typename RNGE>
+template<typename T>
+inline void Lisp::GcSimRunner<RNGE>::addField(std::vector<Lisp::GcSimRunner<RNGE>::MemberType> & res,
+                                              T GcSimRunner<RNGE>::*member,
+                                              const std::string & name)
+{
+  res.push_back(std::make_shared<SimulMember<GcSimRunner<RNGE>,T>>(member, name));
+}
+
+template<typename RNGE>
+std::vector<typename Lisp::GcSimRunner<RNGE>::MemberType> Lisp::GcSimRunner<RNGE>::getParameters()
+{
+  using Self = Lisp::GcSimRunner<RNGE>;
+  std::vector<MemberType> ret;
+  addField<std::size_t>(ret, &Self::numSteps, "num_steps");
+  addField<std::size_t>(ret, &Self::targetNumRoot, "num_root");
+  addField<std::size_t>(ret, &Self::targetNumBulk, "num_bulk");
+  addField<double>(ret, &Self::targetChildFraction, "child_fraction");
+  addField<double>(ret, &Self::meanNumberOfCells, "num_cells");
+  addField<std::size_t>(ret, &Self::numEdgeRewireSteps, "num_edge_rewire_steps");
+  addField<std::size_t>(ret, &Self::numBulkSteps, "num_bulk_conses_steps");
+  // garbage collector parameters
+  addField<std::size_t>(ret, &Self::garbageSteps, "garbage_steps");
+  addField<std::size_t>(ret, &Self::recycleSteps, "recycle_steps");
   return ret;
 }
 

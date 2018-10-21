@@ -38,8 +38,6 @@ either expressed or implied, of the FreeBSD Project.
 #include <lpp/core/types/cons.h>
 #include <lpp/core/types/container.h>
 
-#define CONS_PAGE_SIZE 512
-
 // @todo move to config.h
 #define CONS_PAGE_SIZE 512
 
@@ -101,6 +99,11 @@ namespace Lisp
     inline void enableCollector();
     inline void enableRecycling();
     inline std::size_t getCycles() const;
+    inline unsigned short getGarbageSteps() const;
+    inline unsigned short getRecycleSteps() const;
+    inline void setGarbageSteps(unsigned short steps);
+    inline void setRecycleSteps(unsigned short steps);
+
 
     void cycle();
     inline void step();
@@ -399,14 +402,20 @@ inline void Lisp::GarbageCollector::forEachDisposedCollectible(std::function<voi
 ////////////////////////////////////////////////////////////////////////////////
 inline void Lisp::GarbageCollector::disableCollector()
 {
-  backGarbageSteps = garbageSteps;
-  garbageSteps = 0;
+  if(garbageSteps != 0)
+  {
+    backGarbageSteps = garbageSteps;
+    garbageSteps = 0;
+  }
 }
 
 inline void Lisp::GarbageCollector::disableRecycling()
 {
-  backRecycleSteps = recycleSteps;
-  recycleSteps = 0;
+  if(recycleSteps != 0)
+  {
+    backRecycleSteps = recycleSteps;
+    recycleSteps = 0;
+  }
 }
 
 inline void Lisp::GarbageCollector::enableCollector()
@@ -422,6 +431,55 @@ inline void Lisp::GarbageCollector::enableRecycling()
 inline std::size_t Lisp::GarbageCollector::getCycles() const
 {
   return cycles;
+}
+
+inline unsigned short Lisp::GarbageCollector::getGarbageSteps() const
+{
+  if(garbageSteps == 0)
+  {
+    return backGarbageSteps;
+  }
+  else
+  {
+    return garbageSteps;
+  }
+}
+
+inline unsigned short Lisp::GarbageCollector::getRecycleSteps() const
+{
+  if(recycleSteps == 0)
+  {
+    return backRecycleSteps;
+  }
+  else
+  {
+    return recycleSteps;
+  }
+}
+
+inline void Lisp::GarbageCollector::setGarbageSteps(unsigned short steps)
+{
+  if(garbageSteps == 0)
+  {
+    backGarbageSteps = steps;
+  }
+  else
+  {
+    garbageSteps = steps;
+  }
+
+}
+
+inline void Lisp::GarbageCollector::setRecycleSteps(unsigned short steps)
+{
+  if(recycleSteps == 0)
+  {
+    backRecycleSteps = steps;
+  }
+  else
+  {
+    recycleSteps = steps;
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
