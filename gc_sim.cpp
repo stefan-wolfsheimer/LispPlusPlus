@@ -39,6 +39,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <lpp/simul/gc_sim_runner.h>
 #include <lpp/simul/gc_sim_record.h>
 #include <lpp/simul/sim_quantile.h>
+#include <lpp/simul/sim_average.h>
 #include <cli.h>
 
 using GcSimRunner = Lisp::GcSimRunner<std::default_random_engine>;
@@ -86,30 +87,28 @@ static void writeRun(std::shared_ptr<Cli::Value<std::string>> outputFileName,
   }
 }
 
-static void writeQuantiles(std::ostream & ost,
-                           const Lisp::Quantile<Lisp::GcSimRecord> & quantiles_result)
+static void writeResult(std::ostream & ost, const Lisp::RunStatistics & result)
 {
   ost << "step,";
-  quantiles_result.streamHeader(ost) << std::endl;
-  for(std::size_t i = 0; i < quantiles_result.numSteps(); i++)
+  result.streamHeader(ost) << std::endl;
+  for(std::size_t i = 0; i < result.numSteps(); i++)
   {
     ost << i << ",";
-    quantiles_result.streamRow(ost, i) << std::endl;
+    result.streamRow(ost, i) << std::endl;
   }
 }
 
-static void writeQuantiles(std::shared_ptr<Cli::Value<std::string>> outputFileName,
-                           const Lisp::Quantile<Lisp::GcSimRecord> & quantiles_result)
+static void writeResult(std::shared_ptr<Cli::Value<std::string>> outputFileName, const Lisp::RunStatistics & result)
 {
   if(outputFileName->isSet())
   {
     std::ofstream outfile(outputFileName->getValue().c_str());
-    writeQuantiles(outfile, quantiles_result);
+    writeResult(outfile, result);
     outfile.close();
   }
   else
   {
-    writeQuantiles(std::cout, quantiles_result);
+    writeResult(std::cout, result);
   }
 }
 
@@ -154,6 +153,9 @@ int main(int argc, const char ** argv)
                                                Cli::Doc("number of steps per run"));
   parser.addValue<std::size_t>(numRuns, "num_runs", Cli::Doc("number of runs"));
 
+  auto statFile = parser.addValue<std::string>("stat",
+                                               Cli::Doc("Filename for statistics"));
+
   auto quantiles = parser.addMultipleValue<std::size_t>('q',
                                                         "quantiles",
                                                         Cli::Doc("Accumulate set of quantiles.\n"
@@ -194,12 +196,6 @@ int main(int argc, const char ** argv)
   parser.addValue<std::size_t>("recycle_steps",
                                Cli::Doc("Number of times conses are recycled on each step.\n"
                                         "(parameter of Lisp::GarbageCollector)"));
-#if 0
-  // @todo
-  parser.add(StringValue::make(consFractionFile,
-                               "cons-fraction-output",
-                               Cli::Doc("Filename for cons fraction statistics")));
-#endif
 
   std::vector<std::string> err;
   if(!parser.parse(argc, argv, err))
@@ -231,17 +227,16 @@ int main(int argc, const char ** argv)
     configureRunner(runner, parser);
     std::vector<Lisp::GcSimRecord> run = runner.run();
     writeRun(outputFiles, i, run);
-    if(quantiles->isSet())
-    {
-      runs.push_back(std::move(run));
-    }
+    runs.push_back(std::move(run));
     if(quantiles->isSet())
     {
       Lisp::Quantile<Lisp::GcSimRecord> quantiles_result(quantiles->getValue(),
                                                          Lisp::GcSimRecordMembers().members,
                                                          runs);
-      writeQuantiles(quantileFile, quantiles_result);
+      writeResult(quantileFile, quantiles_result);
     }
+    Lisp::Average<Lisp::GcSimRecord> average_result(Lisp::GcSimRecordMembers().members, runs);
+    writeResult(statFile, average_result);
   }
   return 0;
 }

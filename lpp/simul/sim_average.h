@@ -37,20 +37,25 @@ either expressed or implied, of the FreeBSD Project.
 namespace Lisp
 {
   template<typename CLS>
-  class Quantile : public RunStatistics
+  class Average : public RunStatistics
   {
   public:
-    Quantile(const std::vector<std::size_t> & _quantile,
-             const std::vector<std::shared_ptr<SimulMemberBase<CLS>>> & _fields,
-             const std::vector<std::vector<CLS>> & runs);
-    std::size_t numSteps() const;
-    std::ostream & streamHeader(std::ostream & ost) const;
-    std::ostream & streamRow(std::ostream & ost, std::size_t i) const;
+    Average(const std::vector<std::shared_ptr<SimulMemberBase<CLS>>> & _fields,
+            const std::vector<std::vector<CLS>> & runs);
+    std::size_t numSteps() const override;
+    std::ostream & streamHeader(std::ostream & ost) const override;
+    std::ostream & streamRow(std::ostream & ost, std::size_t i) const override;
   private:
-    std::vector<std::size_t> quantiles;
-    std::vector<std::vector<CLS>> data;
+    struct Record
+    {
+      std::size_t step;
+      std::size_t n;
+      double avg;
+      double avg2;
+      Record(std::size_t i, std::shared_ptr<SimulMemberBase<CLS>> field, const std::vector<CLS> & data);
+    };
     std::vector<std::shared_ptr<SimulMemberBase<CLS>>> fields;
-    std::vector<CLS> computeQuantiles(const std::vector<std::vector<CLS>> & runs, std::size_t step);
+    std::vector<std::vector<Record>> averages;
   };
 }
 
@@ -61,60 +66,77 @@ namespace Lisp
 ///////////////////////////////////////////////////////////////////////////////
 
 template<typename CLS>
-Lisp::Quantile<CLS>::Quantile(const std::vector<std::size_t> & _quantiles,
-                              const std::vector<std::shared_ptr<SimulMemberBase<CLS>>> & _fields,
-                              const std::vector<std::vector<CLS>> & runs)
-             : fields(_fields), quantiles(_quantiles)
+Lisp::Average<CLS>::Record::Record(std::size_t i, std::shared_ptr<SimulMemberBase<CLS>> field, const std::vector<CLS> & data)
 {
-  if(!runs.empty())
+  step = i;
+  n = data.size();
+  avg = field->sum(data);
+  if(n)
   {
-    std::size_t nsteps = runs.front().size();
-    data.reserve(nsteps);
-    for(std::size_t i = 0; i < nsteps; i++)
+    avg/= n;
+  }
+  avg2 = field->sum2(data, avg);
+  if(n)
+  {
+    avg2/= n;
+  }
+}
+
+template<typename CLS>
+Lisp::Average<CLS>::Average(const std::vector<std::shared_ptr<SimulMemberBase<CLS>>> & _fields,
+                            const std::vector<std::vector<CLS>> & runs)
+  : fields(_fields)
+{
+  std::size_t numSteps = 0;
+  // @todo better solution here
+  for(const auto & run : runs)
+  {
+    if(numSteps == 0)
     {
-      data.push_back(computeQuantiles(runs, i));
+      numSteps = run.size();
+    }
+    else
+    {
+      if(numSteps != run.size())
+      {
+        throw std::logic_error("runs not transposible");
+      }
     }
   }
-}
-
-template<typename CLS>
-std::vector<CLS> Lisp::Quantile<CLS>::computeQuantiles(const std::vector<std::vector<CLS>> & runs, std::size_t step)
-{
-  std::vector<CLS> records;
-  std::vector<CLS> ret;
-  ret.reserve(quantiles.size());
-  for(auto & run : runs)
+  averages.reserve(numSteps);
+  for(std::size_t i = 0; i < numSteps; i++)
   {
-    records.push_back(run[step]);
-  }
-  for(const CLS & obj : runs.front())
-  {
-    ret.push_back(obj);
-  }
-  for(auto field : fields)
-  {
-    field->sort(records);
-    for(std::size_t i = 0; i < quantiles.size(); i++)
+    std::vector<CLS> data;
+    data.reserve(runs.size());
+    for(std::size_t r = 0; r < runs.size(); r++)
     {
-      field->copy(&ret[i], &records.at(quantiles[i]));
+      data.push_back(runs[r][i]);
     }
+    std::vector<Record> records;
+    for(auto field : fields)
+    {
+      if(field->isNumeric())
+      {
+        records.push_back(Record(i, field, data));
+      }
+    }
+    averages.push_back(records);
   }
-  return ret;
 }
 
 template<typename CLS>
-std::size_t Lisp::Quantile<CLS>::numSteps() const
+std::size_t Lisp::Average<CLS>::numSteps() const
 {
-  return data.size();
+  return averages.size();
 }
 
 template<typename CLS>
-std::ostream & Lisp::Quantile<CLS>::streamHeader(std::ostream & ost) const
+std::ostream & Lisp::Average<CLS>::streamHeader(std::ostream & ost) const
 {
   bool first = true;
   for(auto field : fields)
   {
-    for(std::size_t i = 0; i < quantiles.size(); i++)
+    if(field->isNumeric())
     {
       if(first)
       {
@@ -124,30 +146,27 @@ std::ostream & Lisp::Quantile<CLS>::streamHeader(std::ostream & ost) const
       {
         ost << ",";
       }
-      ost << field->getName() << "[" << quantiles[i] << "]";
+      ost << field->getName() << "[avg]," << field->getName() << "[std]";
     }
   }
   return ost;
 }
 
 template<typename CLS>
-std::ostream & Lisp::Quantile<CLS>::streamRow(std::ostream & ost, std::size_t step) const
+std::ostream & Lisp::Average<CLS>::streamRow(std::ostream & ost, std::size_t i) const
 {
   bool first = true;
-  for(auto field : fields)
+  for(const auto & rec : averages[i])
   {
-    for(std::size_t i = 0; i < quantiles.size(); i++)
+    if(first)
     {
-      if(first)
-      {
-        first = false;
-      }
-      else
-      {
-        ost << ",";
-      }
-      field->write(ost, &data[step][i]);
+      first = false;
     }
+    else
+    {
+      ost << ",";
+    }
+    ost << rec.avg << "," << rec.avg2;
   }
   return ost;
 }

@@ -34,6 +34,8 @@ either expressed or implied, of the FreeBSD Project.
 #include <algorithm>
 #include <typeinfo>
 #include <typeindex>
+#include <type_traits>
+
 
 namespace Lisp
 {
@@ -47,7 +49,14 @@ namespace Lisp
     virtual void write(std::ostream & ost, const CLS * obj) const = 0;
     virtual void read(std::istream & ist, CLS * obj) const = 0;
     virtual void sort(std::vector<CLS> & data) const = 0;
+    virtual double sum(const std::vector<CLS> & data) const = 0;
+    virtual double sum2(const std::vector<CLS> & data, double offset=0) const = 0;
     virtual void copy(CLS * a, const CLS * b) const = 0;
+
+    template<typename T>
+    bool isA() const;
+
+    virtual bool isNumeric() const = 0;
 
     template<typename T>
     void set(CLS * obj, const T & value);
@@ -56,8 +65,21 @@ namespace Lisp
     const T & get(const CLS * obj);
 
   protected:
+    virtual bool isAImpl(const std::type_info& ti) const = 0;
     virtual void * getImpl(CLS * obj, const std::type_info& ti) const = 0;
     virtual void setImpl(CLS * obj, const std::type_info& ti, const void * value) const = 0;
+
+    template<typename T>
+    static double asDouble(const T & value, std::true_type isNum)
+    {
+      return (double)value;
+    };
+
+    template<typename T>
+    static double asDouble(const T & value, std::false_type isNotNum)
+    {
+      return 0.0;
+    };
 
   private:
     std::string name;
@@ -70,10 +92,15 @@ namespace Lisp
     typedef T member_type;
     typedef member_type CLS::*pointer_to_member_type;
     SimulMember(pointer_to_member_type member, const std::string & name);
+    virtual bool isNumeric() const override;
     virtual void write(std::ostream & ost, const CLS * obj) const override;
     virtual void read(std::istream & ist, CLS * obj) const override;
     virtual void sort(std::vector<CLS> & data) const override;
+    virtual double sum(const std::vector<CLS> & data) const override;
+    virtual double sum2(const std::vector<CLS> & data, double offset=0) const override;
     virtual void copy(CLS * a, const CLS * b) const override;
+  protected:
+    virtual bool isAImpl(const std::type_info& ti) const override;
     virtual void * getImpl(CLS * obj, const std::type_info& ti) const override;
     virtual void setImpl(CLS * obj, const std::type_info& ti, const void * value) const override;
   private:
@@ -94,6 +121,12 @@ inline const std::string& Lisp::SimulMemberBase<CLS>::getName() const
   return name;
 }
 
+template<typename CLS>
+template<typename T>
+bool Lisp::SimulMemberBase<CLS>::isA() const
+{
+  return isAImpl(typeid(T));
+}
 
 template<typename CLS>
 template<typename T>
@@ -113,6 +146,12 @@ template<typename CLS, typename T>
 Lisp::SimulMember<CLS, T>::SimulMember(pointer_to_member_type _member, const std::string & name)
   : SimulMemberBase<CLS>(name), member(_member)
 {
+}
+
+template<typename CLS, typename T>
+bool Lisp::SimulMember<CLS, T>::isNumeric() const
+{
+  return std::is_arithmetic<T>::value;
 }
 
 template<typename CLS, typename T>
@@ -144,6 +183,12 @@ void Lisp::SimulMember<CLS, T>::copy(CLS * a, const CLS * b) const
 }
 
 template<typename CLS, typename T>
+bool Lisp::SimulMember<CLS, T>::isAImpl(const std::type_info& ti) const
+{
+  return std::type_index(ti) == std::type_index(typeid(T));
+}
+
+template<typename CLS, typename T>
 void * Lisp::SimulMember<CLS, T>::getImpl(CLS * obj, const std::type_info& ti) const
 {
   if(std::type_index(ti) != std::type_index(typeid(T)))
@@ -161,4 +206,28 @@ void Lisp::SimulMember<CLS, T>::setImpl(CLS * obj, const std::type_info& ti, con
     throw std::bad_cast();
   }
   obj->*member = *static_cast <const T*>(value);
+}
+
+template<typename CLS, typename T>
+double Lisp::SimulMember<CLS, T>::sum(const std::vector<CLS> & data) const
+{
+  double ret = 0.0;
+  for(const CLS & obj : data)
+  {
+    ret += SimulMemberBase<CLS>::asDouble(obj.*member, std::is_arithmetic<T>{});
+  }
+  return ret;
+}
+
+template<typename CLS, typename T>
+double Lisp::SimulMember<CLS, T>::sum2(const std::vector<CLS> & data, double offset) const
+{
+  double ret = 0.0;
+  for(const CLS & obj : data)
+  {
+    double x = SimulMemberBase<CLS>::asDouble(obj.*member, std::is_arithmetic<T>{});
+    ret += (x - offset) * (x - offset);
+  }
+  return ret;
+
 }
