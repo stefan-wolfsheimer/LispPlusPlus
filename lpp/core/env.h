@@ -29,13 +29,16 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
+#include <assert.h>
 #include <unordered_map>
-#include "object.h"
+#include <lpp/core/object.h>
+#include <lpp/core/types/function.h>
 
 namespace Lisp
 {
   class Symbol;
   class Object;
+
   class Env
   {
   public:

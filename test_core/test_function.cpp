@@ -28,72 +28,33 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#include <assert.h>
+#include <catch.hpp>
 #include <lpp/core/vm.h>
-#include <lpp/core/opcode.h>
 #include <lpp/core/types/function.h>
-#include <lpp/core/types/type_id.h>
-#include "config.h"
-
-
-#ifdef NDEBUG
-const bool Lisp::Vm::withDebug = false;
-#else
-const bool Lisp::Vm::withDebug = true;
-#endif
+#include <lpp/core/object.h>
 
 using Vm = Lisp::Vm;
 using Object = Lisp::Object;
 using Function = Lisp::Function;
-using Cons = Lisp::Cons;
-using Symbol = Lisp::Symbol;
 
-
-Vm::Vm(std::shared_ptr<GarbageCollector> _consFactory)
-  : consFactory( _consFactory ?
-                 _consFactory :
-                 std::make_shared<GarbageCollector>())
+TEST_CASE("function", "[Function]")
 {
-  dataStack.reserve(1024);
-  values.reserve(1024);
-  values.push_back(Lisp::nil);
+  Function func({0u, 1u},
+                {});
+  //Vm vm;
+  //auto code = vm.list(Object(new BuiltinFunction([](Vm &){})),
+  //Object(1),
+  //Object(2),
+  //Object(3));
+  //auto program = vm.compile(code);
+  //vm.eval(program);
+  //REQUIRE(vm.value().isA<Integer>());
+  //REQUIRE(vm.value().as<Integer>(), 6);
+  //vm.push(1);
+  //vm.push(2);
+  //vm.push(3);
+  //vm.push(3);
+  //vm.push
+  //REQUIRE(cell.isA<ManagedType>());
+  //REQUIRE(cell.isA<String>());
 }
-
-Object Vm::compile(const Object & obj) const
-{
-  if(obj.isA<Cons>())
-  {
-  }
-  else if(obj.isA<Symbol>())
-  {
-  }
-  else
-  {
-    return consFactory->makeRoot<Function>(Function::Code{SETV, 0},
-                                           Array(obj));
-  }
-  return Lisp::nil;
-}
-
-void Lisp::Vm::eval(const Function * func)
-{
-  std::size_t i;
-  auto itr = func->instructions.begin();
-  auto end = func->instructions.end();
-  while(itr != end)
-  {
-    switch(*itr)
-    {
-    case SETV:
-      ++itr;
-      assert(itr != end);
-      assert(*itr < func->data.size());
-      values.resize(1);
-      values[0] = std::move(func->data.at(*itr));
-    }
-    ++itr;
-  }
-}
-
-
-

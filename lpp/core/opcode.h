@@ -29,9 +29,11 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
+#include <cstddef>
 
 namespace Lisp
 {
-  static const std::size_t SETV = 0x01;
+  using InstructionType = std::size_t;
+  static const InstructionType SETV = 0x01;
 }
 

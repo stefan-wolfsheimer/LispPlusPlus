@@ -40,6 +40,7 @@ namespace Lisp
   public:
     template<typename... ARGS>
     Array(ARGS... rest);
+
     inline std::size_t size() const;
     inline const Cell & atCell(std::size_t pos) const;
     inline Object at(std::size_t pos) const;
@@ -53,13 +54,42 @@ namespace Lisp
 
     template<typename... ARGS>
     inline void append(const Cell & a, ARGS... rest);
-
-    virtual void forEachChild(std::function<void(const Cell&)> func) const override;
-    virtual TypeId getTypeId() const override;
-    virtual bool greyChildren() override;
     inline std::size_t getGcPosition() const;
-    virtual void resetGcPosition() override;
-    virtual bool recycleNextChild() override;
+    
+    //////////////////////////////////////////////////
+    // implementation of the Container interface
+    //////////////////////////////////////////////////
+    virtual void forEachChild(std::function<void(const Cell&)> func) const override
+    {
+      forEachChildImpl(func);
+    }
+
+    virtual TypeId getTypeId() const override
+    {
+      return getTypeIdImpl();
+    }
+
+    virtual bool greyChildren() override
+    {
+      return greyChildrenImpl();
+    }
+
+    virtual void resetGcPosition() override
+    {
+      return resetGcPositionImpl();
+    }
+
+    virtual bool recycleNextChild() override
+    {
+      return recycleNextChildImpl();
+    }
+
+    inline void forEachChildImpl(std::function<void(const Cell&)> func) const;
+    inline TypeId getTypeIdImpl() const;
+    inline bool greyChildrenImpl();
+    inline std::size_t getGcPositionImpl() const;
+    inline void resetGcPositionImpl();
+    inline bool recycleNextChildImpl();
   private:
     std::size_t gcPosition;
     std::vector<Lisp::Cell> data;
@@ -132,4 +162,56 @@ void Lisp::Array::append(const Cell & a, ARGS... rest)
 inline std::size_t Lisp::Array::getGcPosition() const
 {
   return gcPosition;
+}
+
+inline void Lisp::Array::forEachChildImpl(std::function<void(const Cell&)> func) const
+{
+  for(const Cell & c : data)
+  {
+    func(c);
+  }
+}
+
+Lisp::TypeId Lisp::Array::getTypeIdImpl() const
+{
+  return TypeTraits<Array>::typeId;
+}
+
+bool Lisp::Array::greyChildrenImpl()
+{
+  if(gcPosition < data.size())
+  {
+    data[gcPosition].grey();
+    if(++gcPosition == data.size())
+    {
+      gcPosition = 0;
+      return true;
+    }
+    else
+    {
+      return false;
+    }
+  }
+  else
+  {
+    return true;
+  }
+}
+
+void Lisp::Array::resetGcPositionImpl()
+{
+  gcPosition = 0;
+}
+
+bool Lisp::Array::recycleNextChildImpl()
+{
+  if(gcPosition < data.size())
+  {
+    if(!data[gcPosition].isA<Collectible>())
+    {
+      data[gcPosition] = Lisp::nil;
+    }
+    return ++gcPosition == data.size();
+  }
+  return true;
 }

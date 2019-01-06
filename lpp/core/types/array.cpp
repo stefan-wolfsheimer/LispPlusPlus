@@ -2,6 +2,7 @@
 using TypeId = Lisp::TypeId;
 using Array = Lisp::Array;
 
+#if 0
 void Array::forEachChild(std::function<void(const Cell&)> func) const
 {
   for(const Cell & c : data)
@@ -53,3 +54,5 @@ bool Array::recycleNextChild()
   }
   return true;
 }
+
+#endif

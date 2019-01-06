@@ -31,7 +31,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <catch.hpp>
 #include <lpp/core/vm.h>
 #include <lpp/core/types/lisp_string.h>
-#include <lpp/core/types/lisp_function.h>
+#include <lpp/core/types/function.h>
 
 using Vm = Lisp::Vm;
 using Object = Lisp::Object;

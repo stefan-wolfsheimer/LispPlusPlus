@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2018, Stefan Wolfsheimer
+Copyright (c) 2019, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -29,31 +29,17 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
-#include <cstdint>
-#include <vector>
-#include <lpp/core/object.h>
-#include <lpp/core/types/type_id.h>
 
 namespace Lisp
 {
-  class Object;
-  class Vm;
-  class Function : public ManagedType
-  {
-  public:
-    typedef std::size_t InstructionType;
-  private:
-    friend class Vm;
-    Function(std::size_t reserveInstr, std::size_t reserveData);
-    typedef std::vector<std::pair<InstructionType, std::size_t> > ProgramType;
-    ProgramType instr;
-    std::vector<Object> data;
-  };
-}
+  typedef ::std::uint_least16_t TypeId;
+  typedef ::std::int_fast32_t IntegerType;
+  struct BasicType {};
 
-inline Lisp::Function::Function(std::size_t reserveInstr,
-                                std::size_t reserveData)
-{
-  instr.reserve(reserveInstr);
-  data.reserve(reserveData);
+  union CellDataType
+  {
+    IntegerType intValue;
+    BasicType * ptr;
+  };
+
 }

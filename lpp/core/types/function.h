@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2017, Stefan Wolfsheimer
+Copyright (c) 2018, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -28,72 +28,71 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#include <assert.h>
-#include <lpp/core/vm.h>
+#pragma once
+#include <cstdint>
+#include <vector>
 #include <lpp/core/opcode.h>
-#include <lpp/core/types/function.h>
+#include <lpp/core/object.h>
 #include <lpp/core/types/type_id.h>
-#include "config.h"
+#include <lpp/core/types/container.h>
+#include <lpp/core/types/array.h>
 
 
-#ifdef NDEBUG
-const bool Lisp::Vm::withDebug = false;
-#else
-const bool Lisp::Vm::withDebug = true;
-#endif
-
-using Vm = Lisp::Vm;
-using Object = Lisp::Object;
-using Function = Lisp::Function;
-using Cons = Lisp::Cons;
-using Symbol = Lisp::Symbol;
-
-
-Vm::Vm(std::shared_ptr<GarbageCollector> _consFactory)
-  : consFactory( _consFactory ?
-                 _consFactory :
-                 std::make_shared<GarbageCollector>())
+namespace Lisp
 {
-  dataStack.reserve(1024);
-  values.reserve(1024);
-  values.push_back(Lisp::nil);
-}
+  class Object;
+  class Vm;
+  
+  class Function : public Container
+  {
+  public:
+    friend class Vm;
+    using Code = std::vector<InstructionType>;
+    
+    Function(const Code & instr, const Array & data);
+    Function(Code && instr, Array && data);
 
-Object Vm::compile(const Object & obj) const
-{
-  if(obj.isA<Cons>())
-  {
-  }
-  else if(obj.isA<Symbol>())
-  {
-  }
-  else
-  {
-    return consFactory->makeRoot<Function>(Function::Code{SETV, 0},
-                                           Array(obj));
-  }
-  return Lisp::nil;
-}
-
-void Lisp::Vm::eval(const Function * func)
-{
-  std::size_t i;
-  auto itr = func->instructions.begin();
-  auto end = func->instructions.end();
-  while(itr != end)
-  {
-    switch(*itr)
+    //////////////////////////////////////////////////
+    // implementation of the Container interface
+    //////////////////////////////////////////////////
+    virtual void forEachChild(std::function<void(const Cell&)> func) const override
     {
-    case SETV:
-      ++itr;
-      assert(itr != end);
-      assert(*itr < func->data.size());
-      values.resize(1);
-      values[0] = std::move(func->data.at(*itr));
+      data.forEachChildImpl(func);
     }
-    ++itr;
-  }
+
+    virtual TypeId getTypeId() const override
+    {
+      return data.getTypeIdImpl();
+    }
+
+    virtual bool greyChildren() override
+    {
+      return data.greyChildrenImpl();
+    }
+
+    virtual void resetGcPosition() override
+    {
+      return data.resetGcPositionImpl();
+    }
+
+    virtual bool recycleNextChild() override
+    {
+      return data.recycleNextChildImpl();
+    }
+
+  private:
+    Code instructions;
+    Array data;
+  };
 }
 
+inline Lisp::Function::Function(const std::vector<InstructionType> & instr,
+                                const Array & _data)
+  : instructions(instr), data(_data)
+{
+}
 
-
+inline Lisp::Function::Function(Code && instr, Array && _data)
+  : instructions(std::move(instr)), data(std::move(_data))
+{
+}

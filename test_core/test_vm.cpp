@@ -30,12 +30,18 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include <catch.hpp>
 #include <lpp/core/vm.h>
+#include <lpp/core/opcode.h>
 #include <lpp/core/types/cons.h>
+#include <lpp/core/types/function.h>
+
 
 using Vm = Lisp::Vm;
 using Object = Lisp::Object;
 using Cons = Lisp::Cons;
 using Nil = Lisp::Nil;
+using Function = Lisp::Function;
+using IntegerType = Lisp::IntegerType;
+
 
 TEST_CASE("is_debug_enabled", "[Vm]")
 {
@@ -98,5 +104,17 @@ TEST_CASE("push_does_not_create_temporary_objects", "[Vm]")
   Vm vm;
   vm.push(Lisp::nil);
   vm.push(vm.cons(Lisp::nil, Lisp::nil));
+}
+
+
+TEST_CASE("eval", "[Vm]")
+{
+  Vm vm;
+  auto func = vm.compile(Object(1));
+  REQUIRE(func.isA<Function>());
+  vm.eval(func.as<Function>());
+  auto res = vm.getValue();
+  REQUIRE(res.isA<IntegerType>());
+  REQUIRE(res.as<IntegerType>() == 1u);
 }
 

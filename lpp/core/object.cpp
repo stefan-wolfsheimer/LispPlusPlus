@@ -93,6 +93,7 @@ Object & Lisp::Object::operator=(const Object & rhs)
   return *this;
 }
 
+
 Lisp::Object & Lisp::Object::operator=(Object && rhs)
 {
   Cell::unset();

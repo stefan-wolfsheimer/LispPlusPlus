@@ -72,7 +72,7 @@ namespace Lisp
 
     Object compile(const Object & obj) const;
     void eval(const Function * func);
-    inline Object getValue() const;
+    inline const Object & getValue() const;
   private:
     std::shared_ptr<GarbageCollector> consFactory;
     std::vector<Object> dataStack;
@@ -154,7 +154,7 @@ inline void Lisp::Vm::pop(std::size_t n)
   dataStack.erase(dataStack.end()-n, dataStack.end());
 }
 
-inline Lisp::Object Lisp::Vm::getValue() const
+inline const Lisp::Object & Lisp::Vm::getValue() const
 {
   return values.front();
 }

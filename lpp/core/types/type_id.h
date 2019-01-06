@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2018, Stefan Wolfsheimer
+Copyright (c) 2019, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -32,6 +32,46 @@ either expressed or implied, of the FreeBSD Project.
 #include <cstdint>
 #include <memory>
 #include <vector>
+#include <lpp/core/cell_data_type.h>
+#include <lpp/core/types/type_traits.h>
+
+#define DEF_TRAITS_NUL(CLS, ID)                                       \
+  template<>                                                          \
+  struct TypeTraits<CLS> : Traits::Null<Traits::Id<ID>> {};           \
+  template<>                                                          \
+  struct TypeTraits<const CLS> : Traits::Null<Traits::Id<ID>> {}
+
+#define DEF_TRAITS_NUL_MATCH(CLS, ID)                                   \
+ template<>                                                             \
+ struct TypeTraits<CLS> : Traits::Null<Traits::IdMask<ID>> {};          \
+ template<>                                                             \
+ struct TypeTraits<const CLS> : Traits::Null<Traits::IdMask<ID>> {}
+
+#define DEF_TRAITS_INT(CLS, ID)                                         \
+ template<>                                                             \
+ struct TypeTraits<CLS> : Traits::Integer<Traits::Id<ID>> {};           \
+ template<>                                                             \
+ struct TypeTraits<const CLS> : Traits::Integer<Traits::Id<ID>> {}      \
+
+#define DEF_TRAITS_PTR(CLS, ID)                                         \
+ template<>                                                             \
+ struct TypeTraits<CLS> : Traits::Pointer<CLS, Traits::Id<ID>> {};      \
+ template<>                                                             \
+ struct TypeTraits<const CLS> : Traits::Pointer<const CLS, Traits::Id<ID>> {}
+
+#define DEF_TRAITS_PTR_MATCH(CLS, ID)                                   \
+ template<>                                                             \
+ struct TypeTraits<CLS> : Traits::Pointer<CLS, Traits::IdMask<ID>> {};  \
+ template<>                                                             \
+ struct TypeTraits<const CLS> : Traits::Pointer<const CLS, Traits::IdMask<ID>> {}
+
+#define DEF_TRAITS_PTR_CHOIC(CLS, C1, C2)                               \
+ template<>                                                             \
+ struct TypeTraits<CLS> : Traits::PointerChoice<CLS, C1, C2> {};        \
+ template<>                                                             \
+ struct TypeTraits<const CLS> : Traits::PointerChoice<const CLS, const C1, const C2> {}
+
+
 
 namespace Lisp
 {
@@ -44,8 +84,6 @@ namespace Lisp
    *  11: collectibleContainer   (0xc000)
    */
 
-  typedef ::std::uint_least16_t TypeId;
-  typedef ::std::int_fast32_t IntegerType;
   class ManagedType;
   class Collectible;
   /** 
@@ -64,256 +102,34 @@ namespace Lisp
   class ConsFactory;
   class BuiltinFunction;
   class Function;
-  struct BasicType {};
   struct ValueType : BasicType {};
   struct Nil : BasicType {};
   struct Undefined : BasicType {};
 
 
-  //struct AtomType : ValueType, public ManagedType {};
+  DEF_TRAITS_NUL(Nil,               0x0000u);
+  DEF_TRAITS_NUL(Undefined,         0x0001u);
+  DEF_TRAITS_INT(IntegerType,       0x4001u);
+  DEF_TRAITS_PTR(String,            0x8001u);
+  DEF_TRAITS_PTR(Symbol,            0x8002u);
+  DEF_TRAITS_PTR(BuiltinFunction,   0x8003u);
+  DEF_TRAITS_PTR(Cons,              0x0002u);
+  DEF_TRAITS_PTR(Array,             0xc001u);
+  DEF_TRAITS_PTR(Function,          0xc002u);
 
-  union CellDataType
-  {
-    IntegerType intValue;
-    BasicType * ptr;
-  };
-
-  template<typename T>
-  struct TypeTraits
-  {
-  };
-
-  template<TypeId TID>
-  struct TypeIdTraits
-  {
-    static const TypeId typeId = TID;
-    static inline bool isA(TypeId tid)
-    {
-      return tid == typeId;
-    }
-  };
-
-  template<TypeId TID, typename T>
-  struct PointerTypeTraits
-  {
-    static const TypeId typeId = TID;
-    typedef T * Type;
-
-    static inline bool isA(TypeId tid)
-    {
-      return tid == typeId;
-    }
-
-    static inline Type as(const CellDataType & data, TypeId tid)
-    {
-      if(isA(tid))
-      {
-        return static_cast<T*>(data.ptr);
-      }
-      else
-      {
-        return nullptr;
-      }
-    }
-  };
-
-  template<TypeId TID, typename T>
-  struct ValueTypeTraits : public TypeIdTraits<TID>
-  {
-  };
-
-  template<>
-  struct TypeTraits<Nil> : public TypeIdTraits<0x0000>
-  {
-  };
-
-  template<>
-  struct TypeTraits<Undefined> : public TypeIdTraits<0x0001>
-  {
-  };
-
-  template<>
-  struct TypeTraits<IntegerType> : TypeIdTraits<0x4001u>
-  {
-    typedef IntegerType Type;
-    static inline Type as(const CellDataType & data, TypeId tid)
-    {
-      if(TypeTraits<IntegerType>::isA(tid))
-      {
-        return data.intValue;
-      }
-      else
-      {
-        return 0;
-      }
-    }
-  };
-
-  template<>
-  struct TypeTraits<String> : PointerTypeTraits<0x8001u, String>
-  {
-  };
-
-  template<>
-  struct TypeTraits<Symbol> : PointerTypeTraits<0x8002u, Symbol>
-  {
-  };
-
-  template<>
-  struct TypeTraits<BuiltinFunction> : PointerTypeTraits<0x8003u,
-                                                         BuiltinFunction>
-  {
-  };
-
-  template<>
-  struct TypeTraits<Function> : PointerTypeTraits<0x8004u, Function>
-  {
-  };
-
-  template<>
-  struct TypeTraits<Cons> : PointerTypeTraits<0x0002u, Cons>
-  {
-  };
-
-  template<>
-  struct TypeTraits<const Cons> : PointerTypeTraits<0x0002u, const Cons>
-  {
-  };
-
-
-  template<>
-  struct TypeTraits<ManagedType> : public TypeTraits<void>
-  {
-    typedef ManagedType * Type;
-    static inline bool isA(TypeId tid)
-    {
-      return (tid & 0xc000) == 0x8000;
-    }
-
-    static inline Type as(const CellDataType & data, TypeId tid)
-    {
-      if(isA(tid))
-      {
-        return reinterpret_cast<ManagedType*>(data.ptr);
-      }
-      else
-      {
-        return nullptr;
-      }
-    }
-  };
-
-  template<>
-  struct TypeTraits<Container> : public TypeTraits<void>
-  {
-    typedef Container * Type;
-    static inline bool isA(TypeId tid)
-    {
-      return (tid & 0xc000) == 0xc000;
-    }
-
-    static inline Type as(const CellDataType & data, TypeId tid)
-    {
-      if(isA(tid))
-      {
-        return reinterpret_cast<Container*>(data.ptr);
-      }
-      else
-      {
-        return nullptr;
-      }
-    }
-  };
-
-  // todo: implement one template for const and non-const
-  template<>
-  struct TypeTraits<const Container> : public TypeTraits<void>
-  {
-    typedef Container * Type;
-
-    static inline bool isA(TypeId tid)
-    {
-      return (tid & 0xc000) == 0xc000;
-    }
-
-    static inline Type as(const CellDataType & data, TypeId tid)
-    {
-      if(isA(tid))
-      {
-        return reinterpret_cast<Type>(data.ptr);
-      }
-      else
-      {
-        return nullptr;
-      }
-    }
-  };
-
-  template<>
-  struct TypeTraits<Collectible> : public TypeTraits<void>
-  {
-    typedef Collectible * Type;
-    static inline bool isA(TypeId tid)
-    {
-      return TypeTraits<Container>::isA(tid) || TypeTraits<Cons>::isA(tid);
-    }
-
-    static inline Type as(const CellDataType & data, TypeId tid)
-    {
-      if(isA(tid))
-      {
-        return reinterpret_cast<Type>(data.ptr);
-      }
-      else
-      {
-        return nullptr;
-      }
-    }
-  };
-
-  // todo: implement one template for const and non-const
-  template<>
-  struct TypeTraits<const Collectible> : public TypeTraits<void>
-  {
-    typedef const Collectible * Type;
-    static inline bool isA(TypeId tid)
-    {
-      return TypeTraits<const Container>::isA(tid) || TypeTraits<const Cons>::isA(tid);
-    }
-
-    static inline Type as(const CellDataType & data, TypeId tid)
-    {
-      if(isA(tid))
-      {
-        return reinterpret_cast<Type>(data.ptr);
-      }
-      else
-      {
-        return nullptr;
-      }
-    }
-  };
-
-  template<>
-  struct TypeTraits<ValueType>
-  {
-    static inline bool isA(TypeId tid)
-    {
-      return (tid & 0xc000) == 0x4000;
-    }
-  };
-
-  template<>
-  struct TypeTraits<Array> : PointerTypeTraits<0xc001u, Array>
-  {
-  };
-
-  template<>
-  struct TypeTraits<const Array> : PointerTypeTraits<0xc001u, const Array>
-  {
-  };
+  DEF_TRAITS_NUL_MATCH(ValueType,   0x4000u);
+  DEF_TRAITS_PTR_MATCH(ManagedType, 0x8000u);
+  DEF_TRAITS_PTR_MATCH(Container,   0xc000u);
+  DEF_TRAITS_PTR_CHOIC(Collectible, Container, Cons);
 
 }
 
+
+#undef DEF_TRAITS_NUL
+#undef DEF_TRAITS_NUL_MATCH
+#undef DEF_TRAITS_INT
+#undef DEF_TRAITS_PTR
+#undef DEF_TRAITS_PTR_MATCH
+#undef DEF_TRAITS_PCR_CHOIC
 
 

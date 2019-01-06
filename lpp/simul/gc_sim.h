@@ -48,14 +48,51 @@ namespace Lisp
   {
   public:
     GcSim();
+
+    /**
+     * Number of root objects (directly reachable)
+     */
     inline std::size_t numRoot() const;
+
+    /**
+     * Number of bulk objects (reachable from root) 
+     */
     inline std::size_t numBulk() const;
+
+    /**
+     * Total number of objects.
+     * numTotal = numRoot + numBulk
+     */
     inline std::size_t numTotal() const;
+
+    /**
+     * Number of allocated objects.
+     * The (numAllocated - numTotal) is the number
+     * of unreachable objects. 
+     */
     inline std::size_t numAllocated() const;
+
+    /**
+     * Number of leave nodes of the reachibility graph.
+     * That is the number of child objects that are not a Collectible
+     */
     inline std::size_t numLeaves() const;
+
+    /**
+     * Number of edges of the dependency graph.
+     */
     inline std::size_t numEdges() const;
+
+    /** 
+     * Void Conses that have been marked as unreachable.
+     */
     inline std::size_t numVoid() const;
+
     inline std::size_t numDisposed() const;
+
+    /** 
+     * Number of full garbage collector cycles
+     */
     inline std::size_t numCycles() const;
 
     inline void setGarbageSteps(std::size_t steps);
