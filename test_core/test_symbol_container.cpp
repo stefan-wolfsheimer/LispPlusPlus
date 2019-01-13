@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2017, Stefan Wolfsheimer
+Copyright (c) 2018, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -28,40 +28,35 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#include <assert.h>
-#include "symbol_factory.h"
-#include "types/lisp_symbol.h"
+#include <lpp/core/object.h>
+#include <lpp/core/gc/symbol_container.h>
+#include <lpp/core/types/symbol.h>
 
-using SymbolFactory = Lisp::SymbolFactory;
+#include <catch.hpp>
+
 using Symbol = Lisp::Symbol;
+using SymbolContainer = Lisp::SymbolContainer;
+using Object = Lisp::Object;
 
-SymbolFactory::~SymbolFactory()
+TEST_CASE("symbol_life_cycle", "[SymbolFactory]")
 {
-  for(auto & p : symbols)
+  SymbolContainer container;
+  Symbol * psymb = container.make("symb1");
+  REQUIRE(psymb->getRefCount() == 0);
+  Object symb1(psymb);
+  REQUIRE(psymb->getRefCount() == 1);
+  REQUIRE(symb1.isA<Symbol>());
+  REQUIRE(symb1.as<Symbol>() == psymb);
+  REQUIRE(symb1.as<Lisp::Symbol>()->getName() == "symb1");
   {
-    assert(p.second->factory == this);
-    p.second->factory = nullptr;
+    Object symb1Copy1(symb1);
+    REQUIRE(symb1Copy1.isA<Symbol>());
+    REQUIRE(symb1Copy1.as<Lisp::Symbol>() == psymb);
+    REQUIRE(psymb->getRefCount() == 2);
+    Object symb1Copy2(container.make("symb1"));
+    REQUIRE(symb1Copy2.isA<Symbol>());
+    REQUIRE(psymb->getRefCount() == 3);
+    REQUIRE(symb1Copy2.as<Lisp::Symbol>() == psymb);
   }
+  REQUIRE(psymb->getRefCount() == 1);
 }
-
-Symbol * SymbolFactory::make(const std::string & name)
-{
-  auto res = symbols.insert(std::make_pair(name, (Symbol*)nullptr));
-  if(res.second)
-  {
-    res.first->second = new Symbol(res.first->first.c_str(), this);
-    return res.first->second;
-  }
-  else
-  {
-    return res.first->second;
-  }
-}
-
-void SymbolFactory::remove(Symbol * symbol)
-{
-  auto itr = symbols.find(symbol->getName());
-  assert(itr != symbols.end());
-  symbols.erase(itr);
-}
-

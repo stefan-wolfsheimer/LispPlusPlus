@@ -38,7 +38,7 @@ either expressed or implied, of the FreeBSD Project.
 
 namespace Lisp
 {
-  class Cons;
+  class BasicCons;
   class Object;
   class Container;
   class Collectible;
@@ -46,10 +46,11 @@ namespace Lisp
   class Cell
   {
   public:
-    friend class Cons;
+    friend class BasicCons;
+    friend class Object;
+
     Cell();
     Cell(const Cell & rhs);
-    Cell(const Object & rhs);
     Cell(IntegerType rhs);
     Cell(Collectible * rhs, TypeId typeId);
     
@@ -61,7 +62,7 @@ namespace Lisp
      * conses are managed by the garbage collector
      */
     ~Cell();
-    Cell& operator=(const Object & rhs);
+    Cell& operator=(const Cell & rhs);
 
     inline TypeId getTypeId() const;
     std::string getTypeName() const;

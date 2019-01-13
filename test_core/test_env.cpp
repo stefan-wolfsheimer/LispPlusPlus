@@ -29,10 +29,47 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include <catch.hpp>
+#include <lpp/core/gc/garbage_collector.h>
+#include <lpp/core/gc/symbol_container.h>
 #include <lpp/core/env.h>
 
 using Env = Lisp::Env;
+using Object = Lisp::Object;
+using Symbol = Lisp::Symbol;
+using Undefined = Lisp::Undefined;
+using IntegerType = Lisp::IntegerType;
+using ManagedType = Lisp::ManagedType;
+using Reference = Lisp::Reference;
+using GarbageCollector = Lisp::GarbageCollector;
+using SymbolContainer = Lisp::SymbolContainer;
 
-TEST_CASE("env", "[Env]")
+TEST_CASE("make_reference", "[Env]")
 {
+  auto sc = std::make_shared<SymbolContainer>();
+  auto gc = std::make_shared<GarbageCollector>();
+  Object ref_a;
+  {
+    Object a(sc->make("a"));
+    REQUIRE(a.isA<Symbol>());
+    REQUIRE(a.isA<ManagedType>());
+    REQUIRE(a.getRefCount() == 1);
+    ref_a = Object(gc->makeRoot<Reference>(a, Lisp::nil));
+    REQUIRE(ref_a.isA<Reference>());
+    REQUIRE(a.getRefCount() == 2);
+    REQUIRE(ref_a.getRefCount() == 1);
+  }
+  REQUIRE(ref_a.as<Reference>()->getCarCell().getRefCount() == 1);
 }
+
+TEST_CASE("env_make_reference", "[Env]")
+{
+  SymbolContainer sc;
+  GarbageCollector gc;
+  Env env;
+  Object a(sc.make("a"));
+  REQUIRE(env.find(a).isA<Undefined>());
+  env.set(a, Object(2));
+  REQUIRE(env.find(a).isA<IntegerType>());
+  REQUIRE(env.find(a).as<IntegerType>() == 2);
+}
+

@@ -30,7 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
 #include <cstdint>
-#include "cell.h"
+#include <lpp/core/cell.h>
 #include "config.h"
 
 namespace Lisp
@@ -49,13 +49,15 @@ namespace Lisp
     static Object nil();
     static Object undefined();
 
+    Object & operator=(const Cell & rhs);
+    Object & operator=(Cell && rhs);
     Object & operator=(const Object & rhs);
     Object & operator=(Object && rhs);
  
     ~Object();
 
   protected:
-    void init(Cons * cons, TypeId _typeId);
+    void init(BasicCons * cons, TypeId _typeId);
     void init(Container * cons, TypeId _typeId);
     inline void init(ManagedType * managedType, TypeId _typeId);
   private:

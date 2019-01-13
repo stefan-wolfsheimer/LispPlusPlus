@@ -33,6 +33,8 @@ either expressed or implied, of the FreeBSD Project.
 
 namespace Lisp
 {
+  class Env;
+
   class ManagedType : public BasicType
   {
   public:
@@ -41,6 +43,7 @@ namespace Lisp
     inline std::size_t getRefCount() const;
   private:
     friend class Cell;
+    friend class Env;
     std::size_t refCount;
   };
 }

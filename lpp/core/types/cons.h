@@ -43,8 +43,8 @@ namespace Lisp
   class GarbageCollector;
   template<typename T> class CollectibleContainer;
 
-  class Cons : public Collectible,
-               public CollectibleMixin<Cons>
+  class BasicCons : public Collectible,
+                    public CollectibleMixin<BasicCons>
   {
   public:
     friend class GarbageCollector;
@@ -87,51 +87,60 @@ namespace Lisp
      * to Color::GreyRoot or Color::Grey.
      */
     inline void gcStep();
-    Cons();
+    BasicCons();
   };
+
+  class Cons : public BasicCons
+  {
+  };
+
+  class Reference : public BasicCons
+  {
+  };
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-inline Lisp::Cons::Cons() : car(Lisp::nil), cdr(Lisp::nil)
+inline Lisp::BasicCons::BasicCons() : car(Lisp::nil), cdr(Lisp::nil)
 {
 }
 
-inline Lisp::TypeId Lisp::Cons::getTypeId() const
+inline Lisp::TypeId Lisp::BasicCons::getTypeId() const
 {
   return TypeTraits<Cons>::typeId;
 }
 
-inline Lisp::Object Lisp::Cons::getCar() const
+inline Lisp::Object Lisp::BasicCons::getCar() const
 {
   return Lisp::Object(car);
 }
 
-inline Lisp::Object Lisp::Cons::getCdr() const
+inline Lisp::Object Lisp::BasicCons::getCdr() const
 {
   return Lisp::Object(cdr);
 }
 
-inline const Lisp::Cell & Lisp::Cons::getCarCell() const
+inline const Lisp::Cell & Lisp::BasicCons::getCarCell() const
 {
   return car;
 }
 
-inline const Lisp::Cell & Lisp::Cons::getCdrCell() const
+inline const Lisp::Cell & Lisp::BasicCons::getCdrCell() const
 {
   return cdr;
 }
 
-inline void Lisp::Cons::unsetCar()
+inline void Lisp::BasicCons::unsetCar()
 {
   car = Lisp::nil;
 }
 
-inline void Lisp::Cons::unsetCdr()
+inline void Lisp::BasicCons::unsetCdr()
 {
   cdr = Lisp::nil;
 }
 
-inline void Lisp::Cons::setCar(const Cell & rhs)
+inline void Lisp::BasicCons::setCar(const Cell & rhs)
 {
   if(!setCar<Cons>(rhs.as<Cons>(), rhs.getTypeId()))
   {
@@ -142,7 +151,7 @@ inline void Lisp::Cons::setCar(const Cell & rhs)
   }
 }
 
-inline void Lisp::Cons::setCdr(const Cell & rhs)
+inline void Lisp::BasicCons::setCdr(const Cell & rhs)
 {
   if(!setCdr<Cons>(rhs.as<Cons>(), rhs.getTypeId()))
   {
@@ -154,7 +163,7 @@ inline void Lisp::Cons::setCdr(const Cell & rhs)
 }
 
 template<typename T>
-inline bool Lisp::Cons::setCar(T * collectible, TypeId _typeId)
+inline bool Lisp::BasicCons::setCar(T * collectible, TypeId _typeId)
 {
   if(collectible)
   {
@@ -169,7 +178,7 @@ inline bool Lisp::Cons::setCar(T * collectible, TypeId _typeId)
 }
 
 template<typename T>
-inline bool Lisp::Cons::setCdr(T * collectible, TypeId _typeId)
+inline bool Lisp::BasicCons::setCdr(T * collectible, TypeId _typeId)
 {
   if(collectible)
   {
@@ -183,20 +192,20 @@ inline bool Lisp::Cons::setCdr(T * collectible, TypeId _typeId)
   return false;
 }
 
-inline void Lisp::Cons::forEachChild(std::function<void(const Cell&)> func) const
+inline void Lisp::BasicCons::forEachChild(std::function<void(const Cell&)> func) const
 {
   func(car);
   func(cdr);
 }
 
-inline bool Lisp::Cons::greyChildren()
+inline bool Lisp::BasicCons::greyChildren()
 {
   car.grey();
   cdr.grey();
   return true;
 }
 
-inline bool Lisp::Cons::recycleNextChild()
+inline bool Lisp::BasicCons::recycleNextChild()
 {
   if(!car.isA<Collectible>())
   {
@@ -209,7 +218,7 @@ inline bool Lisp::Cons::recycleNextChild()
   return true;
 }
 
-inline void Lisp::Cons::gcStep()
+inline void Lisp::BasicCons::gcStep()
 {
   car.grey();
   cdr.grey();

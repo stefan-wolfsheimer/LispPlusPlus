@@ -30,41 +30,76 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
 #include <assert.h>
+#include <functional>
 #include <unordered_map>
+#include <lpp/core/cell.h>
 #include <lpp/core/object.h>
-#include <lpp/core/types/function.h>
+#include <lpp/core/types/symbol.h>
 
 namespace Lisp
 {
-  class Symbol;
-  class Object;
-
   class Env
   {
   public:
-    void set(Symbol * symb, const Object & obj);
-    void set(Symbol * symb, Object && obj);
+    void set(const Cell & sym, const Object & obj);
+    void set(const Cell & sym, Object && obj);
     bool unset(Symbol * symb);
-    const Object & find(Symbol * symb) const;
+
+    /**
+     * Find the reference to the object that is assigned to the symbol.
+     * If not found, Lisp::undefined is returned.
+     * @todo throw exection if not found
+     *
+     * @returns an Object of type Lisp::Reference (a Cons-like type of the form (Symbol . Object)
+     */
+    inline const Object & find(const Cell & symb) const;
+
   private:
-    std::unordered_map<Symbol*, Object> bindings;
+    struct Hash
+    {
+      inline std::size_t operator()(const Cell & object) const;
+    };
+
+    struct Equal
+    {
+      inline bool operator()(const Cell & lhs,
+                             const Cell & rhs) const;
+    };
+
+    std::unordered_map<Cell, Object, Hash, Equal> bindings;
   };
 
 } //namespace Lisp
 
-inline void Lisp::Env::set(Symbol * symb, const Object & obj)
+inline std::size_t Lisp::Env::Hash::operator()(const Cell & object) const
+{
+  static std::hash<Symbol*> symbolHash;
+  assert(object.isA<Symbol>());
+  return symbolHash(object.as<Symbol>());
+}
+
+inline bool Lisp::Env::Equal::operator()(const Cell & lhs, const Cell & rhs) const
+{
+  static std::equal_to<Symbol*> symbolEq;
+  assert(lhs.isA<Symbol>());
+  assert(rhs.isA<Symbol>());
+  return symbolEq(lhs.as<Symbol>(), rhs.as<Symbol>());
+}
+
+inline void Lisp::Env::set(const Cell & symb, const Object & obj)
 {
   bindings[symb] = obj;
 }
 
-inline void Lisp::Env::set(Symbol * symb, Object && obj)
+inline void Lisp::Env::set(const Cell & symb, Object && obj)
 {
   bindings[symb] = obj;
 }
 
-inline const Lisp::Object & Lisp::Env::find(Symbol * symb) const
+inline const Lisp::Object & Lisp::Env::find(const Cell & obj) const
 {
-  auto itr = bindings.find(symb);
+  assert(obj.isA<Symbol>());
+  auto itr = bindings.find(obj);
   if(itr == bindings.end())
   {
     return Lisp::undefined;

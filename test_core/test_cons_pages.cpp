@@ -35,7 +35,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <lpp/core/types/cons.h>
 
 using ConsPages = Lisp::ConsPages;
-using Cons = Lisp::Cons;
+using BasicCons = Lisp::BasicCons;
 
 TEST_CASE("cons_pages_life_time", "[ConsPages]")
 {
@@ -44,28 +44,28 @@ TEST_CASE("cons_pages_life_time", "[ConsPages]")
   REQUIRE(pages.getPageSize() == 4u);
   REQUIRE(pages.getNumAllocated() == 0u);
   REQUIRE(pages.getNumVoid() == 0u);
-  Cons * cons1 = pages.next();
+  BasicCons * cons1 = pages.next();
   REQUIRE(testRandomAccessIterator({cons1},
                                    pages.cbegin(), pages.cend()));
   REQUIRE(pages.getNumAllocated() == 4u);
   REQUIRE(pages.getNumVoid() == 3u);
-  Cons * cons2 = pages.next();
+  BasicCons * cons2 = pages.next();
   REQUIRE(testRandomAccessIterator({cons1, cons2},
                                    pages.cbegin(), pages.cend()));
   REQUIRE(pages.getNumAllocated() == 4u);
   REQUIRE(pages.getNumVoid() == 2u);
-  Cons * cons3 = pages.next();
+  BasicCons * cons3 = pages.next();
   REQUIRE(testRandomAccessIterator({cons1, cons2, cons3},
                                    pages.cbegin(), pages.cend()));
   REQUIRE(pages.getNumAllocated() == 4u);
   REQUIRE(pages.getNumVoid() == 1u);
-  Cons * cons4 = pages.next();
+  BasicCons * cons4 = pages.next();
   REQUIRE(testRandomAccessIterator({cons1, cons2, cons3, cons4},
                                    pages.cbegin(), pages.cend()));
 
   REQUIRE(pages.getNumAllocated() == 4u);
   REQUIRE(pages.getNumVoid() == 0u);
-  Cons * cons5 = pages.next();
+  BasicCons * cons5 = pages.next();
   REQUIRE(testRandomAccessIterator({cons1, cons2, cons3, cons4, cons5},
                                    pages.cbegin(), pages.cend()));
   REQUIRE(pages.getNumAllocated() == 8u);

@@ -3,17 +3,16 @@
 #include "object.h"
 #include "types/cons.h"
 #include "types/container.h"
-#include "symbol_factory.h"
 #include <lpp/core/types/array.h> //@todo remove reference when functionality is re-implementated polymorphically
 
 using Cell = Lisp::Cell;
-using Cons = Lisp::Cons;
+using BasicCons = Lisp::BasicCons;
 using Symbol = Lisp::Symbol;
 using ManagedType = Lisp::ManagedType;
 
-Cell& Cell::operator=(const Object & rhs)
+Cell& Cell::operator=(const Cell & rhs)
 {
-  assert(!rhs.isA<Cons>() || rhs.as<Cons>()->isRoot());
+  //assert(!rhs.isA<BasicCons>() || rhs.as<BasicCons>()->isRoot());
   unset();
   typeId = rhs.typeId;
   data = rhs.data;
@@ -26,16 +25,6 @@ Cell& Cell::operator=(const Object & rhs)
 
 
 Lisp::Cell::Cell(const Cell & rhs)
-{
-  typeId = rhs.typeId;
-  data = rhs.data;
-  if(rhs.isA<ManagedType>())
-  {
-    static_cast<ManagedType*>(data.ptr)->refCount++;
-  }
-}
-
-Lisp::Cell::Cell(const Object & rhs)
 {
   typeId = rhs.typeId;
   data = rhs.data;
@@ -73,7 +62,7 @@ void Cell::unset()
 
 std::string Cell::getTypeName() const
 {
-  if(isA<Cons>())
+  if(isA<BasicCons>())
   {
     return "Cons";
   }
@@ -89,9 +78,9 @@ std::string Cell::getTypeName() const
 
 void Cell::forEachChild(std::function<void(const Cell&)> func) const
 {
-  if(isA<Cons>())
+  if(isA<BasicCons>())
   {
-    as<Cons>()->forEachChild(func);
+    as<BasicCons>()->forEachChild(func);
   }
   else if(isA<Container>())
   {
@@ -101,7 +90,7 @@ void Cell::forEachChild(std::function<void(const Cell&)> func) const
 
 void Cell::grey() const
 {
-  auto cons = as<Cons>();
+  auto cons = as<BasicCons>();
   if(cons)
   {
     cons->grey();
@@ -118,9 +107,9 @@ void Cell::grey() const
 
 bool Lisp::Cell::isRoot() const
 {
-  if(isA<Cons>())
+  if(isA<BasicCons>())
   {
-    as<Cons>()->isRoot();
+    as<BasicCons>()->isRoot();
   }
   else if(isA<Container>())
   {
@@ -134,9 +123,9 @@ bool Lisp::Cell::isRoot() const
 
 Lisp::Color Lisp::Cell::getColor() const
 {
-  if(isA<Cons>())
+  if(isA<BasicCons>())
   {
-    return as<Cons>()->getColor();
+    return as<BasicCons>()->getColor();
   }
   else if(isA<Container>())
   {
@@ -150,13 +139,17 @@ Lisp::Color Lisp::Cell::getColor() const
 
 std::size_t Lisp::Cell::getRefCount() const
 {
-  if(isA<Cons>())
+  if(isA<BasicCons>())
   {
-    return as<Cons>()->getRefCount();
+    return as<BasicCons>()->getRefCount();
   }
   else if(isA<Container>())
   {
     return as<Container>()->getRefCount();
+  }
+  else if(isA<ManagedType>())
+  {
+    return as<ManagedType>()->getRefCount();
   }
   else
   {
@@ -166,9 +159,9 @@ std::size_t Lisp::Cell::getRefCount() const
 
 bool Lisp::Cell::checkIndex() const
 {
-  if(isA<Cons>())
+  if(isA<BasicCons>())
   {
-    return as<Cons>()->checkIndex();
+    return as<BasicCons>()->checkIndex();
   }
   else if(isA<Container>())
   {
@@ -182,15 +175,24 @@ bool Lisp::Cell::checkIndex() const
 
 std::ostream & operator<<(std::ostream & ost, const Lisp::Cell & cell)
 {
+  using IntegerType = Lisp::IntegerType;
   // @todo: implement meta type with introspection and streaming interface
-  if(cell.isA<Cons>())
+  if(cell.isA<Lisp::Undefined>())
   {
-    ost << "[CONS " "#" << cell.as<Cons>() << " ";
-    if(cell.as<Cons>()->isRoot())
+    ost << "[UNDEFINED]";
+  }
+  else if(cell.isA<Lisp::IntegerType>())
+  {
+    ost << cell.as<Lisp::IntegerType>();
+  }
+  else if(cell.isA<BasicCons>())
+  {
+    ost << "[CONS " "#" << cell.as<BasicCons>() << " ";
+    if(cell.as<BasicCons>()->isRoot())
     {
-      ost << " ROOT " << cell.as<Cons>()->getRefCount() << " ";
+      ost << " ROOT " << cell.as<BasicCons>()->getRefCount() << " ";
     }
-    ost << cell.as<Cons>()->getColor()  << "]";
+    ost << cell.as<BasicCons>()->getColor()  << "]";
   }
   else if(cell.isA<Lisp::Array>())
   {

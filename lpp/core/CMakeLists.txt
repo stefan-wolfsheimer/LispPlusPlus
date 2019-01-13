@@ -1,9 +1,9 @@
 add_library( Core
-  types/lisp_symbol.cpp
   types/array.cpp
   gc/cons_pages.cpp
   gc/garbage_collector.cpp
+  gc/symbol_container.cpp
   cell.cpp
   object.cpp
-  symbol_factory.cpp
+  default_env.cpp
   vm.cpp )

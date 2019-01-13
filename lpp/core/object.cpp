@@ -34,16 +34,18 @@ either expressed or implied, of the FreeBSD Project.
 #include <lpp/core/types/container.h>
 #include <lpp/core/gc/garbage_collector.h>
 
-using Object = Lisp::Object;
 using Nil = Lisp::Nil;
+using Object = Lisp::Object;
+using BasicCons = Lisp::BasicCons;
+using Container = Lisp::Container;
 
 Object::Object(const Object & rhs) : Cell(rhs)
 {
-  if(rhs.isA<Lisp::Cons>())
+  if(rhs.isA<BasicCons>())
   {
-    static_cast<Cons*>(data.ptr)->root();
+    static_cast<BasicCons*>(data.ptr)->root();
   }
-  else if(rhs.isA<Lisp::Container>())
+  else if(rhs.isA<Container>())
   {
     static_cast<Container*>(data.ptr)->root();
   }
@@ -51,9 +53,9 @@ Object::Object(const Object & rhs) : Cell(rhs)
 
 Object::Object(const Cell & rhs) : Cell(rhs)
 {
-  if(rhs.isA<Cons>())
+  if(rhs.isA<BasicCons>())
   {
-    static_cast<Cons*>(data.ptr)->root();
+    static_cast<BasicCons*>(data.ptr)->root();
   }
   else if(rhs.isA<Container>())
   {
@@ -66,23 +68,22 @@ Object::~Object()
   unsetCons();
 }
 
-Object & Lisp::Object::operator=(const Object & rhs)
+
+Object & Object::operator=(const Cell & rhs)
 {
   Cell::unset();
   unsetCons();
   typeId = rhs.typeId;
-  if(rhs.isA<Lisp::Cons>())
+  if(rhs.isA<BasicCons>())
   {
-    assert(rhs.isRoot());
-    assert(rhs.getRefCount() > 0u);
+    assert(!rhs.isRoot() || rhs.getRefCount() > 0u);
     assert(rhs.checkIndex());
-    data.ptr = rhs.as<Cons>();
-    static_cast<Cons*>(data.ptr)->incRefCount();
+    data.ptr = rhs.as<BasicCons>();
+    static_cast<BasicCons*>(data.ptr)->incRefCount();
   }
   else if(rhs.isA<Lisp::Container>())
   {
-    assert(rhs.isRoot());
-    assert(rhs.getRefCount() > 0u);
+    assert(!rhs.isRoot() || rhs.getRefCount() > 0u);
     assert(rhs.checkIndex());
     static_cast<Container*>(data.ptr)->incRefCount();
   }
@@ -90,11 +91,54 @@ Object & Lisp::Object::operator=(const Object & rhs)
   {
     Cell::init(rhs.as<ManagedType>(), rhs.getTypeId());
   }
+  else
+  {
+    data = rhs.data;
+  }
+  return *this;
+}
+
+Object & Object::operator=(const Object & rhs)
+{
+  Cell::unset();
+  unsetCons();
+  typeId = rhs.typeId;
+  if(rhs.isA<BasicCons>())
+  {
+    assert(!rhs.isRoot() || rhs.getRefCount() > 0u);
+    assert(rhs.checkIndex());
+    data.ptr = rhs.as<BasicCons>();
+    static_cast<BasicCons*>(data.ptr)->incRefCount();
+  }
+  else if(rhs.isA<Lisp::Container>())
+  {
+    assert(!rhs.isRoot() || rhs.getRefCount() > 0u);
+    assert(rhs.checkIndex());
+    static_cast<Container*>(data.ptr)->incRefCount();
+  }
+  else if(rhs.isA<Lisp::ManagedType>())
+  {
+    Cell::init(rhs.as<ManagedType>(), rhs.getTypeId());
+  }
+  else
+  {
+    data = rhs.data;
+  }
   return *this;
 }
 
 
-Lisp::Object & Lisp::Object::operator=(Object && rhs)
+Object & Object::operator=(Cell && rhs)
+{
+  Cell::unset();
+  unsetCons();
+  typeId = rhs.typeId;
+  data = rhs.data;
+  rhs.typeId = TypeTraits<Nil>::typeId;
+  return *this;
+}
+
+Object & Object::operator=(Object && rhs)
 {
   Cell::unset();
   unsetCons();
@@ -106,16 +150,16 @@ Lisp::Object & Lisp::Object::operator=(Object && rhs)
 
 void Object::unsetCons()
 {
-  if(isA<Cons>())
+  if(isA<BasicCons>())
   {
     assert(isRoot());
     assert(getRefCount() > 0u);
     assert(checkIndex());
-    auto coll = static_cast<Cons*>(data.ptr)->getCollector();
-    static_cast<Cons*>(data.ptr)->unroot();
+    auto coll = static_cast<BasicCons*>(data.ptr)->getCollector();
+    static_cast<BasicCons*>(data.ptr)->unroot();
     assert(checkIndex());
     coll->step();
-    assert(static_cast<Cons*>(data.ptr)->getCollector()->checkSanity());
+    assert(static_cast<BasicCons*>(data.ptr)->getCollector()->checkSanity());
     assert(checkIndex());
     coll->recycle();
     assert(checkIndex());
@@ -132,7 +176,7 @@ void Object::unsetCons()
   }
 }
 
-void Object::init(Cons * cons, TypeId _typeId)
+void Object::init(BasicCons * cons, TypeId _typeId)
 {
   assert(cons->isRoot());
   assert(cons->getRefCount() == 1u);

@@ -79,7 +79,7 @@ namespace Lisp
       std::size_t pageSize;
     };
 
-    using const_iterator = IteratorAdapter<std::vector<Cons*>::const_iterator>;
+    using const_iterator = IteratorAdapter<std::vector<BasicCons*>::const_iterator>;
     inline const_iterator cbegin();
     inline const_iterator cend();
 
@@ -89,16 +89,18 @@ namespace Lisp
     inline std::size_t getNumAllocated() const;
     inline std::size_t getNumVoid() const;
     inline std::size_t getNumRecycled() const;
-    inline Cons * next();
-    inline void recycle(Cons * cons);
-    void recycleAll(const std::unordered_set<Cons*> & reachable,
-                    CollectibleContainer<Cons> & target,
+
+    inline BasicCons * next();
+
+    inline void recycle(BasicCons * cons);
+    void recycleAll(const std::unordered_set<BasicCons*> & reachable,
+                    CollectibleContainer<BasicCons> & target,
                     Color ignoreColor);
   private:
     std::size_t pageSize;
     std::size_t pos;
-    std::vector<Cons*> pages;
-    std::vector<Cons*> recycled;
+    std::vector<BasicCons*> pages;
+    std::vector<BasicCons*> recycled;
   };
 }
 
@@ -301,13 +303,13 @@ inline std::size_t Lisp::ConsPages::getNumRecycled() const
   return recycled.size();
 }
 
-inline Lisp::Cons * Lisp::ConsPages::next()
+inline Lisp::BasicCons * Lisp::ConsPages::next()
 {
   if(recycled.empty())
   {
     if(pos == pageSize)
     {
-      pages.push_back(new Cons[pageSize]);
+      pages.push_back(new BasicCons[pageSize]);
       pos = 0;
 
     }
@@ -315,13 +317,13 @@ inline Lisp::Cons * Lisp::ConsPages::next()
   }
   else
   {
-    Cons * ret = recycled.back();
+    BasicCons * ret = recycled.back();
     recycled.pop_back();
     return ret;
   }
 }
 
-inline void Lisp::ConsPages::recycle(Cons * cons)
+inline void Lisp::ConsPages::recycle(BasicCons * cons)
 {
   recycled.push_back(cons);
 }

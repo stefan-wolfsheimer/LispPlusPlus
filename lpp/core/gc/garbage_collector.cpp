@@ -80,13 +80,13 @@ void GarbageCollector::forEachReachable(std::function<void(const Cell &)> func) 
 ////////////////////////////////////////////////////////////////////////////////
 void GarbageCollector::cycle()
 {
-  std::unordered_set<Cons*> conses;
+  std::unordered_set<BasicCons*> conses;
   std::unordered_set<Container*> containers;
   forEachReachable([&conses, &containers]
                    (const Cell & cell){
-      if(cell.isA<Cons>())
+      if(cell.isA<BasicCons>())
       {
-        auto c = cell.as<Cons>();
+        auto c = cell.as<BasicCons>();
         if(!c->isRoot())
         {
           conses.insert(c);
@@ -104,7 +104,7 @@ void GarbageCollector::cycle()
   consMap.swap(conses);
   containerMap.swap(containers);
   cycles++;
-  Cons * cons;
+  BasicCons * cons;
   while((cons = consMap.popDisposed()))
   {
     cons->recycleNextChild();
@@ -115,7 +115,7 @@ void GarbageCollector::cycle()
 void Lisp::GarbageCollector::recycle()
 {
   std::size_t i = recycleSteps;
-  Cons * cons;
+  BasicCons * cons;
   while(i && (cons = consMap.popDisposed()))
   {
     cons->recycleNextChild();

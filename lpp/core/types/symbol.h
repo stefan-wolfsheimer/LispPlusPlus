@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2017-2018, Stefan Wolfsheimer
+Copyright (c) 2017-2019, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -33,27 +33,35 @@ either expressed or implied, of the FreeBSD Project.
 #include <functional>
 #include <lpp/core/types/type_id.h>
 #include <lpp/core/types/managed_type.h>
+#include <lpp/core/gc/symbol_container.h>
+
 
 namespace Lisp
 {
-  class SymbolFactory;
-
   class Symbol : public ManagedType
   {
   public:
-    ~Symbol();
+    inline ~Symbol();
     inline const std::string& getName() const;
   private:
-    friend class SymbolFactory;
+    friend class SymbolContainer;
     friend class Cell;
-    Symbol(const std::string & _name, SymbolFactory * _factory=nullptr);
+    Symbol(const std::string & _name, SymbolContainer * _factory=nullptr);
     std::string name;
-    SymbolFactory * factory;
+    SymbolContainer * container;
   };
 }
 
-inline Lisp::Symbol::Symbol(const std::string & _name, SymbolFactory * _factory)
-  : name(_name), factory(_factory)
+inline Lisp::Symbol::~Symbol()
+{
+  if(container)
+  {
+    container->remove(this); 
+  }
+}
+
+inline Lisp::Symbol::Symbol(const std::string & _name, SymbolContainer * _container)
+  : name(_name), container(_container)
 {
 }
 

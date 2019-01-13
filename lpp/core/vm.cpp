@@ -30,9 +30,13 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include <assert.h>
 #include <lpp/core/vm.h>
+#include <lpp/core/default_env.h>
+#include <lpp/core/env.h>
 #include <lpp/core/opcode.h>
 #include <lpp/core/types/function.h>
 #include <lpp/core/types/type_id.h>
+#include <lpp/core/types/symbol.h>
+
 #include "config.h"
 
 
@@ -47,16 +51,28 @@ using Object = Lisp::Object;
 using Function = Lisp::Function;
 using Cons = Lisp::Cons;
 using Symbol = Lisp::Symbol;
+using Env = Lisp::Env;
 
-
-Vm::Vm(std::shared_ptr<GarbageCollector> _consFactory)
-  : consFactory( _consFactory ?
-                 _consFactory :
-                 std::make_shared<GarbageCollector>())
+Vm::Vm(std::shared_ptr<GarbageCollector> _gc,
+       std::shared_ptr<SymbolContainer> _sc,
+       std::shared_ptr<Env> _env)
+  : gc(_gc ? _gc : std::make_shared<GarbageCollector>()),
+    sc(_sc ? _sc : std::make_shared<SymbolContainer>()),
+    env(_env ? _env : makeDefaultEnv(gc, sc))
 {
   dataStack.reserve(1024);
   values.reserve(1024);
   values.push_back(Lisp::nil);
+}
+
+Lisp::Object Lisp::Vm::symbol(const std::string & name)
+{
+  return sc->make(name);
+}
+
+void Lisp::Vm::define(const std::string & name, const Object & rhs)
+{
+  sc->make(name);
 }
 
 Object Vm::compile(const Object & obj) const
@@ -66,11 +82,13 @@ Object Vm::compile(const Object & obj) const
   }
   else if(obj.isA<Symbol>())
   {
+    // @todo dialect variations: check if reference is bound
+    return gc->makeRoot<Function>(Function::Code{LOOKUP, 0}, Array(obj));
   }
   else
   {
-    return consFactory->makeRoot<Function>(Function::Code{SETV, 0},
-                                           Array(obj));
+    return gc->makeRoot<Function>(Function::Code{SETV, 0},
+                                  Array(obj));
   }
   return Lisp::nil;
 }
@@ -89,7 +107,18 @@ void Lisp::Vm::eval(const Function * func)
       assert(itr != end);
       assert(*itr < func->data.size());
       values.resize(1);
-      values[0] = std::move(func->data.at(*itr));
+      values[0] = func->data.atCell(*itr);
+      break;
+
+    case LOOKUP:
+      ++itr;
+      assert(itr != end);
+      assert(*itr < func->data.size());
+      assert(func->data.at(*itr).isA<Symbol>());
+      values.resize(1);
+      // @todo throw if undefined
+      values[0] = env->find(func->data.at(*itr));
+      break;
     }
     ++itr;
   }

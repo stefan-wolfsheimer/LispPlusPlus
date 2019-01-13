@@ -31,6 +31,8 @@ either expressed or implied, of the FreeBSD Project.
 #pragma once
 #include <vector>
 #include <functional>
+#include <type_traits>
+#include <assert.h>
 #include <lpp/core/gc/color_map.h>
 #include <lpp/core/gc/cons_pages.h>
 #include <lpp/core/gc/collectible_container.h>
@@ -50,25 +52,16 @@ namespace Lisp
                      unsigned short _garbageSteps=1,
                      unsigned short _recycleSteps=1);
 
-    inline Cons * makeCons(const Cell & car, const Cell & cdr);
-    inline Cons * makeCons(Cell && car, const Cell & cdr);
-    inline Cons * makeCons(const Cell & car, Cell && cdr);
-    inline Cons * makeCons(Cell && car, Cell && cdr);
+
+    template<typename C,  typename... ARGS>
+    inline C * make(const ARGS & ... rest);
 
     /**
-     * Allocate and initialize a new Cons object in the root set.
+     * Allocate and initialize a new Cons / Collectible object in the root set.
      * Reference count is 0.
      */
-    inline Cons * makeRootCons(const Cell & car, const Cell & cdr);
-    inline Cons * makeRootCons(Cell && car, const Cell & cdr);
-    inline Cons * makeRootCons(const Cell & car, Cell && cdr);
-    inline Cons * makeRootCons(Cell && car, Cell && cdr);
-
     template<typename C,  typename... ARGS>
-    inline C * make(ARGS... rest);
-
-    template<typename C,  typename... ARGS>
-    inline C * makeRoot(ARGS... rest);
+    inline C * makeRoot(const ARGS & ... rest);
 
     inline std::size_t numCollectible() const;
     inline std::size_t numRootCollectible() const;
@@ -118,7 +111,7 @@ namespace Lisp
     inline bool checkBulkSanity(Color color) const;
 
   private:
-    ColorMap<Cons> consMap;
+    ColorMap<BasicCons> consMap;
     ColorMap<Container> containerMap;
     Container * toBeRecycled;
     ConsPages consPages;
@@ -132,8 +125,42 @@ namespace Lisp
                      std::function<void(const Cell &)> func) const;
     void forEachContainer(const CollectibleContainer<Container> & containers,
                           std::function<void(const Cell &)> func) const;
-    inline Cons * makeCons();
-    inline Cons * makeRootCons();
+    template<typename C>
+    inline C * makeCons();
+
+    template<typename C>
+    inline C * makeRootCons();
+
+    template<typename C>
+    inline C * _make(std::true_type, const Cell & car, const Cell & cdr);
+
+    template<typename C>
+    inline C * _make(std::true_type, Cell && car, const Cell & cdr);
+
+    template<typename C>
+    inline C * _make(std::true_type, const Cell & car, Cell && cdr);
+
+    template<typename C>
+    inline C * _make(std::true_type, Cell && car, Cell && cdr);
+
+    template<typename C>
+    inline C * _makeRoot(std::true_type, const Cell & car, const Cell & cdr);
+
+    template<typename C>
+    inline C * _makeRoot(std::true_type, Cell && car, const Cell & cdr);
+
+    template<typename C>
+    inline C * _makeRoot(std::true_type, const Cell & car, Cell && cdr);
+
+    template<typename C>
+    inline C * _makeRoot(std::true_type, Cell && car, Cell && cdr);
+
+    template<typename C,  typename... ARGS>
+    inline C * _make(std::false_type, ARGS... rest);
+
+    template<typename C,  typename... ARGS>
+    inline C * _makeRoot(std::false_type, ARGS... rest);
+
     inline bool checkSanity(Color color, bool root) const;
   };
 }
@@ -158,103 +185,134 @@ inline Lisp::GarbageCollector::GarbageCollector(std::size_t consPageSize,
 {
 }
 
+template<typename C, typename... ARGS>
+inline C * Lisp::GarbageCollector::make(const ARGS & ... rest)
+{
+  return _make<C>(typename std::is_base_of<BasicCons, C>::type(), rest...);
+}
+
+template<typename C,  typename... ARGS>
+inline C * Lisp::GarbageCollector::makeRoot(const ARGS & ... rest)
+{
+  return _makeRoot<C>(typename std::is_base_of<BasicCons, C>::type(), rest...);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 //
 // Cons
 //
 ////////////////////////////////////////////////////////////////////////////////
-inline Lisp::Cons * Lisp::GarbageCollector::makeCons()
+template<typename C>
+inline C * Lisp::GarbageCollector::makeCons()
 {
+  // is derived from BasicCons and no members have been added
+  typedef std::is_base_of<BasicCons, C> is_base_of_basic_cons;
+  assert(is_base_of_basic_cons::value);
+  assert(sizeof(C) == sizeof(BasicCons));
+
   step();
   recycle();
-  Cons * ret = consPages.next();
+  BasicCons * ret = consPages.next();
   ret->setRefCount(1u);
   consMap.add(ret);
-  return ret;
+  return static_cast<C*>(ret);
 }
 
-inline Lisp::Cons * Lisp::GarbageCollector::makeRootCons()
+template<typename C>
+inline C * Lisp::GarbageCollector::makeRootCons()
 {
+  // is derived from BasicCons and no members have been added
+  typedef std::is_base_of<BasicCons, C> is_base_of_basic_cons;
+  assert(is_base_of_basic_cons::value);
+  assert(sizeof(C) == sizeof(BasicCons));
+
   step();
   recycle();
-  Cons * ret = consPages.next();
+  BasicCons * ret = consPages.next();
   ret->setRefCount(1u);
   consMap.addRoot(ret);
-  return ret;
+  return static_cast<C*>(ret);
 }
 
-inline Lisp::Cons * Lisp::GarbageCollector::makeCons(const Cell & car, const Cell & cdr)
+template<typename C>
+inline C * Lisp::GarbageCollector::_make(std::true_type, const Cell & car, const Cell & cdr)
 {
-  Cons * ret = makeCons();
+  C * ret = makeCons<C>();
   ret->car = car;
   ret->cdr = cdr;
   return ret;
 }
 
-inline Lisp::Cons * Lisp::GarbageCollector::makeCons(const Cell & car, Cell && cdr)
+template<typename C>
+inline C * Lisp::GarbageCollector::_make(std::true_type, Cell && car, const Cell & cdr)
 {
-  Cons * ret = makeCons();
+  C * ret = makeCons<C>();
   ret->car = car;
   ret->cdr = cdr;
   return ret;
 }
 
-inline Lisp::Cons * Lisp::GarbageCollector::makeCons(Cell && car, const Cell & cdr)
+template<typename C>
+inline C * Lisp::GarbageCollector::_make(std::true_type, const Cell & car, Cell && cdr)
 {
-  Cons * ret = makeCons();
+  C * ret = makeCons<C>();
   ret->car = car;
   ret->cdr = cdr;
   return ret;
 }
 
-inline Lisp::Cons * Lisp::GarbageCollector::makeCons(Cell && car, Cell && cdr)
+template<typename C>
+inline C * Lisp::GarbageCollector::_make(std::true_type, Cell && car, Cell && cdr)
 {
-  Cons * ret = makeCons();
+  C * ret = makeCons<C>();
   ret->car = car;
   ret->cdr = cdr;
   return ret;
 }
 
-inline Lisp::Cons * Lisp::GarbageCollector::makeRootCons(const Cell & car, const Cell & cdr)
+template<typename C>
+inline C * Lisp::GarbageCollector::_makeRoot(std::true_type, const Cell & car, const Cell & cdr)
 {
-  Cons * ret = makeRootCons();
+  C * ret = makeRootCons<C>();
   ret->car = car;
   ret->cdr = cdr;
   return ret;
 }
 
-inline Lisp::Cons * Lisp::GarbageCollector::makeRootCons(Cell && car, const Cell & cdr)
+template<typename C>
+inline C * Lisp::GarbageCollector::_makeRoot(std::true_type, Cell && car, const Cell & cdr)
 {
-  Cons * ret = makeRootCons();
+  C * ret = makeRootCons<C>();
   ret->car = car;
   ret->cdr = cdr;
   return ret;
 }
 
-inline Lisp::Cons * Lisp::GarbageCollector::makeRootCons(const Cell & car, Cell && cdr)
+template<typename C>
+inline C * Lisp::GarbageCollector::_makeRoot(std::true_type, const Cell & car, Cell && cdr)
 {
-  Cons * ret = makeRootCons();
+  C * ret = makeRootCons<C>();
   ret->car = car;
   ret->cdr = cdr;
   return ret;
 }
 
-inline Lisp::Cons * Lisp::GarbageCollector::makeRootCons(Cell && car, Cell && cdr)
+template<typename C>
+inline C * Lisp::GarbageCollector::_makeRoot(std::true_type, Cell && car, Cell && cdr)
 {
-  Cons * ret = makeRootCons();
+  C * ret = makeRootCons<C>();
   ret->car = car;
   ret->cdr = cdr;
   return ret;
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////
 //
 // Container
 //
 ////////////////////////////////////////////////////////////////////////////////
-template<typename C, typename... ARGS>
-inline C * Lisp::GarbageCollector::make(ARGS... rest)
+template<typename C,  typename... ARGS>
+inline C * Lisp::GarbageCollector::_make(std::false_type, ARGS... rest)
 {
   step();
   recycle();
@@ -265,7 +323,7 @@ inline C * Lisp::GarbageCollector::make(ARGS... rest)
 }
 
 template<typename C,  typename... ARGS>
-inline C * Lisp::GarbageCollector::makeRoot(ARGS... rest)
+inline C * Lisp::GarbageCollector::_makeRoot(std::false_type, ARGS... rest)
 {
   step();
   recycle();

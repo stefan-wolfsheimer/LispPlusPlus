@@ -123,7 +123,7 @@ SCENARIO("one cons without children", "[GarbageCollector]")
         / \
     */
     auto coll = makeCollector(8);
-    auto obj = std::make_shared<Object>(coll->makeRootCons(Lisp::nil, Lisp::nil));
+    auto obj = std::make_shared<Object>(coll->makeRoot<Cons>(Lisp::nil, Lisp::nil));
     auto cons = obj->as<Cons>();
     CollectibleGraph graph(*coll);
     REQUIRE(obj->isRoot());
@@ -178,7 +178,7 @@ SCENARIO("one cons with self-ref", "[GarbageCollector]")
         / \
     */
     auto coll = makeCollector(8);
-    auto obj = std::make_shared<Object>(coll->makeRootCons(Lisp::nil, Lisp::nil));
+    auto obj = std::make_shared<Object>(coll->makeRoot<Cons>(Lisp::nil, Lisp::nil));
     auto cons = obj->as<Cons>();
     cons->setCar(*obj);
     cons->setCdr(*obj);
@@ -260,8 +260,8 @@ SCENARIO("a cons with 2 children", "[GarbageCollector]")
   {
     auto coll = makeCollector(8);
     //@todo check if we can use Cell(coll->makeCons)
-    auto obj = Object(coll->makeRootCons(Object(coll->makeRootCons(Lisp::nil, Lisp::nil)),
-                                         Object(coll->makeRootCons(Lisp::nil, Lisp::nil))));
+    auto obj = Object(coll->makeRoot<Cons>(Object(coll->makeRoot<Cons>(Lisp::nil, Lisp::nil)),
+                                         Object(coll->makeRoot<Cons>(Lisp::nil, Lisp::nil))));
     auto cons = obj.as<Cons>();
     CollectibleGraph graph(*coll);
     REQUIRE(cons);
@@ -401,13 +401,13 @@ SCENARIO("3 conses with 4 children", "[GarbageCollector]")
       */
 
     auto coll = makeCollector(8);
-    Object cons1(coll->makeRootCons(Object(coll->makeRootCons(Lisp::nil,
+    Object cons1(coll->makeRoot<Cons>(Object(coll->makeRoot<Cons>(Lisp::nil,
                                                               Lisp::nil)),
-                                    Object(coll->makeRootCons(Lisp::nil,
+                                    Object(coll->makeRoot<Cons>(Lisp::nil,
                                                               Lisp::nil))));
-    Object cons2(coll->makeRootCons(Object(coll->makeRootCons(Lisp::nil,
+    Object cons2(coll->makeRoot<Cons>(Object(coll->makeRoot<Cons>(Lisp::nil,
                                                               Lisp::nil)),
-                                    Object(coll->makeRootCons(Lisp::nil,
+                                    Object(coll->makeRoot<Cons>(Lisp::nil,
                                                               Lisp::nil))));
     CollectibleGraph graph(*coll);
     REQUIRE(coll->numVoidCollectible() == 2u);
@@ -428,7 +428,7 @@ SCENARIO("3 conses with 4 children", "[GarbageCollector]")
          o   o    o   o
       */
 
-      Object cons3(coll->makeRootCons(cons2.as<Cons>()->getCar(), Lisp::nil));
+      Object cons3(coll->makeRoot<Cons>(cons2.as<Cons>()->getCar(), Lisp::nil));
       CollectibleGraph graph(*coll);
       REQUIRE(coll->numVoidCollectible() == 1u);
       REQUIRE(checkCollectible(coll, 0u,
@@ -482,9 +482,9 @@ SCENARIO("copy cons object with object copy constructor", "[GarbageCollector]")
   GIVEN("A cons with 2 children")
   {
     auto coll = makeCollector(8);
-    Object cons1(coll->makeRootCons(Object(coll->makeRootCons(Lisp::nil,
+    Object cons1(coll->makeRoot<Cons>(Object(coll->makeRoot<Cons>(Lisp::nil,
                                                               Lisp::nil)),
-                                    Object(coll->makeRootCons(Lisp::nil,
+                                    Object(coll->makeRoot<Cons>(Lisp::nil,
                                                               Lisp::nil))));
     REQUIRE(cons1.isA<Cons>());
     REQUIRE(cons1.as<Cons>()->getRefCount() == 1u);
@@ -524,13 +524,13 @@ SCENARIO("copy cons object with object assignement operator", "[GarbageCollector
   GIVEN("conses with 4 children")
   {
     auto coll = makeCollector(8);
-    Object cons1(coll->makeRootCons(Object(coll->makeRootCons(Lisp::nil,
+    Object cons1(coll->makeRoot<Cons>(Object(coll->makeRoot<Cons>(Lisp::nil,
                                                               Lisp::nil)),
-                                    Object(coll->makeRootCons(Lisp::nil,
+                                    Object(coll->makeRoot<Cons>(Lisp::nil,
                                                               Lisp::nil))));
-    Object cons2(coll->makeRootCons(Object(coll->makeRootCons(Lisp::nil,
+    Object cons2(coll->makeRoot<Cons>(Object(coll->makeRoot<Cons>(Lisp::nil,
                                                               Lisp::nil)),
-                                    Object(coll->makeRootCons(Lisp::nil,
+                                    Object(coll->makeRoot<Cons>(Lisp::nil,
                                                               Lisp::nil))));
     WHEN("cons1 is set to cons2")
     {
@@ -560,11 +560,11 @@ TEST_CASE("automatic collection with lots of temporary objects", "[GarbageCollec
   coll->enableCollector();
   coll->enableRecycling();
   {
-    auto obj = Object(coll->makeRootCons(Lisp::nil,
-                                         Object(coll->makeRootCons(Lisp::nil,
-                                                                   Object(coll->makeRootCons(Lisp::nil,
-                                                                                             Object(coll->makeRootCons(Lisp::nil,
-                                                                                                                       Lisp::nil))))))));
+    auto obj = Object(coll->makeRoot<Cons>(Lisp::nil,
+                                           Object(coll->makeRoot<Cons>(Lisp::nil,
+                                                                       Object(coll->makeRoot<Cons>(Lisp::nil,
+                                                                                                   Object(coll->makeRoot<Cons>(Lisp::nil,
+                                                                                                                               Lisp::nil))))))));
     REQUIRE(coll->getCycles() == 2u);
     REQUIRE(checkCollectible(coll, 0u,
                              { Color::Black == 1u},
@@ -608,8 +608,8 @@ SCENARIO("one array with cons children", "[GarbageCollector]")
   auto coll = makeCollector(8);
   GIVEN("A root array")
   {
-    auto cons1 = Object(coll->makeRootCons(Object(coll->makeRootCons(Lisp::nil, Lisp::nil)),
-                                           Object(coll->makeRootCons(Lisp::nil, Lisp::nil))));
+    auto cons1 = Object(coll->makeRoot<Cons>(Object(coll->makeRoot<Cons>(Lisp::nil, Lisp::nil)),
+                                             Object(coll->makeRoot<Cons>(Lisp::nil, Lisp::nil))));
     REQUIRE(cons1.getColor() == Color::White);
     REQUIRE(cons1.as<Cons>()->getCarCell().getColor() == Color::Grey);
     REQUIRE(cons1.as<Cons>()->getCarCell().getColor() == Color::Grey);
@@ -618,11 +618,11 @@ SCENARIO("one array with cons children", "[GarbageCollector]")
     REQUIRE(array->isRoot());
     REQUIRE(array->getColor() == Color::White);
     REQUIRE(array->getRefCount() == 1u);
-    array->append(Cell(coll->makeCons(Lisp::nil, Lisp::nil)),
+    array->append(Cell(coll->make<Cons>(Lisp::nil, Lisp::nil)),
                   Object(1),
-                  Cell(coll->makeCons(Lisp::nil, Lisp::nil)),
+                  Cell(coll->make<Cons>(Lisp::nil, Lisp::nil)),
                   Object(3),
-                  coll->makeCons(Lisp::nil, Lisp::nil));
+                  coll->make<Cons>(Lisp::nil, Lisp::nil));
     REQUIRE(array->atCell(0).isA<Cons>());
     REQUIRE(array->atCell(0).isRoot() == false);
     REQUIRE(array->atCell(0).getColor() == Color::Grey);
@@ -699,7 +699,7 @@ SCENARIO("one array with cons children", "[GarbageCollector]")
 
       /////////////////////////
       coll->disableCollector();
-      array->set(1, Object(coll->makeRootCons(Lisp::nil, Lisp::nil)));
+      array->set(1, Object(coll->makeRoot<Cons>(Lisp::nil, Lisp::nil)));
       coll->enableCollector();
       REQUIRE(array->atCell(1).getColor() == Color::Grey);
       
@@ -800,7 +800,7 @@ SCENARIO("a cons with 2 array children", "[GarbageCollector]")
   GIVEN("A cons coll with 2 children")
   {
     auto coll = makeCollector(8);
-    auto obj = Object(coll->makeRootCons(Cell(coll->make<Array>(Lisp::nil, Lisp::nil)),
+    auto obj = Object(coll->makeRoot<Cons>(Cell(coll->make<Array>(Lisp::nil, Lisp::nil)),
                                          Cell(coll->make<Array>(Lisp::nil, Lisp::nil))));
     auto cons = obj.as<Cons>();
     REQUIRE(cons->isRoot());
@@ -939,7 +939,7 @@ TEST_CASE("simul", "[GarbageCollector]")
   auto coll = makeCollector(8);
   coll->enableCollector();
   coll->enableRecycling();
-  auto obj = std::make_shared<Object>(coll->makeRootCons(Lisp::nil, Lisp::nil));
+  auto obj = std::make_shared<Object>(coll->makeRoot<Cons>(Lisp::nil, Lisp::nil));
   obj->as<Cons>()->setCar(Cell(coll->make<Array>()));
   
 }

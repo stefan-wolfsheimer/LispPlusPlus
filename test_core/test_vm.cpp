@@ -107,9 +107,14 @@ TEST_CASE("push_does_not_create_temporary_objects", "[Vm]")
 }
 
 
-TEST_CASE("eval", "[Vm]")
+TEST_CASE("eval_value", "[Vm]")
 {
+
   Vm vm;
+  Object obj(1);
+  REQUIRE(obj.isA<IntegerType>());
+  REQUIRE(obj.as<IntegerType>() == 1u);
+  
   auto func = vm.compile(Object(1));
   REQUIRE(func.isA<Function>());
   vm.eval(func.as<Function>());
@@ -118,3 +123,14 @@ TEST_CASE("eval", "[Vm]")
   REQUIRE(res.as<IntegerType>() == 1u);
 }
 
+TEST_CASE("eval_lookup", "[Vm]")
+{
+  using Undefined = Lisp::Undefined;
+  Vm vm;
+  auto func = vm.compile(vm.symbol("a"));
+  REQUIRE(func.isA<Function>());
+  // @todo exception if unbound
+  vm.eval(func.as<Function>());
+  auto res = vm.getValue();
+  REQUIRE(res.isA<Undefined>());
+}

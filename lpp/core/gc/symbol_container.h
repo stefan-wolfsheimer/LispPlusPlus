@@ -34,16 +34,17 @@ either expressed or implied, of the FreeBSD Project.
 
 namespace Lisp
 {
-class Symbol;
-class SymbolFactory
-{
-public:
-  ~SymbolFactory();
-  Symbol * make(const std::string & name);
-private:
-  friend class Symbol;
-  void remove(Symbol * symbol);
-  std::unordered_map<std::string, Symbol*> symbols;
-};
+  class Symbol;
 
+  class SymbolContainer
+  {
+  public:
+    ~SymbolContainer();
+    Symbol * make(const std::string & name);
+    //Symbol * makeRoot(const std::string & name);
+  private:
+    friend class Symbol;
+    void remove(Symbol * symbol);
+    std::unordered_map<std::string, Symbol*> symbols;
+  };
 } //namespace Lisp

@@ -38,7 +38,7 @@ IF(CMAKE_BUILD_TYPE MATCHES Debug)
       test_core/test_cons.cpp
       test_core/test_array.cpp
       test_core/test_garbage_collector.cpp
-      test_core/test_symbol_factory.cpp
+      test_core/test_symbol_container.cpp
       test_core/test_function.cpp
       test_core/test_env.cpp
       test_core/test_vm.cpp

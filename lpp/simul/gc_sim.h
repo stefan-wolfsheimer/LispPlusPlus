@@ -251,7 +251,7 @@ inline const Lisp::Cell & Lisp::GcSim::addRoot(std::size_t nchildren)
   root.push_back(std::shared_ptr<Object>());
   if(nchildren == 2)
   {
-    root.back().reset(new Object(gc.makeRootCons(Lisp::nil, Lisp::nil)));
+    root.back().reset(new Object(gc.makeRoot<Cons>(Lisp::nil, Lisp::nil)));
   }
   else
   {
@@ -361,7 +361,7 @@ inline Lisp::Cell Lisp::GcSim::createNode(std::size_t nchildren)
 {
   if(nchildren == 2)
   {
-    return gc.makeCons(Lisp::nil, Lisp::nil);
+    return gc.make<Cons>(Lisp::nil, Lisp::nil);
   }
   else
   {

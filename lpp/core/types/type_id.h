@@ -65,6 +65,30 @@ either expressed or implied, of the FreeBSD Project.
  template<>                                                             \
  struct TypeTraits<const CLS> : Traits::Pointer<const CLS, Traits::IdMask<ID>> {}
 
+#define DEF_TRAITS_PTR_LT(CLS, ID)                                      \
+ template<>                                                             \
+ struct TypeTraits<CLS> : Traits::Pointer<CLS, Traits::IdLt<ID>> {};    \
+ template<>                                                             \
+ struct TypeTraits<const CLS> : Traits::Pointer<const CLS, Traits::IdLt<ID>> {}
+
+#define DEF_TRAITS_PTR_GT(CLS, ID)                                      \
+ template<>                                                             \
+ struct TypeTraits<CLS> : Traits::Pointer<CLS, Traits::IdGt<ID>> {};    \
+ template<>                                                             \
+ struct TypeTraits<const CLS> : Traits::Pointer<const CLS, Traits::IdGt<ID>> {}
+
+#define DEF_TRAITS_NUL_LT(CLS, ID)                                      \
+ template<>                                                             \
+ struct TypeTraits<CLS> : Traits::Null<Traits::IdLt<ID>> {};            \
+ template<>                                                             \
+ struct TypeTraits<const CLS> : Traits::Null<Traits::IdLt<ID>> {}
+
+#define DEF_TRAITS_NUL_GT(CLS, ID)                                      \
+ template<>                                                             \
+ struct TypeTraits<CLS> : Traits::Null<Traits::IdGt<ID>> {};            \
+ template<>                                                             \
+ struct TypeTraits<const CLS> : Traits::Null<Traits::IdGt<ID>> {}
+
 #define DEF_TRAITS_PTR_CHOIC(CLS, C1, C2)                               \
  template<>                                                             \
  struct TypeTraits<CLS> : Traits::PointerChoice<CLS, C1, C2> {};        \
@@ -77,26 +101,29 @@ namespace Lisp
 {
   /** typeId
    *  largest bit flags managed types
-   *  00: nil           (0x0000)
-   *      cons          (0x0002)
-   *  01: value types   (0x4000)
-   *  10: managed types (0x8000)
-   *  11: collectibleContainer   (0xc000)
+   *  00: value types             (0x0000)
+   *  01: cons types              (0x4000)
+   *  10: managed types           (0x8000)
+   *  11: collectibleContainer    (0xc000)
    */
 
   class ManagedType;
   class Collectible;
   /** 
-        BasicType
-           |
-      Collectible
-         /    \
-     Cons      Container
+               BasicType
+                  |
+             Collectible
+              /      \
+            Cons     Container
+                         \
+                        Array
    */
   class Container;
   class Symbol;
   class String;
   class Array;
+  class BasicCons;
+  class Reference;
   class Cons;
   class Cell;
   class ConsFactory;
@@ -107,21 +134,29 @@ namespace Lisp
   struct Undefined : BasicType {};
 
 
+  DEF_TRAITS_NUL_LT(ValueType,      0x4000u);
   DEF_TRAITS_NUL(Nil,               0x0000u);
   DEF_TRAITS_NUL(Undefined,         0x0001u);
-  DEF_TRAITS_INT(IntegerType,       0x4001u);
+  DEF_TRAITS_INT(IntegerType,       0x0002u);
+
+  // conses
+  DEF_TRAITS_PTR_MATCH(BasicCons,   0x4000u);
+  DEF_TRAITS_PTR(Cons,              0x4001u);
+  DEF_TRAITS_PTR(Reference,         0x4002u);
+
+  // objects
+  DEF_TRAITS_PTR_MATCH(ManagedType, 0x8000u);
+  
   DEF_TRAITS_PTR(String,            0x8001u);
   DEF_TRAITS_PTR(Symbol,            0x8002u);
   DEF_TRAITS_PTR(BuiltinFunction,   0x8003u);
-  DEF_TRAITS_PTR(Cons,              0x0002u);
-  DEF_TRAITS_PTR(Array,             0xc001u);
   DEF_TRAITS_PTR(Function,          0xc002u);
 
-  DEF_TRAITS_NUL_MATCH(ValueType,   0x4000u);
-  DEF_TRAITS_PTR_MATCH(ManagedType, 0x8000u);
   DEF_TRAITS_PTR_MATCH(Container,   0xc000u);
-  DEF_TRAITS_PTR_CHOIC(Collectible, Container, Cons);
+  DEF_TRAITS_PTR(Array,             0xc001u);
 
+  DEF_TRAITS_PTR_GT(Collectible,    0x0fffu);
+  //DEF_TRAITS_PTR_CHOIC(Collectible, Container, Cons);
 }
 
 
@@ -130,6 +165,8 @@ namespace Lisp
 #undef DEF_TRAITS_INT
 #undef DEF_TRAITS_PTR
 #undef DEF_TRAITS_PTR_MATCH
+#undef DEF_TRAITS_PTR_LT
+#undef DEF_TRAITS_PTR_GT
+#undef DEF_TRAITS_NUL_LT
+#undef DEF_TRAITS_NUL_GT
 #undef DEF_TRAITS_PCR_CHOIC
-
-

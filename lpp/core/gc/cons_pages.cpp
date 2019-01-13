@@ -49,8 +49,8 @@ ConsPages::~ConsPages()
   }
 }
 
-void ConsPages::recycleAll(const std::unordered_set<Cons*> & reachable,
-                           CollectibleContainer<Cons> & target,
+void ConsPages::recycleAll(const std::unordered_set<BasicCons*> & reachable,
+                           CollectibleContainer<BasicCons> & target,
                            Color ignoreColor)
 {
   recycled.clear();

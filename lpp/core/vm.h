@@ -32,7 +32,9 @@ either expressed or implied, of the FreeBSD Project.
 #include <memory>
 #include <lpp/core/object.h>
 #include <lpp/core/gc/garbage_collector.h>
+#include <lpp/core/gc/symbol_container.h>
 #include <lpp/core/types/array.h>
+#include <lpp/core/default_env.h>
 #include "types/lisp_function_interface.h"
 
 namespace Lisp
@@ -41,7 +43,10 @@ namespace Lisp
   {
   public:
     static const bool withDebug;
-    Vm(std::shared_ptr<GarbageCollector> _consFactory = nullptr);
+    Vm(std::shared_ptr<GarbageCollector> _gc = nullptr,
+       std::shared_ptr<SymbolContainer> _sc = nullptr,
+       std::shared_ptr<Env> _env = nullptr);
+    
     inline std::shared_ptr<GarbageCollector> getConsFactory() const;
     inline Object cons(const Object & car, const Object & cdr);
     inline Object list();
@@ -49,17 +54,19 @@ namespace Lisp
     inline Object list(Object && a);
 
     template<typename... ARGS>
-    Object list(const Object & a, ARGS... rest);
+    Object list(const Object & a, const ARGS & ... rest);
 
     template<typename... ARGS>
-    Object list(Object && a, ARGS... rest);
+    Object list(Object && a, const ARGS & ... rest);
 
     inline Object array();
 
     template<typename... ARGS>
-    inline Object array(ARGS... rest);
+    inline Object array(const ARGS & ... rest);
     
     Object symbol(const std::string & name);
+
+    void define(const std::string & name, const Object & rhs);
     //void setq(const std::string & name, const Object & obj);
     //void setq(const Object & obj, const Object & rhs);
     //void setq(Symbol * obj, const Object & rhs);
@@ -74,7 +81,9 @@ namespace Lisp
     void eval(const Function * func);
     inline const Object & getValue() const;
   private:
-    std::shared_ptr<GarbageCollector> consFactory;
+    std::shared_ptr<GarbageCollector> gc;
+    std::shared_ptr<SymbolContainer> sc;
+    std::shared_ptr<Env> env;
     std::vector<Object> dataStack;
     std::vector<Object> values;
   };
@@ -85,13 +94,13 @@ namespace Lisp
  ******************************************************************************/
 std::shared_ptr<Lisp::GarbageCollector> Lisp::Vm::getConsFactory() const
 {
-  return consFactory;
+  return gc;
 }
 
 inline Lisp::Object Lisp::Vm::cons(const Lisp::Object & _car,
                                    const Lisp::Object & _cdr)
 {
-  return Lisp::Object(consFactory->makeRootCons(_car, _cdr));
+  return Lisp::Object(gc->makeRoot<Cons>(_car, _cdr));
 }
 
 inline Lisp::Object Lisp::Vm::list()
@@ -110,26 +119,26 @@ inline Lisp::Object Lisp::Vm::list(Object && a)
 }
 
 template<typename... ARGS>
-Lisp::Object Lisp::Vm::list(const Lisp::Object & a, ARGS... rest)
+Lisp::Object Lisp::Vm::list(const Lisp::Object & a, const ARGS & ... rest)
 {
   return cons(a, std::move(list(rest...)));
 }
 
 template<typename... ARGS>
-Lisp::Object Lisp::Vm::list(Lisp::Object && a, ARGS... rest)
+Lisp::Object Lisp::Vm::list(Lisp::Object && a, const ARGS & ... rest)
 {
   return cons(a, std::move(list(rest...)));
 }
 
 inline Lisp::Object Lisp::Vm::array()
 {
-  return consFactory->makeRoot<Lisp::Array>();
+  return gc->makeRoot<Lisp::Array>();
 }
 
 template<typename... ARGS>
-inline Lisp::Object Lisp::Vm::array(ARGS... rest)
+inline Lisp::Object Lisp::Vm::array(const ARGS & ... rest)
 {
-  Object ret(consFactory->makeRoot<Lisp::Array>());
+  Object ret(gc->makeRoot<Lisp::Array>());
   ret.as<Array>()->append(rest...);
   return ret;
 }
@@ -151,7 +160,7 @@ inline void Lisp::Vm::pop()
 
 inline void Lisp::Vm::pop(std::size_t n)
 {
-  dataStack.erase(dataStack.end()-n, dataStack.end());
+  //dataStack.erase(dataStack.end()-n, dataStack.end());
 }
 
 inline const Lisp::Object & Lisp::Vm::getValue() const

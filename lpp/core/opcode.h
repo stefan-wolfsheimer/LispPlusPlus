@@ -35,5 +35,6 @@ namespace Lisp
 {
   using InstructionType = std::size_t;
   static const InstructionType SETV = 0x01;
+  static const InstructionType LOOKUP = 0x02;
 }
 

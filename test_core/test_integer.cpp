@@ -40,6 +40,5 @@ TEST_CASE("integer_is_a_integer", "[Integer]")
 {
   Object obj(2);
   REQUIRE(obj.isA<IntegerType>());
-  //REQUIRE(obj.isA<AtomType>());
   REQUIRE(obj.as<IntegerType>() == 2);
 }
