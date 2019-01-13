@@ -67,6 +67,7 @@ namespace Lisp
     Object symbol(const std::string & name);
 
     void define(const std::string & name, const Object & rhs);
+    Object find(const std::string & name) const;
     //void setq(const std::string & name, const Object & obj);
     //void setq(const Object & obj, const Object & rhs);
     //void setq(Symbol * obj, const Object & rhs);

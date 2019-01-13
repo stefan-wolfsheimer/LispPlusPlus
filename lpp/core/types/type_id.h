@@ -105,34 +105,40 @@ namespace Lisp
    *  01: cons types              (0x4000)
    *  10: managed types           (0x8000)
    *  11: collectibleContainer    (0xc000)
+   * 
+   *            BasicType
+   *               |
+   *          Collectible
+   *           /        \
+   *     BasicCons    Container
+   *                     \
+   *                    Array
    */
 
-  class ManagedType;
+  /* collectible types (container or BasicCons or Container) */
   class Collectible;
-  /** 
-               BasicType
-                  |
-             Collectible
-              /      \
-            Cons     Container
-                         \
-                        Array
-   */
-  class Container;
-  class Symbol;
-  class String;
-  class Array;
-  class BasicCons;
-  class Reference;
-  class Cons;
-  class Cell;
-  class ConsFactory;
-  class BuiltinFunction;
-  class Function;
+
+  /* value types */
   struct ValueType : BasicType {};
   struct Nil : BasicType {};
   struct Undefined : BasicType {};
 
+  /* conses types */
+  class BasicCons;
+  class Cons;
+  class Reference;
+
+  /* managed types */
+  class ManagedType;
+  class String;
+  class Symbol;
+  class Form;
+  class BuiltinFunction;
+  class Function;
+
+  /* collectible */
+  class Container;
+  class Array;
 
   DEF_TRAITS_NUL_LT(ValueType,      0x4000u);
   DEF_TRAITS_NUL(Nil,               0x0000u);
@@ -146,17 +152,16 @@ namespace Lisp
 
   // objects
   DEF_TRAITS_PTR_MATCH(ManagedType, 0x8000u);
-  
   DEF_TRAITS_PTR(String,            0x8001u);
   DEF_TRAITS_PTR(Symbol,            0x8002u);
   DEF_TRAITS_PTR(BuiltinFunction,   0x8003u);
-  DEF_TRAITS_PTR(Function,          0xc002u);
+  DEF_TRAITS_PTR(Form,              0x8005u);
 
   DEF_TRAITS_PTR_MATCH(Container,   0xc000u);
   DEF_TRAITS_PTR(Array,             0xc001u);
-
+  DEF_TRAITS_PTR(Function,          0xc002u);
+  
   DEF_TRAITS_PTR_GT(Collectible,    0x0fffu);
-  //DEF_TRAITS_PTR_CHOIC(Collectible, Container, Cons);
 }
 
 

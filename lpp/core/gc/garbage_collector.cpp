@@ -36,6 +36,11 @@ either expressed or implied, of the FreeBSD Project.
 using GarbageCollector = Lisp::GarbageCollector;
 using Cell = Lisp::Cell;
 
+GarbageCollector::~GarbageCollector()
+{
+  cycle();
+}
+
 void GarbageCollector::forEachContainer(const CollectibleContainer<Container> & containers,
                                         std::function<void(const Cell &)> func) const
 {
@@ -109,7 +114,22 @@ void GarbageCollector::cycle()
   {
     cons->recycleNextChild();
     consPages.recycle(cons);
-  } 
+  }
+  if(toBeRecycled)
+  {
+    while(!toBeRecycled->recycleNextChild())
+    {
+      delete toBeRecycled;
+    }
+  }
+  while((toBeRecycled = containerMap.popDisposed()))
+  {
+    toBeRecycled->resetGcPosition();
+    while(!toBeRecycled->recycleNextChild())
+    {}
+    delete toBeRecycled;
+  }
+  toBeRecycled = nullptr;
 }
 
 void Lisp::GarbageCollector::recycle()

@@ -55,7 +55,8 @@ namespace Lisp
     template<typename... ARGS>
     inline void append(const Cell & a, ARGS... rest);
     inline std::size_t getGcPosition() const;
-    
+    inline void reserve(std::size_t s);
+
     //////////////////////////////////////////////////
     // implementation of the Container interface
     //////////////////////////////////////////////////
@@ -157,6 +158,11 @@ void Lisp::Array::append(const Cell & a, ARGS... rest)
 {
   append(a);
   append(rest...);
+}
+
+inline void Lisp::Array::reserve(std::size_t s)
+{
+  data.reserve(s);
 }
 
 inline std::size_t Lisp::Array::getGcPosition() const

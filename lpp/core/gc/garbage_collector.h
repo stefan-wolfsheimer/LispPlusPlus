@@ -51,6 +51,7 @@ namespace Lisp
     GarbageCollector(std::size_t consPageSize=CONS_PAGE_SIZE,
                      unsigned short _garbageSteps=1,
                      unsigned short _recycleSteps=1);
+    ~GarbageCollector();
 
 
     template<typename C,  typename... ARGS>

@@ -134,3 +134,31 @@ TEST_CASE("eval_lookup", "[Vm]")
   auto res = vm.getValue();
   REQUIRE(res.isA<Undefined>());
 }
+
+TEST_CASE("eval_define", "[Vm]")
+{
+  using Undefined = Lisp::Undefined;
+  Vm vm;
+  vm.getConsFactory()->disableCollector();
+  Function * f;
+  {
+    Object func(std::move(vm.compile(vm.list(vm.symbol("define"),
+                                             vm.symbol("a"),
+                                             Object(1)))));
+    REQUIRE(func.getRefCount() == 1u);
+    REQUIRE(func.isA<Function>());
+    vm.eval(func.as<Function>());
+    vm.getConsFactory()->cycle();
+    f = func.as<Function>();
+  }
+  auto res = vm.find("a");
+  REQUIRE(res.isA<IntegerType>());
+  REQUIRE(res.as<IntegerType>() == 1);
+  {
+    auto func = vm.compile(vm.symbol("a"));
+    vm.eval(func.as<Function>());
+    auto res = vm.getValue();
+    REQUIRE(res.isA<IntegerType>());
+    REQUIRE(res.as<IntegerType>() == 1);
+  }
+}

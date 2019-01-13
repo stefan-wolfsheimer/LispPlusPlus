@@ -32,6 +32,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <lpp/core/vm.h>
 #include <lpp/core/default_env.h>
 #include <lpp/core/env.h>
+#include <lpp/core/compiler/jit.h>
 #include <lpp/core/opcode.h>
 #include <lpp/core/types/function.h>
 #include <lpp/core/types/type_id.h>
@@ -72,25 +73,20 @@ Lisp::Object Lisp::Vm::symbol(const std::string & name)
 
 void Lisp::Vm::define(const std::string & name, const Object & rhs)
 {
-  sc->make(name);
+  env->set(sc->make(name), rhs);
+}
+
+Object Lisp::Vm::find(const std::string & name) const
+{
+  return env->find(sc->make(name));
 }
 
 Object Vm::compile(const Object & obj) const
 {
-  if(obj.isA<Cons>())
-  {
-  }
-  else if(obj.isA<Symbol>())
-  {
-    // @todo dialect variations: check if reference is bound
-    return gc->makeRoot<Function>(Function::Code{LOOKUP, 0}, Array(obj));
-  }
-  else
-  {
-    return gc->makeRoot<Function>(Function::Code{SETV, 0},
-                                  Array(obj));
-  }
-  return Lisp::nil;
+  Jit jit(gc, sc, env);
+  jit.pass1(obj);
+  jit.pass2(obj);
+  return jit.function;
 }
 
 void Lisp::Vm::eval(const Function * func)
@@ -114,10 +110,18 @@ void Lisp::Vm::eval(const Function * func)
       ++itr;
       assert(itr != end);
       assert(*itr < func->data.size());
-      assert(func->data.at(*itr).isA<Symbol>());
+      assert(func->data.atCell(*itr).isA<Symbol>());
       values.resize(1);
       // @todo throw if undefined
-      values[0] = env->find(func->data.at(*itr));
+      values[0] = env->find(func->data.atCell(*itr));
+      break;
+
+    case DEFINEV:
+      ++itr;
+      assert(itr != end);
+      assert(*itr < func->data.size());
+      assert(func->data.atCell(*itr).isA<Symbol>());
+      env->set(func->data.atCell(*itr), values[0]);
       break;
     }
     ++itr;

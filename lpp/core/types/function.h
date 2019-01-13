@@ -48,9 +48,16 @@ namespace Lisp
   public:
     friend class Vm;
     using Code = std::vector<InstructionType>;
-    
+
+    Function(std::size_t codeSize, std::size_t dataSize);
     Function(const Code & instr, const Array & data);
     Function(Code && instr, Array && data);
+
+    inline void appendInstruction(const InstructionType  & i1);
+    inline void appendInstruction(const InstructionType  & i1, const InstructionType  & i2);
+    inline void appendData(const Cell & rhs);
+    inline std::size_t dataSize() const;
+    inline std::size_t instructionSize() const;
 
     //////////////////////////////////////////////////
     // implementation of the Container interface
@@ -62,7 +69,7 @@ namespace Lisp
 
     virtual TypeId getTypeId() const override
     {
-      return data.getTypeIdImpl();
+      return TypeTraits<Function>::typeId;
     }
 
     virtual bool greyChildren() override
@@ -72,7 +79,7 @@ namespace Lisp
 
     virtual void resetGcPosition() override
     {
-      return data.resetGcPositionImpl();
+      data.resetGcPositionImpl();
     }
 
     virtual bool recycleNextChild() override
@@ -86,6 +93,17 @@ namespace Lisp
   };
 }
 
+////////////////////////////////////////////////////////////////////////////////
+//
+// Implementation
+//
+////////////////////////////////////////////////////////////////////////////////
+inline Lisp::Function::Function(std::size_t codeSize, std::size_t dataSize)
+{
+  instructions.reserve(codeSize);
+  data.reserve(dataSize);
+}
+
 inline Lisp::Function::Function(const std::vector<InstructionType> & instr,
                                 const Array & _data)
   : instructions(instr), data(_data)
@@ -95,4 +113,30 @@ inline Lisp::Function::Function(const std::vector<InstructionType> & instr,
 inline Lisp::Function::Function(Code && instr, Array && _data)
   : instructions(std::move(instr)), data(std::move(_data))
 {
+}
+
+inline void Lisp::Function::appendData(const Cell & rhs)
+{
+  data.append(rhs);
+}
+
+inline void Lisp::Function::appendInstruction(const InstructionType  & i1)
+{
+  instructions.push_back(i1);
+}
+
+inline void Lisp::Function::appendInstruction(const InstructionType  & i1, const InstructionType  & i2)
+{
+  instructions.push_back(i1);
+  instructions.push_back(i2);
+}
+
+inline std::size_t Lisp::Function::dataSize() const
+{
+  return data.size();
+}
+
+inline std::size_t Lisp::Function::instructionSize() const
+{
+  return instructions.size();
 }

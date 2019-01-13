@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2017-2018, Stefan Wolfsheimer
+Copyright (c) 2017-2019, Stefan Wolfsheimer
 
 All rights reserved.
 
