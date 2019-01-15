@@ -10,56 +10,6 @@ using BasicCons = Lisp::BasicCons;
 using Symbol = Lisp::Symbol;
 using ManagedType = Lisp::ManagedType;
 
-Cell& Cell::operator=(const Cell & rhs)
-{
-  //assert(!rhs.isA<BasicCons>() || rhs.as<BasicCons>()->isRoot());
-  unset();
-  typeId = rhs.typeId;
-  data = rhs.data;
-  if(isA<ManagedType>())
-  {
-    static_cast<ManagedType*>(data.ptr)->refCount++;
-  }
-  return *this;
-}
-
-
-Lisp::Cell::Cell(const Cell & rhs)
-{
-  typeId = rhs.typeId;
-  data = rhs.data;
-  if(rhs.isA<ManagedType>())
-  {
-    static_cast<ManagedType*>(data.ptr)->refCount++;
-  }
-}
-
-Cell::~Cell()
-{
-  unset();
-}
-
-void Lisp::Cell::init(Lisp::Collectible * cons,
-                      Lisp::TypeId _typeId)
-{
-  typeId = _typeId;
-  data.ptr = static_cast<BasicType*>(cons);
-}
-
-void Cell::unset()
-{
-  if(TypeTraits<ManagedType>::isA(typeId))
-  {
-    ManagedType * obj = static_cast<ManagedType*>(data.ptr);
-    assert(obj->refCount);
-    if(! --obj->refCount)
-    {
-      delete obj;
-      data.ptr = nullptr;
-    }
-  }
-}
-
 std::string Cell::getTypeName() const
 {
   if(isA<BasicCons>())

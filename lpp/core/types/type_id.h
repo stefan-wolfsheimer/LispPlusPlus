@@ -106,8 +106,8 @@ namespace Lisp
    *  10: managed types           (0x8000)
    *  11: collectibleContainer    (0xc000)
    * 
-   *            BasicType
-   *               |
+   *
+   *
    *          Collectible
    *           /        \
    *     BasicCons    Container
@@ -119,9 +119,9 @@ namespace Lisp
   class Collectible;
 
   /* value types */
-  struct ValueType : BasicType {};
-  struct Nil : BasicType {};
-  struct Undefined : BasicType {};
+  struct ValueType;
+  struct Nil;
+  struct Undefined;
 
   /* conses types */
   class BasicCons;

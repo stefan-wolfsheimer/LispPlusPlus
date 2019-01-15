@@ -35,7 +35,7 @@ namespace Lisp
 {
   class Env;
 
-  class ManagedType : public BasicType
+  class ManagedType
   {
   public:
     ManagedType();

@@ -34,12 +34,11 @@ namespace Lisp
 {
   typedef ::std::uint_least16_t TypeId;
   typedef ::std::int_fast32_t IntegerType;
-  struct BasicType {};
 
   union CellDataType
   {
     IntegerType intValue;
-    BasicType * ptr;
+    void * ptr;
   };
 
 }

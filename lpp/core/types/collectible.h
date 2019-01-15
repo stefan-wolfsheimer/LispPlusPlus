@@ -10,7 +10,7 @@ namespace Lisp
 {
   class GarbageCollector;
 
-  class Collectible : public BasicType
+  class Collectible
   {
   };
 

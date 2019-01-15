@@ -32,6 +32,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <cstdint>
 #include <functional>
 #include <iostream>
+#include <assert.h>
 #include <lpp/core/types/type_id.h>
 #include <lpp/core/types/managed_type.h>
 #include <lpp/core/gc/color.h>
@@ -62,7 +63,7 @@ namespace Lisp
      * conses are managed by the garbage collector
      */
     ~Cell();
-    Cell& operator=(const Cell & rhs);
+    inline Cell& operator=(const Cell & rhs);
 
     inline TypeId getTypeId() const;
     std::string getTypeName() const;
@@ -88,8 +89,8 @@ namespace Lisp
   protected:
     TypeId typeId;
     CellDataType data;
-    void unset();
-    void init(Collectible * cons, TypeId _typeId);
+    inline void unset();
+    inline void init(Collectible * cons, TypeId _typeId);
     inline void init(ManagedType * managedType, TypeId _typeId);
   };
 }
@@ -166,6 +167,16 @@ inline Lisp::Cell::Cell(Lisp::IntegerType value)
   data.intValue = value;
 }
 
+inline Lisp::Cell::Cell(const Cell & rhs)
+{
+  typeId = rhs.typeId;
+  data = rhs.data;
+  if(rhs.isA<ManagedType>())
+  {
+    static_cast<ManagedType*>(data.ptr)->refCount++;
+  }
+}
+
 template<typename T>
 inline Lisp::Cell::Cell(T * obj)
 {
@@ -176,8 +187,41 @@ inline Lisp::Cell::Cell(Collectible * rhs, TypeId _typeId)
   : typeId(_typeId)
 {
   typeId = _typeId;
-  data.ptr = reinterpret_cast<BasicType*>(rhs);
+  data.ptr = rhs;
 }
+
+inline Lisp::Cell& Lisp::Cell::operator=(const Cell & rhs)
+{
+  //assert(!rhs.isA<BasicCons>() || rhs.as<BasicCons>()->isRoot());
+  unset();
+  typeId = rhs.typeId;
+  data = rhs.data;
+  if(isA<ManagedType>())
+  {
+    static_cast<ManagedType*>(data.ptr)->refCount++;
+  }
+  return *this;
+}
+
+inline Lisp::Cell::~Cell()
+{
+  unset();
+}
+
+inline void Lisp::Cell::unset()
+{
+  if(TypeTraits<ManagedType>::isA(typeId))
+  {
+    ManagedType * obj = static_cast<ManagedType*>(data.ptr);
+    assert(obj->refCount);
+    if(! --obj->refCount)
+    {
+      delete obj;
+      data.ptr = nullptr;
+    }
+  }
+}
+
 
 inline void Lisp::Cell::init(Lisp::ManagedType * obj,
                              Lisp::TypeId _typeId)
@@ -185,6 +229,13 @@ inline void Lisp::Cell::init(Lisp::ManagedType * obj,
   typeId = _typeId;
   obj->refCount++;
   data.ptr = obj;
+}
+
+inline void Lisp::Cell::init(Lisp::Collectible * cons,
+                             Lisp::TypeId _typeId)
+{
+  typeId = _typeId;
+  data.ptr = cons;
 }
 
 inline Lisp::TypeId Lisp::Cell::getTypeId() const
