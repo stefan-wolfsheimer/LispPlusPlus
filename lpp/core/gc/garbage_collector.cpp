@@ -118,9 +118,9 @@ void GarbageCollector::cycle()
   if(toBeRecycled)
   {
     while(!toBeRecycled->recycleNextChild())
-    {
-      delete toBeRecycled;
-    }
+    {}
+    delete toBeRecycled;
+    toBeRecycled = nullptr;
   }
   while((toBeRecycled = containerMap.popDisposed()))
   {
@@ -128,9 +128,10 @@ void GarbageCollector::cycle()
     while(!toBeRecycled->recycleNextChild())
     {}
     delete toBeRecycled;
+    toBeRecycled = nullptr;
   }
-  toBeRecycled = nullptr;
 }
+
 
 void Lisp::GarbageCollector::recycle()
 {

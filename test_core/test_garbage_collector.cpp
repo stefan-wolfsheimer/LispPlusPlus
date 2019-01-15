@@ -603,7 +603,7 @@ TEST_CASE("automatic collection with lots of temporary objects", "[GarbageCollec
 // Array tests
 //
 ////////////////////////////////////////////////////////////////////////////////
-SCENARIO("one array with cons children", "[GarbageCollector]")
+SCENARIO("one_array_with_cons_children", "[GarbageCollector]")
 {
   auto coll = makeCollector(8);
   GIVEN("A root array")
@@ -666,9 +666,11 @@ SCENARIO("one array with cons children", "[GarbageCollector]")
       coll->enableRecycling();
 
       //////////////////////////
+      // gc position 0 -> 1
       coll->step();
       REQUIRE(coll->getCycles() == 0u);
       REQUIRE(array->getGcPosition() == 1u);
+      REQUIRE(array->getColor() == Color::White);
       REQUIRE(cons1.getColor() == Color::Black);
       REQUIRE(cons1.as<Cons>()->getCarCell().getColor() == Color::Grey);
       REQUIRE(cons1.as<Cons>()->getCdrCell().getColor() == Color::Grey);
@@ -676,6 +678,7 @@ SCENARIO("one array with cons children", "[GarbageCollector]")
                                { Color::White == 1u, Color::Black == 1u },
                                { Color::White == 0u, Color::Grey == 5u }));
       //////////////////////////
+      // gc position 1 -> 2, grey -> black
       coll->step();
       REQUIRE(coll->getCycles() == 0u);
       REQUIRE(array->getGcPosition() == 2u);
@@ -683,55 +686,73 @@ SCENARIO("one array with cons children", "[GarbageCollector]")
                                { Color::White == 1u, Color::Black == 1u },
                                { Color::Black == 1u, Color::Grey == 4u}));
       //////////////////////////
+      // gc position 2 -> 3, grey -> black
       coll->step();
       REQUIRE(coll->getCycles() == 0u);
       REQUIRE(array->getGcPosition() == 3u);
+      REQUIRE(array->getColor() == Color::White);
       REQUIRE(checkCollectible(coll, 0u,
                                { Color::White == 1u, Color::Black == 1u },
                                { Color::Black == 2u, Color::Grey == 3u}));
       //////////////////////////
+      // gc position 3 -> 4, grey -> black
       coll->step();
       REQUIRE(coll->getCycles() == 0u);
       REQUIRE(array->getGcPosition() == 4u);
+      REQUIRE(array->getColor() == Color::White);
       REQUIRE(checkCollectible(coll, 0u,
                                { Color::White == 1u, Color::Black == 1u },
                                { Color::Black == 3u, Color::Grey == 2u }));
 
       /////////////////////////
+      // add grey
       coll->disableCollector();
       array->set(1, Object(coll->makeRoot<Cons>(Lisp::nil, Lisp::nil)));
-      coll->enableCollector();
+      REQUIRE(array->getGcPosition() == 4u);
+      REQUIRE(array->getColor() == Color::White);
+      REQUIRE(checkCollectible(coll, 0u,
+                               { Color::White == 1u, Color::Black == 1u },
+                               { Color::Black == 3u, Color::Grey == 3u }));
       REQUIRE(array->atCell(1).getColor() == Color::Grey);
-      
+      coll->enableCollector();
       
       //////////////////////////
+      // gc position 4 -> 0, grey -> black, white root -> black root
       coll->step();
       REQUIRE(coll->getCycles() == 0u);
       REQUIRE(array->getGcPosition() == 0u);
+      REQUIRE(array->getColor() == Color::Black);
+      REQUIRE(array->atCell(1).getColor() == Color::Black);
       REQUIRE(checkCollectible(coll, 0u,
                                { Color::Black == 2u },
                                { Color::Black == 4u, Color::Grey == 2u }));
 
       //////////////////////////
+      // grey -> black
       coll->step();
       REQUIRE(coll->getCycles() == 0u);
       REQUIRE(array->getGcPosition() == 0u);
+      REQUIRE(array->getColor() == Color::Black);
       REQUIRE(checkCollectible(coll, 0u,
                                { Color::Black == 2u },
                                { Color::Black == 5u, Color::Grey == 1u }));
 
       //////////////////////////
+      // grey -> black
       coll->step();
       REQUIRE(coll->getCycles() == 0u);
       REQUIRE(array->getGcPosition() == 0u);
+      REQUIRE(array->getColor() == Color::Black);
       REQUIRE(checkCollectible(coll, 0u,
                                { Color::Black == 2u },
                                { Color::Black == 6u }));
 
       //////////////////////////
+      // swap
       coll->step();
       REQUIRE(coll->getCycles() == 1u);
       REQUIRE(array->getGcPosition() == 0u);
+      REQUIRE(array->getColor() == Color::White);
       REQUIRE(checkCollectible(coll, 0u,
                                { Color::White == 2u },
                                { Color::White == 6u }));
@@ -879,7 +900,7 @@ SCENARIO("a cons with 2 array children", "[GarbageCollector]")
           coll->cycle();
           REQUIRE(coll->getCycles() == 1u);
           REQUIRE(coll->numVoidCollectible() == 7u);
-          REQUIRE(checkCollectible(coll, 1u, {Color::White == 1u}, {Color::White == 1u}));
+          REQUIRE(checkCollectible(coll, 0u, {Color::White == 1u}, {Color::White == 1u}));
         }
         THEN("GarbageCollector::step() does remove it")
         {
