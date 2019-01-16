@@ -34,6 +34,7 @@ either expressed or implied, of the FreeBSD Project.
 namespace Lisp
 {
   class Env;
+  class Cell;
 
   class ManagedType
   {

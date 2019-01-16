@@ -135,6 +135,7 @@ namespace Lisp
   class Form;
   class BuiltinFunction;
   class Function;
+  class BasicType;
 
   /* collectible */
   class Container;
