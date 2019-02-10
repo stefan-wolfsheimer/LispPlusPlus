@@ -103,6 +103,7 @@ namespace Lisp
    *  largest bit flags managed types
    *  00: value types             (0x0000)
    *  01: cons types              (0x4000)
+   *      011 reference           (0x6000)
    *  10: managed types           (0x8000)
    *  11: collectibleContainer    (0xc000)
    * 
@@ -121,13 +122,14 @@ namespace Lisp
   /* value types */
   struct ValueType;
   struct Nil;
+  class BasicType;
   struct Undefined;
 
   /* conses types */
   class BasicCons;
   class Cons;
   class Reference;
-
+  
   /* managed types */
   class ManagedType;
   class String;
@@ -135,7 +137,6 @@ namespace Lisp
   class Form;
   class BuiltinFunction;
   class Function;
-  class BasicType;
 
   /* collectible */
   class Container;
@@ -144,7 +145,9 @@ namespace Lisp
   DEF_TRAITS_NUL_LT(ValueType,      0x4000u);
   DEF_TRAITS_NUL(Nil,               0x0000u);
   DEF_TRAITS_NUL(Undefined,         0x0001u);
-  DEF_TRAITS_INT(IntegerType,       0x0002u);
+  DEF_TRAITS_INT(BasicType,         0x0002u);
+  DEF_TRAITS_INT(IntegerType,       0x0003u);
+
 
   // conses
   DEF_TRAITS_PTR_MATCH(BasicCons,   0x4000u);

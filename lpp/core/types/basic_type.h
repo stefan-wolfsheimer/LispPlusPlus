@@ -1,4 +1,4 @@
-#pragma
+#pragma once
 #include <lpp/core/types/managed_type.h>
 
 namespace Lisp

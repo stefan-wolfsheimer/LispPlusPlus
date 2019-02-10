@@ -25,9 +25,10 @@ namespace Lisp
     }
 
   protected:
+    friend class TypeContainer;
+
     Type()
-    {
-    }
+    {}
   };
 
   class AnyType : public BasicType

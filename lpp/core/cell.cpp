@@ -4,6 +4,7 @@
 #include "types/cons.h"
 #include "types/container.h"
 #include <lpp/core/types/array.h> //@todo remove reference when functionality is re-implementated polymorphically
+#include <lpp/core/types/symbol.h> //@todo remove reference when functionality is re-implementated polymorphically
 
 using Cell = Lisp::Cell;
 using BasicCons = Lisp::BasicCons;
@@ -25,6 +26,7 @@ std::string Cell::getTypeName() const
     return "Unknown";
   }
 }
+
 
 void Cell::forEachChild(std::function<void(const Cell&)> func) const
 {
@@ -135,6 +137,10 @@ std::ostream & operator<<(std::ostream & ost, const Lisp::Cell & cell)
   {
     ost << cell.as<Lisp::IntegerType>();
   }
+  else if(cell.isA<Lisp::Symbol>())
+  {
+    ost << cell.as<Lisp::Symbol>()->getName();
+  }
   else if(cell.isA<BasicCons>())
   {
     ost << "[CONS " "#" << cell.as<BasicCons>() << " ";
@@ -152,6 +158,10 @@ std::ostream & operator<<(std::ostream & ost, const Lisp::Cell & cell)
       ost << " ROOT " << cell.as<Lisp::Array>()->getRefCount() << " ";
     }
     ost << cell.as<Lisp::Array>()->getColor()  << "]";
+  }
+  else if(cell.isA<Lisp::Function>())
+  {
+    ost << "[Function]";
   }
   else if(cell.isA<Lisp::Container>())
   {

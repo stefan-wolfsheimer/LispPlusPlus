@@ -37,7 +37,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <lpp/core/types/function.h>
 #include <lpp/core/types/type_id.h>
 #include <lpp/core/types/symbol.h>
-
+#include <lpp/core/exception.h>
 #include "config.h"
 
 
@@ -54,16 +54,32 @@ using Cons = Lisp::Cons;
 using Symbol = Lisp::Symbol;
 using Env = Lisp::Env;
 
+// logging data stack
+#ifdef DO_ASM_LOG
+#define LOG_DATA_STACK(STACK)  {                        \
+    ASM_LOG("STACK_SIZE: " << STACK.size());            \
+    for(std::size_t i = 0; i < STACK.size(); i++)       \
+    {                                                   \
+      ASM_LOG("STACK [" << i << "] " << STACK[i]);      \
+    }                                                   \
+  }
+#else
+#define LOG_DATA_STACK(STACK)
+#endif
+
+
+
+
 Vm::Vm(std::shared_ptr<GarbageCollector> _gc,
        std::shared_ptr<SymbolContainer> _sc,
+       std::shared_ptr<TypeContainer> _tc,
        std::shared_ptr<Env> _env)
   : gc(_gc ? _gc : std::make_shared<GarbageCollector>()),
     sc(_sc ? _sc : std::make_shared<SymbolContainer>()),
+    tc(_tc ? _tc : std::make_shared<TypeContainer>()),
     env(_env ? _env : makeDefaultEnv(gc, sc))
 {
   dataStack.reserve(1024);
-  values.reserve(1024);
-  values.push_back(Lisp::nil);
 }
 
 Lisp::Object Lisp::Vm::symbol(const std::string & name)
@@ -83,48 +99,209 @@ Object Lisp::Vm::find(const std::string & name) const
 
 Object Vm::compile(const Object & obj) const
 {
-  Jit jit(gc, sc, env);
-  jit.pass1(obj);
-  jit.pass2(obj);
-  return jit.function;
+  Jit jit(gc, sc, tc, env);
+  return jit.compile(obj);
 }
 
-void Lisp::Vm::eval(const Function * func)
+Object Vm::compileAndEval(const Object & obj)
 {
-  std::size_t i;
-  auto itr = func->instructions.begin();
-  auto end = func->instructions.end();
-  while(itr != end)
+  Object func = compile(obj);
+  eval(func.as<Function>());
+  Object ret = top();
+  pop();
+  return ret;
+}
+
+struct ExecutionState
+{
+  Function * func;
+  Function::const_iterator itr;
+  Function::const_iterator end;
+  std::size_t returnPos;
+
+  ExecutionState(const ExecutionState & rhs)
+    : func(rhs.func),
+      itr(rhs.itr),
+      end(rhs.end),
+      returnPos(rhs.returnPos)
   {
-    switch(*itr)
+  }
+
+  ExecutionState(const ExecutionState & rhs, Function::const_iterator _itr)
+    : func(rhs.func),
+      itr(_itr),
+      end(rhs.end),
+      returnPos(rhs.returnPos)
+  {
+  }
+
+  ExecutionState(Function * _func,
+                 std::size_t _returnPos)
+    : func(_func),
+      itr(_func->cbegin()),
+      end(_func->cend()),
+      returnPos(_returnPos)
+  {
+    ASM_LOG("FUNC\t" << func <<
+            " itr: " << (itr - func->cbegin()) << "/" << func->instructionSize() <<
+            " nargs: " << func->numArguments() <<
+            " returnPos: " << returnPos);
+  }
+
+  ExecutionState(Function * _func,
+                 std::size_t _returnPos,
+                 Function::const_iterator _itr)
+    : func(_func),
+      itr(_itr),
+      end(_func->cend()),
+      returnPos(_returnPos)
+  {
+    ASM_LOG("FUNC\t" << func <<
+            " itr: " << (itr - func->cbegin()) << "/" << func->instructionSize() <<
+            " nargs: " << func->numArguments() <<
+            " returnPos: " << returnPos);
+  }
+};
+
+void Lisp::Vm::eval(Function * __func)
+{
+  ASM_LOG("----------------------------------");
+  ASM_LOG("eval " << __func);
+  ASM_LOG("----------------------------------");
+  LOG_DATA_STACK(dataStack);
+  ExecutionState state(__func, dataStack.size());
+  std::vector<ExecutionState> executionStack;
+
+  while(true)
+  {
+    while(state.itr != state.end)
     {
-    case SETV:
-      ++itr;
-      assert(itr != end);
-      assert(*itr < func->data.size());
-      values.resize(1);
-      values[0] = func->data.atCell(*itr);
-      break;
+      switch(*state.itr)
+      {
+      case RETURNV:
+        // return a value from function data
+        assert((state.itr + 1) < state.end);
+        assert(state.itr[1] < state.func->dataSize());
+        ASM_LOG("\tRETURNV " << state.itr[1] << ": " <<
+                state.func->data.atCell(state.itr[1]) <<
+                " stackSize: " << dataStack.size() <<
+                " returnPos: " << state.returnPos);
+        if(state.returnPos < dataStack.size())
+        {
+          dataStack[state.returnPos] = state.func->data.at(state.itr[1]);
+        }
+        else
+        {
+          assert(state.returnPos == dataStack.size());
+          dataStack.push_back(state.func->data.at(state.itr[1]));
+        }
+        state.itr += 2;
+        break;
 
-    case LOOKUP:
-      ++itr;
-      assert(itr != end);
-      assert(*itr < func->data.size());
-      assert(func->data.atCell(*itr).isA<Symbol>());
-      values.resize(1);
-      // @todo throw if undefined
-      values[0] = env->find(func->data.atCell(*itr));
-      break;
+      case RETURNS:
+        // return a value from stack
+        assert((state.itr + 1) < state.end);
+        assert(state.itr[1] <= dataStack.size());
+        ASM_LOG("\tRETURNS " << state.itr[1] << ": " <<
+                *(dataStack.end() - state.itr[1]) <<
+                " stackSize: " << dataStack.size() <<
+                " returnPos: " << state.returnPos);
+        if(dataStack.size() - state.itr[1] != state.returnPos)
+        {
+          dataStack[state.returnPos] = dataStack[dataStack.size() - state.itr[1]];
+        }
+        state.itr += 2;
+        break;
 
-    case DEFINEV:
-      ++itr;
-      assert(itr != end);
-      assert(*itr < func->data.size());
-      assert(func->data.atCell(*itr).isA<Symbol>());
-      env->set(func->data.atCell(*itr), values[0]);
+      case RETURNL:
+        // return a value from function data
+        // @todo exception if unbound
+        assert((state.itr + 1) < state.end);
+        assert(state.itr[1] < state.func->dataSize());
+        assert(state.func->data.atCell(state.itr[1]).isA<Symbol>());
+        ASM_LOG("\tRETURNL " << state.itr[1] << ": " <<
+                state.func->data.atCell(state.itr[1]) <<
+                " stackSize: " << dataStack.size() <<
+                " returnPos: " << state.returnPos);
+        if(state.returnPos < dataStack.size())
+        {
+          dataStack[state.returnPos] = env->find(state.func->data.atCell(state.itr[1]));
+        }
+        else
+        {
+          assert(state.returnPos == dataStack.size());
+          dataStack.push_back(env->find(state.func->data.atCell(state.itr[1])));
+        }
+        state.itr += 2;
+        break;
+        
+      case INCRET:
+        // increase return position by 1
+        state.returnPos++;
+        ASM_LOG("\tINCRET returnPos: " << state.returnPos);
+        state.itr++;
+        break;
+
+      case FUNCALL:
+        assert((state.itr + 2) < state.end);
+        assert(state.itr[2] < state.func->data.size());
+        assert(state.func->data.atCell(state.itr[2]).isA<Function>());
+        // @todo check number of arguments
+        ASM_LOG("\tFUNCALL nargs: " << state.itr[1] <<
+                " func: " << state.itr[2] << ": " <<
+                state.func->data.atCell(state.itr[2]) <<
+                " stackSize: " << dataStack.size() <<
+                " returnPos: " << (dataStack.size() - state.itr[1]));
+
+        // @todo tail recurion optimization, don't emplace if
+        //       it is the end of the function
+        state.returnPos -= state.itr[1];
+        executionStack.emplace_back(state, state.itr + 3);
+        LOG_DATA_STACK(dataStack);
+        state = ExecutionState(state.func->data.atCell(state.itr[2]).as<Function>(),
+                               dataStack.size() - state.itr[1]);
+        break;
+      
+      case DEFINES:
+        // define a symbol
+        assert((state.itr + 1) < state.end);
+        assert(state.itr[1] < state.func->dataSize());
+        assert(state.func->data.atCell(state.itr[1]).isA<Symbol>());
+        assert(dataStack.size() > 0);
+        ASM_LOG("\tDEFINES " << state.itr[1] << ": " <<
+                state.func->data.atCell(state.itr[1]) <<
+                " stackSize: " << dataStack.size() <<
+                " returnPos: " << state.returnPos);
+        env->set(state.func->data.atCell(state.itr[1]), dataStack.back());
+        state.itr += 2;
+        break;
+      
+      default:
+        // @todo proper exception
+        ASM_LOG("unkown instruction " << *state.itr);
+        throw 1;
+      }
+    } // while itr != end
+    if(state.func->numArguments() > 1)
+    {
+      pop(state.func->numArguments()-1);
+    }
+    LOG_DATA_STACK(dataStack);
+    if(executionStack.empty())
+    {
       break;
     }
-    ++itr;
+    else
+    {
+      ASM_LOG("----------------------------------");
+      ASM_LOG("executionStack: " << executionStack.size() << " --> POP");
+      state = executionStack.back();
+      executionStack.pop_back();
+      ASM_LOG("FUNC\t" << state.func <<
+              " itr: " << (state.itr - state.func->cbegin()) << "/" << state.func->instructionSize() <<
+              " nargs: " << state.func->numArguments() <<
+              " returnPos: " << state.returnPos);
+    }
   }
 }
 

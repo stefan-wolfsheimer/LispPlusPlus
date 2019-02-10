@@ -1,5 +1,6 @@
 #pragma once
 #include <lpp/core/types/managed_type.h>
+#include <lpp/core/object.h>
 
 namespace Lisp
 {
@@ -10,8 +11,6 @@ namespace Lisp
   {
   public:
     virtual ~Form(){}
-    virtual void pass1(Jit & jit, const Cell & cdr) const = 0;
-    virtual void pass2(Jit & jit, const Cell & cdr) const = 0;
-    virtual void exception(Jit & jit, const Cell & cdr) const = 0;
+    virtual void compile(Jit & jit, Function *, const Cell & obj) const=0;
   };
 }

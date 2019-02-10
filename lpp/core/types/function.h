@@ -42,22 +42,34 @@ namespace Lisp
 {
   class Object;
   class Vm;
-  
+
   class Function : public Container
   {
   public:
     friend class Vm;
     using Code = std::vector<InstructionType>;
+    using const_iterator = Code::const_iterator;
 
-    Function(std::size_t codeSize, std::size_t dataSize);
+    Function();
     Function(const Code & instr, const Array & data);
     Function(Code && instr, Array && data);
 
-    inline void appendInstruction(const InstructionType  & i1);
-    inline void appendInstruction(const InstructionType  & i1, const InstructionType  & i2);
+    inline void appendInstruction(const InstructionType & i1);
+    inline void appendInstruction(const InstructionType & i1,
+                                  const InstructionType & i2);
+    inline void appendInstruction(const InstructionType & i1,
+                                  const InstructionType & i2,
+                                  const InstructionType & i3);
     inline void appendData(const Cell & rhs);
+    inline void setNumArguments(std::size_t n);
+
     inline std::size_t dataSize() const;
+    inline std::size_t numArguments() const;
     inline std::size_t instructionSize() const;
+    inline void shrink();
+
+    inline const_iterator cbegin() const;
+    inline const_iterator cend() const;
 
     //////////////////////////////////////////////////
     // implementation of the Container interface
@@ -69,7 +81,7 @@ namespace Lisp
 
     virtual TypeId getTypeId() const override
     {
-      return TypeTraits<Function>::typeId;
+      return TypeTraits<Function>::getTypeId();
     }
 
     virtual bool greyChildren() override
@@ -90,6 +102,7 @@ namespace Lisp
   private:
     Code instructions;
     Array data;
+    std::size_t numArgs; // arguments [0..numArgs) of data
   };
 }
 
@@ -98,26 +111,29 @@ namespace Lisp
 // Implementation
 //
 ////////////////////////////////////////////////////////////////////////////////
-inline Lisp::Function::Function(std::size_t codeSize, std::size_t dataSize)
+inline Lisp::Function::Function() : numArgs(0)
 {
-  instructions.reserve(codeSize);
-  data.reserve(dataSize);
 }
 
 inline Lisp::Function::Function(const std::vector<InstructionType> & instr,
                                 const Array & _data)
-  : instructions(instr), data(_data)
+  : instructions(instr), data(_data), numArgs(0)
 {
 }
 
 inline Lisp::Function::Function(Code && instr, Array && _data)
-  : instructions(std::move(instr)), data(std::move(_data))
+  : instructions(std::move(instr)), data(std::move(_data)), numArgs(0)
 {
 }
 
 inline void Lisp::Function::appendData(const Cell & rhs)
 {
   data.append(rhs);
+}
+
+inline void Lisp::Function::setNumArguments(std::size_t n)
+{
+  numArgs = n;
 }
 
 inline void Lisp::Function::appendInstruction(const InstructionType  & i1)
@@ -131,12 +147,42 @@ inline void Lisp::Function::appendInstruction(const InstructionType  & i1, const
   instructions.push_back(i2);
 }
 
+inline void Lisp::Function::appendInstruction(const InstructionType  & i1,
+                                              const InstructionType  & i2,
+                                              const InstructionType  & i3)
+{
+  instructions.push_back(i1);
+  instructions.push_back(i2);
+  instructions.push_back(i3);
+}
+
 inline std::size_t Lisp::Function::dataSize() const
 {
   return data.size();
 }
 
+inline std::size_t Lisp::Function::numArguments() const
+{
+  return numArgs;
+}
+
 inline std::size_t Lisp::Function::instructionSize() const
 {
   return instructions.size();
+}
+
+inline void Lisp::Function::shrink()
+{
+  data.shrink();
+  instructions.shrink_to_fit();
+}
+
+inline Lisp::Function::const_iterator Lisp::Function::cbegin() const
+{
+  return instructions.cbegin();
+}
+
+inline Lisp::Function::const_iterator Lisp::Function::cend() const
+{
+  return instructions.cend();
 }

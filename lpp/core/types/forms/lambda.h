@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2017, Stefan Wolfsheimer
+Copyright (c) 2019, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -29,44 +29,16 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
-#include <cstddef>
+#include <lpp/core/types/form.h>
 
 namespace Lisp
 {
-  using InstructionType = std::size_t;
-
-  /**
-   * return a value from function data.
-   */
-  static const InstructionType RETURNV = 0x01;
-
-  /**
-   * return / push a value from stack 
-   */
-  static const InstructionType RETURNS = 0x02;
-
-  /**
-   * return the result from symbol lookup 
-   */
-  static const InstructionType RETURNL = 0x03;
-
-  /*
-   * increment return position by one
-   */
-  static const InstructionType INCRET = 0x04;
-
-  /*
-   * call a functions with arguments on the stack
-   * decrement returnPos by the number of arguments
-   * push the current state on call stack
-   */
-  static const InstructionType FUNCALL = 0x05;
-
-  /**
-   * define the value of a symbol in the env
-   */
-  static const InstructionType DEFINES = 0x06;
-
-  //static const InstructionType DECRET = 0x0a;
+  class Lambda : public Form
+  {
+  public:
+    Lambda();
+    virtual void compile(Jit & jit, Function *, const Cell & obj) const override;
+  private:
+    std::shared_ptr<BasicType> pattern;
+  };
 }
-

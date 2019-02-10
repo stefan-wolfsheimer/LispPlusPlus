@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2017, Stefan Wolfsheimer
+Copyright (c) 2019, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -28,81 +28,63 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#pragma once
-#include <cstdint>
-#include <lpp/core/cell.h>
-#include "config.h"
+#include <catch.hpp>
+#include <lpp/core/vm.h>
+#include <lpp/core/opcode.h>
+ //#include <lpp/core/types/cons.h>
+#include <lpp/core/types/function.h>
 
-namespace Lisp
+using Vm = Lisp::Vm;
+using Object = Lisp::Object;
+//using Cons = Lisp::Cons;
+//using Nil = Lisp::Nil;
+using Function = Lisp::Function;
+using IntegerType = Lisp::IntegerType;
+
+
+TEST_CASE("eval_lookup", "[Define]")
 {
-  class Object : public Cell
+  using Undefined = Lisp::Undefined;
+  Vm vm;
+  std::size_t stackSize = vm.stackSize();
+  auto func = vm.compile(vm.symbol("a"));
+  REQUIRE(func.isA<Function>());
+  REQUIRE(func.getRefCount() == 1u);
+  // @todo exception if unbound
+  vm.eval(func.as<Function>());
+  auto res = vm.top();
+  vm.pop();
+  REQUIRE(res.isA<Undefined>());
+  REQUIRE(stackSize == vm.stackSize());
+}
+
+TEST_CASE("eval_define", "[Vm]")
+{
+  using Undefined = Lisp::Undefined;
+  Vm vm;
+  vm.getGarbageCollector()->disableCollector();
+  std::size_t stackSize = vm.stackSize();
+  Function * f;
   {
-  public:
-    Object();
-    Object(const Object & rhs);
-    Object(Object && rhs);
-    explicit Object(const Cell & rhs);
-
-    template<typename T>
-    Object(T * obj);
-
-    static Object nil();
-    static Object undefined();
-
-    Object & operator=(const Cell & rhs);
-    Object & operator=(Cell && rhs);
-    Object & operator=(const Object & rhs);
-    Object & operator=(Object && rhs);
- 
-    ~Object();
-
-    void swap(Object & rhs);
-  protected:
-    void init(BasicCons * cons, TypeId _typeId);
-    void init(Container * cons, TypeId _typeId);
-    inline void init(ManagedType * managedType, TypeId _typeId);
-  private:
-    inline void unsetCons();
-  };
-
-  extern Object nil;
-  extern Object undefined;
-}
-
-inline Lisp::Object::Object() : Lisp::Cell()
-{
-}
-
-inline Lisp::Object::Object(Object && rhs)
-{
-  typeId = rhs.typeId;
-  data = rhs.data;
-  rhs.typeId = TypeTraits<Nil>::getTypeId();
-}
-
-template<typename T>
-inline Lisp::Object::Object(T * obj)
-{
-  init(obj, TypeTraits<T>::getTypeId());
-}
-
-inline Lisp::Object Lisp::Object::nil()
-{
-  Object ret;
-  ret.typeId = TypeTraits<Nil>::getTypeId();
-  ret.data.ptr = nullptr;
-  return ret;
-}
-
-inline Lisp::Object Lisp::Object::undefined()
-{
-  Object ret;
-  ret.typeId = TypeTraits<Undefined>::getTypeId();
-  ret.data.ptr = nullptr;
-  return ret;
-}
-
-inline void Lisp::Object::init(ManagedType * managedType, TypeId _typeId)
-{
-  Cell::init(managedType, _typeId);
+    Object func(std::move(vm.compile(vm.list(vm.symbol("define"),
+                                             vm.symbol("a"),
+                                             Object(1)))));
+    REQUIRE(func.getRefCount() == 1u);
+    REQUIRE(func.isA<Function>());
+    vm.eval(func.as<Function>());
+    vm.pop();
+    vm.getGarbageCollector()->cycle();
+    f = func.as<Function>();
+  }
+  auto res = vm.find("a");
+  REQUIRE(res.isA<IntegerType>());
+  REQUIRE(res.as<IntegerType>() == 1);
+  {
+    auto func = vm.compile(vm.symbol("a"));
+    vm.eval(func.as<Function>());
+    auto res = vm.top();
+    vm.pop();
+    REQUIRE(res.isA<IntegerType>());
+    REQUIRE(res.as<IntegerType>() == 1);
+  }
 }

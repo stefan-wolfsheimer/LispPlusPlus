@@ -31,6 +31,7 @@ either expressed or implied, of the FreeBSD Project.
 #pragma once
 #include <assert.h>
 #include <functional>
+#include <memory>
 #include <unordered_map>
 #include <lpp/core/cell.h>
 #include <lpp/core/object.h>
@@ -50,7 +51,7 @@ namespace Lisp
      * If not found, Lisp::undefined is returned.
      * @todo throw exection if not found
      *
-     * @returns an Object of type Lisp::Reference (a Cons-like type of the form (Symbol . Object)
+     * @return Object of type Lisp::Reference (a Cons-like type of the form (Symbol . Object)
      */
     inline const Object & find(const Cell & symb) const;
 
@@ -65,7 +66,6 @@ namespace Lisp
       inline bool operator()(const Cell & lhs,
                              const Cell & rhs) const;
     };
-
     std::unordered_map<Cell, Object, Hash, Equal> bindings;
   };
 
@@ -96,12 +96,15 @@ inline void Lisp::Env::set(const Cell & symb, Object && obj)
   bindings[symb] = obj;
 }
 
+
 inline const Lisp::Object & Lisp::Env::find(const Cell & obj) const
 {
+  // @toto Exception
   assert(obj.isA<Symbol>());
   auto itr = bindings.find(obj);
   if(itr == bindings.end())
   {
+    // @todo exception
     return Lisp::undefined;
   }
   else

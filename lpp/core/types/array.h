@@ -56,6 +56,7 @@ namespace Lisp
     inline void append(const Cell & a, ARGS... rest);
     inline std::size_t getGcPosition() const;
     inline void reserve(std::size_t s);
+    inline void shrink();
 
     //////////////////////////////////////////////////
     // implementation of the Container interface
@@ -165,6 +166,11 @@ inline void Lisp::Array::reserve(std::size_t s)
   data.reserve(s);
 }
 
+inline void Lisp::Array::shrink()
+{
+  data.shrink_to_fit();
+}
+
 inline std::size_t Lisp::Array::getGcPosition() const
 {
   return gcPosition;
@@ -180,7 +186,7 @@ inline void Lisp::Array::forEachChildImpl(std::function<void(const Cell&)> func)
 
 Lisp::TypeId Lisp::Array::getTypeIdImpl() const
 {
-  return TypeTraits<Array>::typeId;
+  return TypeTraits<Array>::getTypeId();
 }
 
 bool Lisp::Array::greyChildrenImpl()

@@ -62,18 +62,24 @@ namespace Lisp
     inline void setCar(const Cell & rhs);
     inline void setCdr(const Cell & rhs);
 
-    //@todo: make this private
-    template<typename T>
-    inline bool setCar(T * cons, TypeId typeId);
-
-    //@todo: make this private
-    template<typename T>
-    inline bool setCdr(T * cons, TypeId typeId);
-
+    /**
+     * Call function func for car and cons.
+     */
     inline void forEachChild(std::function<void(const Cell&)> func) const;
+
+    /** 
+     * Move white car and cdr cell to grey set.
+     * @return true
+     */
     inline bool greyChildren();
     inline bool recycleNextChild();
   private:
+    template<typename T>
+    inline bool setCar(T * cons, TypeId typeId);
+
+    template<typename T>
+    inline bool setCdr(T * cons, TypeId typeId);
+
     Cell car;
     Cell cdr;
     /**
@@ -93,11 +99,6 @@ namespace Lisp
   class Cons : public BasicCons
   {
   };
-
-  class Reference : public BasicCons
-  {
-  };
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -107,7 +108,7 @@ inline Lisp::BasicCons::BasicCons() : car(Lisp::nil), cdr(Lisp::nil)
 
 inline Lisp::TypeId Lisp::BasicCons::getTypeId() const
 {
-  return TypeTraits<Cons>::typeId;
+  return TypeTraits<Cons>::getTypeId();
 }
 
 inline Lisp::Object Lisp::BasicCons::getCar() const

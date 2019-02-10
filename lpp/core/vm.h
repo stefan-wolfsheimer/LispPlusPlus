@@ -33,9 +33,10 @@ either expressed or implied, of the FreeBSD Project.
 #include <lpp/core/object.h>
 #include <lpp/core/gc/garbage_collector.h>
 #include <lpp/core/gc/symbol_container.h>
+#include <lpp/core/gc/type_container.h>
 #include <lpp/core/types/array.h>
 #include <lpp/core/default_env.h>
-#include "types/lisp_function_interface.h"
+
 
 namespace Lisp
 {
@@ -45,9 +46,10 @@ namespace Lisp
     static const bool withDebug;
     Vm(std::shared_ptr<GarbageCollector> _gc = nullptr,
        std::shared_ptr<SymbolContainer> _sc = nullptr,
+       std::shared_ptr<TypeContainer> _tc = nullptr,
        std::shared_ptr<Env> _env = nullptr);
     
-    inline std::shared_ptr<GarbageCollector> getConsFactory() const;
+    inline std::shared_ptr<GarbageCollector> getGarbageCollector() const;
     inline Object cons(const Object & car, const Object & cdr);
     inline Object list();
     inline Object list(const Object & a);
@@ -75,25 +77,31 @@ namespace Lisp
     inline void push(const Object & rhs);
     inline void push(Object && rhs);
 
+    inline Object top() const;
     inline void pop();
     inline void pop(std::size_t n);
-
+    inline std::size_t stackSize() const;
+    
     Object compile(const Object & obj) const;
-    void eval(const Function * func);
-    inline const Object & getValue() const;
+
+    /** Compile and eval expression, pop result from stack
+     */
+    Object compileAndEval(const Object & obj);
+    void eval(Function * func);
+
   private:
     std::shared_ptr<GarbageCollector> gc;
     std::shared_ptr<SymbolContainer> sc;
+    std::shared_ptr<TypeContainer> tc;
     std::shared_ptr<Env> env;
     std::vector<Object> dataStack;
-    std::vector<Object> values;
   };
 }
 
 /******************************************************************************
  * implementation
  ******************************************************************************/
-std::shared_ptr<Lisp::GarbageCollector> Lisp::Vm::getConsFactory() const
+std::shared_ptr<Lisp::GarbageCollector> Lisp::Vm::getGarbageCollector() const
 {
   return gc;
 }
@@ -154,6 +162,11 @@ inline void Lisp::Vm::push(Object && rhs)
   dataStack.emplace_back(std::move(rhs));
 }
 
+inline Lisp::Object Lisp::Vm::top() const
+{
+  return dataStack.back();
+}
+
 inline void Lisp::Vm::pop()
 {
   dataStack.pop_back();
@@ -161,11 +174,13 @@ inline void Lisp::Vm::pop()
 
 inline void Lisp::Vm::pop(std::size_t n)
 {
-  //dataStack.erase(dataStack.end()-n, dataStack.end());
+  for(std::size_t i = 0; i < n; i++)
+  {
+    pop();
+  }
 }
 
-inline const Lisp::Object & Lisp::Vm::getValue() const
+inline std::size_t Lisp::Vm::stackSize() const
 {
-  return values.front();
+  return dataStack.size();
 }
-

@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2017, Stefan Wolfsheimer
+Copyright (c) 2017-2019, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -32,8 +32,11 @@ either expressed or implied, of the FreeBSD Project.
 #include <lpp/core/gc/garbage_collector.h>
 #include <lpp/core/gc/symbol_container.h>
 #include <lpp/core/env.h>
+#include <lpp/core/types/reference.h>
+#include <lpp/core/compiler/scope.h>
 
 using Env = Lisp::Env;
+using Scope = Lisp::Scope;
 using Object = Lisp::Object;
 using Symbol = Lisp::Symbol;
 using Undefined = Lisp::Undefined;
@@ -64,12 +67,12 @@ TEST_CASE("make_reference", "[Env]")
 TEST_CASE("env_make_reference", "[Env]")
 {
   SymbolContainer sc;
-  GarbageCollector gc;
+  //GarbageCollector gc;
   Env env;
   Object a(sc.make("a"));
+  //@todo exception
   REQUIRE(env.find(a).isA<Undefined>());
   env.set(a, Object(2));
   REQUIRE(env.find(a).isA<IntegerType>());
   REQUIRE(env.find(a).as<IntegerType>() == 2);
 }
-

@@ -158,12 +158,12 @@ namespace std
 inline Lisp::Cell::Cell()
 {
   data.ptr = nullptr;
-  typeId = Lisp::TypeTraits<Lisp::Nil>::typeId;
+  typeId = Lisp::TypeTraits<Lisp::Nil>::getTypeId();
 }
 
 inline Lisp::Cell::Cell(Lisp::IntegerType value)
 {
-  typeId = Lisp::TypeTraits<Lisp::IntegerType>::typeId;
+  typeId = Lisp::TypeTraits<Lisp::IntegerType>::getTypeId();
   data.intValue = value;
 }
 
@@ -180,7 +180,7 @@ inline Lisp::Cell::Cell(const Cell & rhs)
 template<typename T>
 inline Lisp::Cell::Cell(T * obj)
 {
-  init(obj, Lisp::TypeTraits<T>::typeId);
+  init(obj, Lisp::TypeTraits<T>::getTypeId());
 }
 
 inline Lisp::Cell::Cell(Collectible * rhs, TypeId _typeId)

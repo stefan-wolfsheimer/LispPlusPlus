@@ -8,37 +8,27 @@
 
 using Define = Lisp::Define;
 using ConsPattern = Lisp::ConsPattern;
+using Object = Lisp::Object;
 
 
 Define::Define()
   : pattern(ConsPattern::make(Type<Symbol>::make(),
-                              ConsPattern::make(AnyType::make(),
-                                                Type<Nil>::make())))
+                              ConsPattern::make(Type<Symbol>::make(),
+                                                ConsPattern::make(AnyType::make(),
+                                                                  Type<Nil>::make()))))
 {}
 
-void Define::pass1(Jit & jit, const Cell & cdr) const
+void Define::compile(Jit & jit, Function * f, const Cell & obj) const
 {
-  if(pattern->isInstance(cdr))
+  if(pattern->isInstance(obj))
   {
-    jit.pass1(cdr.as<Cons>()->getCdrCell().as<Cons>()->getCarCell());
-    jit.instrSize++;
-    jit.instrSize++;
-    jit.dataSize++;
+    auto cons = obj.as<Cons>()->getCdrCell().as<Cons>();
+    jit.compile(f, cons->getCdrCell().as<Cons>()->getCarCell());
+    f->appendInstruction(DEFINES, f->dataSize());
+    f->appendData(cons->getCarCell());
   }
   else
   {
     // @todo throw exception
   }
-}
-
-void Define::pass2(Jit & jit, const Cell & cdr) const
-{
-  auto f = jit.function.as<Function>();
-  jit.pass2(cdr.as<Cons>()->getCdrCell().as<Cons>()->getCarCell());
-  f->appendInstruction(DEFINEV, f->dataSize());
-  f->appendData(cdr.as<Cons>()->getCarCell());
-}
-
-void Define::exception(Jit & jit, const Cell & cdr) const
-{
 }

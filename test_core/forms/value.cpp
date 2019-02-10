@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2017, Stefan Wolfsheimer
+Copyright (c) 2019, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -28,45 +28,26 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#pragma once
-#include <cstddef>
+#include <catch.hpp>
+#include <lpp/core/vm.h>
+#include <lpp/core/types/function.h>
+using Vm = Lisp::Vm;
+using Object = Lisp::Object;
+using Function = Lisp::Function;
+using IntegerType = Lisp::IntegerType;
 
-namespace Lisp
+TEST_CASE("eval_value", "[Value]")
 {
-  using InstructionType = std::size_t;
-
-  /**
-   * return a value from function data.
-   */
-  static const InstructionType RETURNV = 0x01;
-
-  /**
-   * return / push a value from stack 
-   */
-  static const InstructionType RETURNS = 0x02;
-
-  /**
-   * return the result from symbol lookup 
-   */
-  static const InstructionType RETURNL = 0x03;
-
-  /*
-   * increment return position by one
-   */
-  static const InstructionType INCRET = 0x04;
-
-  /*
-   * call a functions with arguments on the stack
-   * decrement returnPos by the number of arguments
-   * push the current state on call stack
-   */
-  static const InstructionType FUNCALL = 0x05;
-
-  /**
-   * define the value of a symbol in the env
-   */
-  static const InstructionType DEFINES = 0x06;
-
-  //static const InstructionType DECRET = 0x0a;
+  Vm vm;
+  std::size_t stackSize = vm.stackSize();
+  auto func = vm.compile(Object(1));
+  REQUIRE(func.getRefCount() == 1u);
+  REQUIRE(func.isA<Function>());
+  REQUIRE(stackSize == vm.stackSize());
+  vm.eval(func.as<Function>());
+  auto res = vm.top();
+  vm.pop();
+  REQUIRE(stackSize == vm.stackSize());
+  REQUIRE(res.isA<IntegerType>());
+  REQUIRE(res.as<IntegerType>() == 1u);
 }
-

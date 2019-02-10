@@ -3,7 +3,10 @@
 
 namespace Lisp
 {
-  class Reference : public Cons
+  class Reference : public BasicCons
   {
+  public:
+    void setValue(const Cell & rhs);
+    const Cell & getValue() const;
   };
 }

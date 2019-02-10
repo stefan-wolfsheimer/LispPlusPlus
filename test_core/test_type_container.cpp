@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2017, Stefan Wolfsheimer
+Copyright (c) 2019, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -28,45 +28,28 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#pragma once
-#include <cstddef>
+#include <lpp/core/gc/type_container.h>
+#include <lpp/core/types/type_id.h>
+#include <lpp/core/types/basic_type.h>
+#include <lpp/core/object.h>
+#include <lpp/core/types/cons.h>
+#include <catch.hpp>
 
-namespace Lisp
+using TypeContainer = Lisp::TypeContainer;
+using IntegerType = Lisp::IntegerType;
+using Cons = Lisp::Cons;
+using Object = Lisp::Object;
+using BasicType = Lisp::BasicType;
+
+TEST_CASE("type_life_cycle", "[TypeContainer]")
 {
-  using InstructionType = std::size_t;
-
-  /**
-   * return a value from function data.
-   */
-  static const InstructionType RETURNV = 0x01;
-
-  /**
-   * return / push a value from stack 
-   */
-  static const InstructionType RETURNS = 0x02;
-
-  /**
-   * return the result from symbol lookup 
-   */
-  static const InstructionType RETURNL = 0x03;
-
-  /*
-   * increment return position by one
-   */
-  static const InstructionType INCRET = 0x04;
-
-  /*
-   * call a functions with arguments on the stack
-   * decrement returnPos by the number of arguments
-   * push the current state on call stack
-   */
-  static const InstructionType FUNCALL = 0x05;
-
-  /**
-   * define the value of a symbol in the env
-   */
-  static const InstructionType DEFINES = 0x06;
-
-  //static const InstructionType DECRET = 0x0a;
+  TypeContainer container;
+  Object intType1(container.make<IntegerType>());
+  Object intType2(container.make<IntegerType>());
+  REQUIRE(intType1.isA<BasicType>());
+  REQUIRE(intType2.isA<BasicType>());
+  REQUIRE(intType1.as<BasicType>() == intType2.as<BasicType>());
+  Object consType1(container.make<Cons>());
+  REQUIRE(consType1.isA<BasicType>());
+  REQUIRE(intType1.as<BasicType>() != consType1.as<BasicType>());
 }
-

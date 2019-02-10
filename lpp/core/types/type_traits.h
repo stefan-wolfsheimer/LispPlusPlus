@@ -43,7 +43,10 @@ namespace Lisp
     template<TypeId TID>
     struct Id
     {
-      static const TypeId typeId = TID;
+      static constexpr TypeId getTypeId()
+      {
+        return TID;
+      }
 
       static inline bool isA(TypeId tid)
       {
@@ -94,7 +97,6 @@ namespace Lisp
     struct Integer : public TypeMatcher
     {
       using Type = IntegerType;
-      static const TypeId typeId = TypeMatcher::typeId;
 
       static inline IntegerType as(const CellDataType & data, TypeId tid)
       {

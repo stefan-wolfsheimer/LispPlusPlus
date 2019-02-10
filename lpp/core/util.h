@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2017, Stefan Wolfsheimer
+Copyright (c) 2017-2019, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -29,44 +29,29 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
-#include <cstddef>
+#include <cstdint>
+#include <functional>
 
 namespace Lisp
 {
-  using InstructionType = std::size_t;
+  class Cell;
 
-  /**
-   * return a value from function data.
+  /** 
+   * @return true if is a proper list
    */
-  static const InstructionType RETURNV = 0x01;
+  bool isAList(const Cell & cell);
 
-  /**
-   * return / push a value from stack 
+  /** 
+   * Determines length of the list. 
+   * @throw NotAList if cell is not a proper list
    */
-  static const InstructionType RETURNS = 0x02;
+  std::size_t listLength(const Cell & cell);
 
-  /**
-   * return the result from symbol lookup 
+  /** 
+   * Iterate over each list element.
+   * @throw NotAList if cell is not a proper list
    */
-  static const InstructionType RETURNL = 0x03;
+  void forEachCar(const Cell & cell,
+                  std::function<void(const Cell&)> func);
 
-  /*
-   * increment return position by one
-   */
-  static const InstructionType INCRET = 0x04;
-
-  /*
-   * call a functions with arguments on the stack
-   * decrement returnPos by the number of arguments
-   * push the current state on call stack
-   */
-  static const InstructionType FUNCALL = 0x05;
-
-  /**
-   * define the value of a symbol in the env
-   */
-  static const InstructionType DEFINES = 0x06;
-
-  //static const InstructionType DECRET = 0x0a;
 }
-

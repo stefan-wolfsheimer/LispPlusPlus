@@ -134,7 +134,7 @@ Object & Object::operator=(Cell && rhs)
   unsetCons();
   typeId = rhs.typeId;
   data = rhs.data;
-  rhs.typeId = TypeTraits<Nil>::typeId;
+  rhs.typeId = TypeTraits<Nil>::getTypeId();
   return *this;
 }
 
@@ -144,7 +144,7 @@ Object & Object::operator=(Object && rhs)
   unsetCons();
   typeId = rhs.typeId;
   data = rhs.data;
-  rhs.typeId = TypeTraits<Nil>::typeId;
+  rhs.typeId = TypeTraits<Nil>::getTypeId();
   return *this;
 }
 
@@ -188,6 +188,16 @@ void Object::init(Container * container, TypeId _typeId)
   assert(container->isRoot());
   assert(container->getRefCount() == 1u);
   Cell::init(container, _typeId);
+}
+
+void Object::swap(Object & rhs)
+{
+  TypeId tmpId = rhs.typeId;
+  rhs.typeId = typeId;
+  typeId = tmpId;
+  CellDataType tmpData = rhs.data;
+  rhs.data = data;
+  data = tmpData;
 }
 
 Object Lisp::nil(Object::nil());

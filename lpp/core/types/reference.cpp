@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2017, Stefan Wolfsheimer
+Copyright (c) 2019, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -28,45 +28,66 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#pragma once
-#include <cstddef>
+#include <lpp/core/types/reference.h>
 
-namespace Lisp
+using Reference = Lisp::Reference;
+using Cell = Lisp::Cell;
+using Cons = Lisp::Cons;
+
+void Reference::setValue(const Cell & rhs)
 {
-  using InstructionType = std::size_t;
-
-  /**
-   * return a value from function data.
-   */
-  static const InstructionType RETURNV = 0x01;
-
-  /**
-   * return / push a value from stack 
-   */
-  static const InstructionType RETURNS = 0x02;
-
-  /**
-   * return the result from symbol lookup 
-   */
-  static const InstructionType RETURNL = 0x03;
-
-  /*
-   * increment return position by one
-   */
-  static const InstructionType INCRET = 0x04;
-
-  /*
-   * call a functions with arguments on the stack
-   * decrement returnPos by the number of arguments
-   * push the current state on call stack
-   */
-  static const InstructionType FUNCALL = 0x05;
-
-  /**
-   * define the value of a symbol in the env
-   */
-  static const InstructionType DEFINES = 0x06;
-
-  //static const InstructionType DECRET = 0x0a;
+  if(getCarCell().isA<Cons>())
+  {
+    assert(getCdrCell().isA<IntegerType>());
+    assert(getCdrCell().as<IntegerType>() == 0 || getCdrCell().as<IntegerType>() == 1);
+    if(getCdrCell().as<IntegerType>() == 0)
+    {
+      getCarCell().as<Cons>()->setCar(rhs);
+    }
+    else
+    {
+      getCarCell().as<Cons>()->setCdr(rhs);
+    }
+  }
+  else if(getCarCell().isA<Array>())
+  {
+    assert(getCdrCell().isA<IntegerType>());
+    assert(getCdrCell().as<IntegerType>() >= 0);
+    getCarCell().as<Array>()->set(getCdrCell().as<IntegerType>(), rhs);
+  }
+  else if(getCarCell().isA<Symbol>())
+  {
+    setCdr(rhs);
+  }
 }
 
+const Cell & Reference::getValue() const
+{
+  if(getCarCell().isA<Cons>())
+  {
+    assert(getCdrCell().isA<IntegerType>());
+    assert(getCdrCell().as<IntegerType>() == 0 || getCdrCell().as<IntegerType>() == 1);
+    if(getCdrCell().as<IntegerType>() == 0)
+    {
+      return getCarCell().as<Cons>()->getCarCell();
+    }
+    else
+    {
+      return getCarCell().as<Cons>()->getCdrCell();
+    }
+  }
+  else if(getCarCell().isA<Array>())
+  {
+    assert(getCdrCell().isA<IntegerType>());
+    assert(getCdrCell().as<IntegerType>() >= 0);
+    return getCarCell().as<Array>()->atCell(getCdrCell().as<IntegerType>());
+  }
+  else if(getCarCell().isA<Symbol>())
+  {
+    return getCdrCell();
+  }
+  else
+  {
+    // @todo raise exception
+  }
+}

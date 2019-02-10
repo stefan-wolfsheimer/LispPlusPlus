@@ -4,6 +4,7 @@
 #include <lpp/core/gc/symbol_container.h>
 #include <lpp/core/gc/garbage_collector.h>
 #include <lpp/core/types/forms/define.h>
+#include <lpp/core/types/forms/lambda.h>
 
 using Env = Lisp::Env;
 using SymbolContainer = Lisp::SymbolContainer;
@@ -22,5 +23,6 @@ std::shared_ptr<Env> Lisp::makeDefaultEnv(std::shared_ptr<GarbageCollector> gc,
 {
   auto env = std::make_shared<Env>();
   defineForm(env, sc, "define", new Lisp::Define());
+  defineForm(env, sc, "lambda", new Lisp::Lambda());
   return env;
 }

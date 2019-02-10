@@ -7,85 +7,99 @@
 #include <lpp/core/types/function.h>
 #include <lpp/core/types/array.h>
 #include <lpp/core/types/form.h>
+#include <lpp/core/util.h>
+#include <lpp/core/compiler/argument_list.h>
 
 using Jit = Lisp::Jit;
 using Object = Lisp::Object;
+using ArgumentList = Lisp::ArgumentList;
 
+Jit::Jit(const Jit & rhs) : gc(rhs.gc), sc(rhs.sc), tc(rhs.tc), env(rhs.env)
+{
+}
 
 Jit::Jit(std::shared_ptr<GarbageCollector> _gc,
          std::shared_ptr<SymbolContainer> _sc,
-         std::shared_ptr<Env> _env) : gc(_gc), sc(_sc), env(_env)
+         std::shared_ptr<TypeContainer> _tc,
+         std::shared_ptr<Env> _env) : gc(_gc), sc(_sc), tc(_tc), env(_env)
 {
-  instrSize = 0;
-  dataSize = 0;
 }
 
-void Jit::pass1(const Cell & obj)
+void Jit::compile(Function * f, const Cell & obj)
 {
   auto cons = obj.as<Cons>();
   if(cons)
   {
     if(cons->getCarCell().isA<Symbol>())
     {
+      // (form ...)
       auto form = env->find(cons->getCarCell()).as<Form>();
       if(form)
       {
-        form->pass1(*this, cons->getCdrCell());
+        form->compile(*this, f, obj);
       }
       else
       {
-        // @todo throw if undefined
+        // (funcion ...)
       }
+    }
+    else if(cons->getCarCell().isA<Cons>())
+    {
+      // ((..) ..)
+      //  |
+      Jit jit(gc, sc, tc, env);
+      InstructionType n = 0;
+      forEachCar(cons->getCdrCell(), [&jit, &n, f](const Cell& arg){
+          jit.compile(f, arg);
+          f->appendInstruction(INCRET);
+          n++;
+      });
+      f->appendInstruction(FUNCALL, n, f->dataSize());
+      f->appendData(jit.compile(cons->getCarCell()));
+    }
+    else if(cons->getCarCell().isA<Function>())
+    {
+      // (#function ...)
+      // @todo match number of arguments
+      InstructionType n = 0;
+      forEachCar(cons->getCdrCell(), [this, &n, f](const Cell& arg){
+          compile(f, arg);
+          f->appendInstruction(INCRET);
+          n++;
+        });
+      f->appendInstruction(FUNCALL, n, f->dataSize());
+      f->appendData(cons->getCarCell());
+    }
+  }
+  else if(obj.isA<Symbol>())
+  {
+    // sybmol
+    if(argumentList && argumentList->isSet(obj))
+    {
+      // @todo isSet recursively in scope stack
+      const ArgumentReference & ref(argumentList->find(obj));
+      f->appendInstruction(RETURNS, ref.getPos());
     }
     else
     {
-      // @todo eval
+      // lookup symbol in global scope
+      f->appendInstruction(RETURNL, f->dataSize());
+      f->appendData(obj);
     }
-  }
-  else if(obj.isA<Symbol>())
-  {
-    // symbol lookup
-    instrSize++;
-    instrSize++;
-    dataSize++;
   }
   else
   {
-    //idempotent
-    instrSize++;
-    instrSize++;
-    dataSize++;
+    // value
+    f->appendInstruction(RETURNV, f->dataSize());
+    f->appendData(obj);
   }
 }
 
-void Jit::pass2(const Cell & obj)
+Object Jit::compile(const Cell & obj)
 {
-  auto f = function.as<Function>();
-  if(!f)
-  {
-    f = gc->makeRoot<Function>(instrSize, dataSize);
-    function = Object(f);
-  }
-  auto cons = obj.as<Cons>();
-  if(cons)
-  {
-    if(cons->getCarCell().isA<Symbol>())
-    {
-      env
-        ->find(cons->getCarCell()).as<Form>()
-        ->pass2(*this, cons->getCdrCell());
-    }
-  }
-  else if(obj.isA<Symbol>())
-  {
-    // @todo dialect variations: check if reference is bound
-    f->appendInstruction(LOOKUP, f->dataSize());
-    f->appendData(obj);
-  }
-  else
-  {
-    f->appendInstruction(SETV, f->dataSize());
-    f->appendData(obj);
-  }
+  Function * f = gc->makeRoot<Function>();
+  Object ret(f);
+  compile(f, obj);
+  f->shrink();
+  return std::move(ret);
 }
-
