@@ -25,6 +25,10 @@ const Object & ExceptionWithObject::getObject() const
   return object;
 }
 
+void ExceptionWithObject::setObject(const Cell & _cell)
+{
+  object = _cell;
+}
 /////////////////////////////////////////////////////////////////
 NonMatchingArguments::NonMatchingArguments(std::size_t _nargs, Function * f)
   : nargs(_nargs), ExceptionWithObject(Cell(f))

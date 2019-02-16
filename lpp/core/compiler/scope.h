@@ -1,49 +1,51 @@
-/******************************************************************************
-Copyright (c) 2019, Stefan Wolfsheimer
-
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-
-1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer.
-2. Redistributions in binary form must reproduce the above copyright notice,
-   this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies,
-either expressed or implied, of the FreeBSD Project.
-******************************************************************************/
 #pragma once
+#include <assert.h>
 #include <unordered_map>
 #include <memory>
-#include <lpp/core/compiler/argument_list.h>
+#include <lpp/core/cell.h>
+#include <lpp/core/object.h>
+#include <lpp/core/types/symbol.h>
+#include <lpp/core/types/function.h>
+#include <lpp/core/exception.h>
+
 
 namespace Lisp
 {
+  class Function;
+
   class Scope
   {
   public:
-    Scope(std::shared_ptr<ArgumentList> & _parent);
-    //Scope(std::shared_ptr<Env> & _env);
-    ~Scope();
+    Scope(std::shared_ptr<Scope> & _parent, const Object & funcObj);
+    inline const std::shared_ptr<Scope> & getParent() const;
+
+    /**
+     * return true if symbol is set in top argument list.
+     */
+    inline bool isSet(const Cell & symbol, bool recursive=false) const;
+
+    /**
+     * Add a new argument to the list
+     */
+    inline void add(const Cell & symbol);
+    inline std::pair<Function*, std::size_t> find(const Cell & symb, bool recursive=false) const;
+
+    inline Function * getFunction() const;
+
   private:
-    //std::shared_ptr<Env> & env;
-    std::shared_ptr<ArgumentList> & argumentList;
+    struct Hash
+    {
+      inline std::size_t operator()(const Cell & object) const;
+    };
+
+    struct Equal
+    {
+      inline bool operator()(const Cell & lhs,
+                             const Cell & rhs) const;
+    };
+    Object funcObj;
+    std::shared_ptr<Scope> parent;
+    std::unordered_map<Cell, std::size_t, Hash, Equal> bindings;
   };
 }
 
@@ -52,15 +54,82 @@ namespace Lisp
 // Implementation
 //
 ////////////////////////////////////////////////////////////////////////////////
-inline Lisp::Scope::Scope(std::shared_ptr<ArgumentList> & _argumentList) : argumentList(_argumentList)
+inline Lisp::Scope::Scope(std::shared_ptr<Scope> & _parent, const Object & _funcObj)
+  : parent(_parent), funcObj(_funcObj)
 {
-  auto newList = std::make_shared<ArgumentList>(_argumentList);
-  argumentList.swap(newList);
 }
 
-inline Lisp::Scope::~Scope()
+inline const std::shared_ptr<Lisp::Scope> & Lisp::Scope::getParent() const
 {
-  auto oldList = argumentList->getParent();
-  argumentList.swap(oldList);
-  oldList.reset();
+  return parent;
+}
+
+inline Lisp::Function * Lisp::Scope::getFunction() const
+{
+  return funcObj.as<Function>();
+}
+
+inline void Lisp::Scope::add(const Cell & symbol)
+{
+  assert(symbol.isA<Symbol>());
+  bindings.insert(std::make_pair(symbol, getFunction()->numArguments()));
+  getFunction()->addArgument(symbol);
+}
+
+inline bool Lisp::Scope::isSet(const Cell & cell, bool recursive) const
+{
+  assert(cell.isA<Symbol>());
+  if(bindings.find(cell) == bindings.end())
+  {
+    if(recursive && parent)
+    {
+      return parent->isSet(cell);
+    }
+    else
+    {
+      return false;
+    }
+  }
+  else
+  {
+    return true;
+  }
+}
+
+
+inline std::pair<Lisp::Function*, std::size_t> Lisp::Scope::find(const Cell & symb,
+                                                                 bool recursive) const
+{
+  assert(symb.isA<Symbol>());
+  auto itr = bindings.find(symb);
+  if(itr == bindings.end())
+  {
+    if(recursive && parent)
+    {
+      return parent->find(symb, recursive);
+    }
+    else
+    {
+      throw NotFound(symb);
+    }
+  }
+  else
+  {
+    return std::make_pair(funcObj.as<Function>(), itr->second);
+  }
+}
+
+inline std::size_t Lisp::Scope::Hash::operator()(const Cell & object) const
+{
+  static std::hash<Symbol*> symbolHash;
+  assert(object.isA<Symbol>());
+  return symbolHash(object.as<Symbol>());
+}
+
+inline bool Lisp::Scope::Equal::operator()(const Cell & lhs, const Cell & rhs) const
+{
+  static std::equal_to<Symbol*> symbolEq;
+  assert(lhs.isA<Symbol>());
+  assert(rhs.isA<Symbol>());
+  return symbolEq(lhs.as<Symbol>(), rhs.as<Symbol>());
 }

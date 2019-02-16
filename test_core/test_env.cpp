@@ -33,10 +33,8 @@ either expressed or implied, of the FreeBSD Project.
 #include <lpp/core/gc/symbol_container.h>
 #include <lpp/core/env.h>
 #include <lpp/core/types/reference.h>
-#include <lpp/core/compiler/scope.h>
 
 using Env = Lisp::Env;
-using Scope = Lisp::Scope;
 using Object = Lisp::Object;
 using Symbol = Lisp::Symbol;
 using Undefined = Lisp::Undefined;

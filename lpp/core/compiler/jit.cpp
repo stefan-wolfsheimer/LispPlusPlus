@@ -8,11 +8,11 @@
 #include <lpp/core/types/array.h>
 #include <lpp/core/types/form.h>
 #include <lpp/core/util.h>
-#include <lpp/core/compiler/argument_list.h>
+#include <lpp/core/compiler/scope.h>
 
 using Jit = Lisp::Jit;
 using Object = Lisp::Object;
-using ArgumentList = Lisp::ArgumentList;
+using Scope = Lisp::Scope;
 
 Jit::Jit(const Jit & rhs) : gc(rhs.gc), sc(rhs.sc), tc(rhs.tc), env(rhs.env)
 {
@@ -74,11 +74,21 @@ void Jit::compile(Function * f, const Cell & obj)
   else if(obj.isA<Symbol>())
   {
     // sybmol
-    if(argumentList && argumentList->isSet(obj))
+    if(scope && scope->isSet(obj, true))
     {
-      // @todo isSet recursively in scope stack
-      const ArgumentReference & ref(argumentList->find(obj));
-      f->appendInstruction(RETURNS, ref.getPos());
+      std::pair<Function*, std::size_t> arg(scope->find(obj, true));
+      if(arg.first == scope->getFunction())
+      {
+        // @todo modify to RETURNR after the function has been completed
+        f->appendInstruction(RETURNS, arg.first->numArguments() - arg.second);
+      }
+      else
+      {
+        // return shared variable
+        // @todo modify to RETURNR
+        f->appendInstruction(RETURNV, f->dataSize());
+        f->appendData(std::move(arg.first->shareArgument(arg.second, gc)));
+      }
     }
     else
     {

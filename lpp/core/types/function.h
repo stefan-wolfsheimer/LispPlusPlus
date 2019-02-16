@@ -33,15 +33,29 @@ either expressed or implied, of the FreeBSD Project.
 #include <vector>
 #include <lpp/core/opcode.h>
 #include <lpp/core/object.h>
+#include <lpp/core/gc/garbage_collector.h>
 #include <lpp/core/types/type_id.h>
 #include <lpp/core/types/container.h>
 #include <lpp/core/types/array.h>
+#include <lpp/core/types/reference.h>
 
 
 namespace Lisp
 {
   class Object;
   class Vm;
+
+  class ArgumentTraits
+  {
+  public:
+    ArgumentTraits();
+    inline bool isReference() const;
+    inline void setReference(std::size_t index);
+    inline std::size_t getReferenceIndex() const;
+  private:
+    bool ref;
+    std::size_t refIndex;
+  };
 
   class Function : public Container
   {
@@ -61,15 +75,36 @@ namespace Lisp
                                   const InstructionType & i2,
                                   const InstructionType & i3);
     inline void appendData(const Cell & rhs);
-    inline void setNumArguments(std::size_t n);
+    inline void addArgument(const Cell & cell);
+    inline Object shareArgument(std::size_t i, std::shared_ptr<GarbageCollector> gc);
 
     inline std::size_t dataSize() const;
     inline std::size_t numArguments() const;
-    inline std::size_t instructionSize() const;
+
+    /**
+     * Number of instructions
+     */
+    inline std::size_t numInstructions() const;
+
+    /**
+     * Shrink all internal vectors to fit size.
+     */
     inline void shrink();
+
+    /**
+     * Get properties of ith function argument.
+     * @param index of argument i in [0 ... numArguments() )
+     */
+    inline const ArgumentTraits & getArgumentTraits(const std::size_t i) const;
+    inline ArgumentTraits & getArgumentTraits(const std::size_t i);
 
     inline const_iterator cbegin() const;
     inline const_iterator cend() const;
+
+    /**
+     * return a const reference of the ith data element
+     */
+    inline const Cell & atCell(std::size_t i) const;
 
     //////////////////////////////////////////////////
     // implementation of the Container interface
@@ -100,29 +135,51 @@ namespace Lisp
     }
 
   private:
+    std::vector<ArgumentTraits> argumentTraits;
     Code instructions;
     Array data;
-    std::size_t numArgs; // arguments [0..numArgs) of data
   };
 }
 
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 //
 // Implementation
 //
-////////////////////////////////////////////////////////////////////////////////
-inline Lisp::Function::Function() : numArgs(0)
+///////////////////////////////////////////////////////////////////////////////
+inline Lisp::ArgumentTraits::ArgumentTraits() : ref(false), refIndex(0)
+{
+}
+
+inline bool Lisp::ArgumentTraits::isReference() const
+{
+  return ref;
+}
+
+inline void Lisp::ArgumentTraits::setReference(std::size_t index)
+{
+  refIndex = index;
+  ref = true;
+}
+
+inline std::size_t Lisp::ArgumentTraits::getReferenceIndex() const
+{
+  return refIndex;
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+inline Lisp::Function::Function()
 {
 }
 
 inline Lisp::Function::Function(const std::vector<InstructionType> & instr,
                                 const Array & _data)
-  : instructions(instr), data(_data), numArgs(0)
+  : instructions(instr), data(_data)
 {
 }
 
 inline Lisp::Function::Function(Code && instr, Array && _data)
-  : instructions(std::move(instr)), data(std::move(_data)), numArgs(0)
+  : instructions(std::move(instr)), data(std::move(_data))
 {
 }
 
@@ -131,9 +188,26 @@ inline void Lisp::Function::appendData(const Cell & rhs)
   data.append(rhs);
 }
 
-inline void Lisp::Function::setNumArguments(std::size_t n)
+inline void Lisp::Function::addArgument(const Cell & cell)
 {
-  numArgs = n;
+  argumentTraits.push_back(ArgumentTraits());
+  appendData(cell);
+}
+
+inline Lisp::Object Lisp::Function::shareArgument(std::size_t i, std::shared_ptr<GarbageCollector> gc)
+{
+  assert(i < argumentTraits.size());
+  if(argumentTraits[i].isReference())
+  {
+    return data[argumentTraits[i].getReferenceIndex()];
+  }
+  else
+  {
+    Object obj(gc->makeRoot<Reference>(data.atCell(i), Lisp::nil));
+    argumentTraits[i].setReference(data.size());
+    appendData(obj);
+    return obj;
+  }
 }
 
 inline void Lisp::Function::appendInstruction(const InstructionType  & i1)
@@ -163,10 +237,10 @@ inline std::size_t Lisp::Function::dataSize() const
 
 inline std::size_t Lisp::Function::numArguments() const
 {
-  return numArgs;
+  return argumentTraits.size();
 }
 
-inline std::size_t Lisp::Function::instructionSize() const
+inline std::size_t Lisp::Function::numInstructions() const
 {
   return instructions.size();
 }
@@ -175,7 +249,19 @@ inline void Lisp::Function::shrink()
 {
   data.shrink();
   instructions.shrink_to_fit();
+  argumentTraits.shrink_to_fit();
 }
+
+inline const Lisp::ArgumentTraits & Lisp::Function::getArgumentTraits(const std::size_t i) const
+{
+  return argumentTraits[i];
+}
+
+inline Lisp::ArgumentTraits & Lisp::Function::getArgumentTraits(const std::size_t i)
+{
+  return argumentTraits[i];
+}
+
 
 inline Lisp::Function::const_iterator Lisp::Function::cbegin() const
 {
@@ -185,4 +271,9 @@ inline Lisp::Function::const_iterator Lisp::Function::cbegin() const
 inline Lisp::Function::const_iterator Lisp::Function::cend() const
 {
   return instructions.cend();
+}
+
+inline const Lisp::Cell & Lisp::Function::atCell(std::size_t i) const
+{
+  return data.atCell(i);
 }

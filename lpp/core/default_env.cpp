@@ -3,8 +3,8 @@
 #include <lpp/core/env.h>
 #include <lpp/core/gc/symbol_container.h>
 #include <lpp/core/gc/garbage_collector.h>
-#include <lpp/core/types/forms/define.h>
-#include <lpp/core/types/forms/lambda.h>
+#include <lpp/core/compiler/forms/define.h>
+#include <lpp/core/compiler/forms/lambda.h>
 
 using Env = Lisp::Env;
 using SymbolContainer = Lisp::SymbolContainer;

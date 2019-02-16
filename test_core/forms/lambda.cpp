@@ -76,10 +76,12 @@ TEST_CASE("lambda_nested_lambdas", "[Lambda]")
   // (lambda (a b) b) -> #Function
   Vm vm;
   Object res;
-  std::size_t initStackSize = vm.stackSize(); 
+  std::size_t initStackSize = vm.stackSize();
+
   Object first = vm.compileAndEval(vm.list(vm.symbol("lambda"),
                                            vm.list(vm.symbol("a"), vm.symbol("b")),
                                            vm.symbol("a")));
+
   REQUIRE(vm.stackSize() == initStackSize);
   Object second = vm.compileAndEval(vm.list(vm.symbol("lambda"),
                                             vm.list(vm.symbol("a"), vm.symbol("b")),

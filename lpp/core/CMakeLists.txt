@@ -1,7 +1,5 @@
 add_library( Core
   types/array.cpp
-  types/forms/define.cpp
-  types/forms/lambda.cpp
   types/reference.cpp
   gc/cons_pages.cpp
   gc/garbage_collector.cpp
@@ -9,6 +7,8 @@ add_library( Core
   compiler/jit.cpp
   compiler/cons_pattern.cpp
   compiler/list_pattern.cpp
+  compiler/forms/define.cpp
+  compiler/forms/lambda.cpp
   cell.cpp
   object.cpp
   exception.cpp

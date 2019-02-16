@@ -29,101 +29,115 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include <catch.hpp>
+#include <memory>
 #include <lpp/core/gc/garbage_collector.h>
 #include <lpp/core/gc/symbol_container.h>
 #include <lpp/core/object.h>
+#include <lpp/core/types/function.h>
 #include <lpp/core/types/reference.h>
-#include <lpp/core/compiler/argument_list.h>
 #include <lpp/core/compiler/scope.h>
+#include <lpp/core/compiler/scope_guard.h>
 
 using Object = Lisp::Object;
-using ArgumentList = Lisp::ArgumentList;
-using ArgumentReference = Lisp::ArgumentReference;
 using Scope = Lisp::Scope;
-using SymbolContainer = Lisp::SymbolContainer;
-
-/*
-using Symbol = Lisp::Symbol;
-using Undefined = Lisp::Undefined;
-using IntegerType = Lisp::IntegerType;
-using ManagedType = Lisp::ManagedType;
-using Reference = Lisp::Reference;
+using ScopeGuard = Lisp::ScopeGuard;
 using GarbageCollector = Lisp::GarbageCollector;
-*/
+using SymbolContainer = Lisp::SymbolContainer;
+using Function = Lisp::Function;
+using Reference = Lisp::Reference;
 
 
-TEST_CASE("argument_list_push_scope", "[Env]")
+TEST_CASE("scope_life_cycle", "[Scope]")
 {
+
   SymbolContainer sc;
-  std::shared_ptr<ArgumentList> root;
-  auto lst1 = std::make_shared<ArgumentList>(root);
+  auto gc = std::make_shared<GarbageCollector>();
   Object a(sc.make("a"));
   Object b(sc.make("b"));
   Object c(sc.make("c"));
   Object d(sc.make("d"));
-  lst1->set(a, ArgumentReference(1));
-  lst1->set(b, ArgumentReference(2));
-  auto lst2 = std::make_shared<ArgumentList>(lst1);
-  lst2->set(c, ArgumentReference(3));
-  lst2->set(b, ArgumentReference(4));
+  std::shared_ptr<Scope> root;
+  std::pair<Function*, std::size_t> itr;
+  Object fobj1(gc->makeRoot<Function>());
+  Object fobj2(gc->makeRoot<Function>());
 
-  REQUIRE(lst1->find(a).getPos() == 1);
-  REQUIRE(lst1->find(b).getPos() == 2);
+  // first scope
+  auto s1 = std::make_shared<Scope>(root, fobj1);
+  REQUIRE_FALSE(s1->getParent());
+  REQUIRE(s1->getFunction() == fobj1.as<Function>());
+  s1->add(a);
+  s1->add(b);
+  REQUIRE(s1->isSet(a, true));
+  REQUIRE_FALSE(s1->isSet(c, true));
+  REQUIRE(s1->isSet(a, false));
+  REQUIRE_FALSE(s1->isSet(c, false));
+  // check traits of function arguments
+  REQUIRE(fobj1.as<Function>()->numArguments() == 2);
+  REQUIRE_FALSE(fobj1.as<Function>()->getArgumentTraits(0).isReference());
+  REQUIRE_FALSE(fobj1.as<Function>()->getArgumentTraits(1).isReference());
 
-  //@todo
-  //REQUIRE(lst2->find(a).getPos() == 1);
-  REQUIRE(lst2->find(c).getPos() == 3);
-  REQUIRE(lst2->find(b).getPos() == 4);
+  // second scope
+  auto s2 = std::make_shared<Scope>(s1, fobj2);
+  REQUIRE(s2->getParent() == s1);
+  REQUIRE(s2->getFunction() == fobj2.as<Function>());
+  s2->add(c);
+  s2->add(b);
+  REQUIRE(s2->isSet(a, true));
+  REQUIRE(s2->isSet(c, true));
+  REQUIRE_FALSE(s2->isSet(a, false));
+  REQUIRE(s2->isSet(c, false));
+
+  // check traits of function arguments
+  REQUIRE(fobj2.as<Function>()->numArguments() == 2);
+  REQUIRE_FALSE(fobj2.as<Function>()->getArgumentTraits(0).isReference());
+  REQUIRE_FALSE(fobj2.as<Function>()->getArgumentTraits(1).isReference());
+
+  itr = s1->find(a, true);
+  REQUIRE(itr.first == fobj1.as<Function>());
+  REQUIRE(itr.second == 0);
+
+  itr = s1->find(b, true);
+  REQUIRE(itr.first == fobj1.as<Function>());
+  REQUIRE(itr.second == 1);
+
+  itr = s2->find(a, true);
+  REQUIRE(itr.first == fobj1.as<Function>());
+  REQUIRE(itr.second == 0);
+
+  itr = s2->find(c, true);
+  REQUIRE(itr.first == fobj2.as<Function>());
+  REQUIRE(itr.second == 0);
+
+  itr = s2->find(b, true);
+  REQUIRE(itr.first == fobj2.as<Function>());
+  REQUIRE(itr.second == 1);
+
+  // create reference in parent scope
+  auto sharedArgument = fobj1.as<Function>()->shareArgument(0, gc);
+
+  REQUIRE(fobj1.as<Function>()->numArguments() == 2);
+  REQUIRE(fobj1.as<Function>()->getArgumentTraits(0).isReference());
+  REQUIRE_FALSE(fobj1.as<Function>()->getArgumentTraits(1).isReference());
+  REQUIRE(sharedArgument.isA<Reference>());
+  std::size_t refIndex = fobj1.as<Function>()->getArgumentTraits(0).getReferenceIndex();
+  REQUIRE(fobj1.as<Function>()->atCell(refIndex).isA<Reference>());
+  REQUIRE(sharedArgument.as<Reference>() == fobj1.as<Function>()->atCell(refIndex).as<Reference>());
 }
 
-
-#if 0
-TEST_CASE("scoped_env", "[Env]")
+TEST_CASE("scope_guard", "[Scope]")
 {
-  SymbolContainer sc;
-  auto env = std::make_shared<Env>();
-  Object a(sc.make("a"));
-  Object b(sc.make("b"));
-  Object c(sc.make("c"));
-  Object d(sc.make("d"));
-  env->set(a, Object(1));
-  env->set(b, Object(2));
+
+  auto gc = std::make_shared<GarbageCollector>();
+  Object fobj1(gc->makeRoot<Function>());
+  Object fobj2(gc->makeRoot<Function>());
+  Object fobj3(gc->makeRoot<Function>());
+  std::shared_ptr<Scope> root;
+  std::shared_ptr<Scope> current = root;
+  REQUIRE(current == root);
   {
-    Scope scope1(env);
-    REQUIRE(env->find(a).isA<IntegerType>());
-    REQUIRE(env->find(a).as<IntegerType>() == 1);
-    REQUIRE(env->find(b).isA<IntegerType>());
-    REQUIRE(env->find(b).as<IntegerType>() == 2);
-    //@todo exception
-    REQUIRE(env->find(c).isA<Undefined>());
-    REQUIRE(env->find(d).isA<Undefined>());
-
-    env->set(c, Object(3));
-    env->set(b, Object(4));
-    REQUIRE(env->find(b).isA<IntegerType>());
-    REQUIRE(env->find(b).as<IntegerType>() == 4);
-    REQUIRE(env->find(c).isA<IntegerType>());
-    REQUIRE(env->find(c).as<IntegerType>() == 3);
-    {
-      Scope scope2(env);
-      env->set(b, Object(5));
-      env->set(d, Object(6));
-      REQUIRE(env->find(a).isA<IntegerType>());
-      REQUIRE(env->find(a).as<IntegerType>() == 1);
-      REQUIRE(env->find(b).isA<IntegerType>());
-      REQUIRE(env->find(b).as<IntegerType>() == 5);
-      REQUIRE(env->find(d).isA<IntegerType>());
-      REQUIRE(env->find(d).as<IntegerType>() == 6);
-    }
-    REQUIRE(env->find(b).isA<IntegerType>());
-    REQUIRE(env->find(b).as<IntegerType>() == 4);
+    ScopeGuard scope_guard(current, fobj1);
+    REQUIRE(current != root);
+    REQUIRE(current->getParent() == root);
   }
-  REQUIRE(env->find(a).isA<IntegerType>());
-  REQUIRE(env->find(a).as<IntegerType>() == 1);
-  REQUIRE(env->find(b).isA<IntegerType>());
-  REQUIRE(env->find(b).as<IntegerType>() == 2);
-  //@todo exception
-  REQUIRE(env->find(c).isA<Undefined>());
-  REQUIRE(env->find(d).isA<Undefined>());
+  REQUIRE(current == root);
 }
-#endif

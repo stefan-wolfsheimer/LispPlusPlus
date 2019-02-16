@@ -1,6 +1,7 @@
 #pragma once
 #include <exception>
 #include <lpp/core/object.h>
+#include <lpp/core/exception.h>
 
 namespace Lisp
 {
@@ -17,6 +18,7 @@ namespace Lisp
   public:
     ExceptionWithObject(const Cell & _cell);
     const Object & getObject() const;
+    void setObject(const Cell & _cell);
   private:
     Object object;
   };
@@ -40,6 +42,38 @@ namespace Lisp
     virtual const char * what() const noexcept override
     {
       return "IllFormed";
+    }
+  };
+
+  /**
+   * A function argument symbol is given more than one time.
+   */
+  class ArgumentGivenTwice : public IllFormed
+  {
+  public:
+    ArgumentGivenTwice(const Cell & _symbol) : IllFormed(Lisp::nil)
+    {
+    }
+
+    ArgumentGivenTwice(const Cell & _symbol,
+                       const Cell & _list) : IllFormed(_list)
+    {
+    }
+
+    const Object & getSymbol() const
+    {
+      return symbol;
+    }
+
+  private:
+    Object symbol;
+  };
+
+  class NotFound : public ExceptionWithObject
+  {
+  public:
+    NotFound(const Cell & _symbol) : ExceptionWithObject(_symbol)
+    {
     }
   };
 

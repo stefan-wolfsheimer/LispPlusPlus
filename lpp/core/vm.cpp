@@ -143,7 +143,7 @@ struct ExecutionState
       returnPos(_returnPos)
   {
     ASM_LOG("FUNC\t" << func <<
-            " itr: " << (itr - func->cbegin()) << "/" << func->instructionSize() <<
+            " itr: " << (itr - func->cbegin()) << "/" << func->numInstructions() <<
             " nargs: " << func->numArguments() <<
             " returnPos: " << returnPos);
   }
@@ -157,7 +157,7 @@ struct ExecutionState
       returnPos(_returnPos)
   {
     ASM_LOG("FUNC\t" << func <<
-            " itr: " << (itr - func->cbegin()) << "/" << func->instructionSize() <<
+            " itr: " << (itr - func->cbegin()) << "/" << func->numInstructions() <<
             " nargs: " << func->numArguments() <<
             " returnPos: " << returnPos);
   }
@@ -298,7 +298,7 @@ void Lisp::Vm::eval(Function * __func)
       state = executionStack.back();
       executionStack.pop_back();
       ASM_LOG("FUNC\t" << state.func <<
-              " itr: " << (state.itr - state.func->cbegin()) << "/" << state.func->instructionSize() <<
+              " itr: " << (state.itr - state.func->cbegin()) << "/" << state.func->numInstructions() <<
               " nargs: " << state.func->numArguments() <<
               " returnPos: " << state.returnPos);
     }
