@@ -78,16 +78,17 @@ Object & Object::operator=(const Cell & rhs)
   {
     assert(!rhs.isRoot() || rhs.getRefCount() > 0u);
     assert(rhs.checkIndex());
-    data.ptr = rhs.as<BasicCons>();
-    static_cast<BasicCons*>(data.ptr)->incRefCount();
+    data.ptr = rhs.data.ptr;
+    static_cast<BasicCons*>(data.ptr)->root();
   }
-  else if(rhs.isA<Lisp::Container>())
+  else if(rhs.isA<Container>())
   {
     assert(!rhs.isRoot() || rhs.getRefCount() > 0u);
     assert(rhs.checkIndex());
-    static_cast<Container*>(data.ptr)->incRefCount();
+    data.ptr = rhs.data.ptr;
+    static_cast<Container*>(data.ptr)->root();
   }
-  else if(rhs.isA<Lisp::ManagedType>())
+  else if(rhs.isA<ManagedType>())
   {
     Cell::init(rhs.as<ManagedType>(), rhs.getTypeId());
   }
@@ -105,15 +106,18 @@ Object & Object::operator=(const Object & rhs)
   typeId = rhs.typeId;
   if(rhs.isA<BasicCons>())
   {
-    assert(!rhs.isRoot() || rhs.getRefCount() > 0u);
+    assert(rhs.isRoot());
+    assert(rhs.getRefCount() > 0u);
     assert(rhs.checkIndex());
     data.ptr = rhs.as<BasicCons>();
     static_cast<BasicCons*>(data.ptr)->incRefCount();
   }
   else if(rhs.isA<Lisp::Container>())
   {
-    assert(!rhs.isRoot() || rhs.getRefCount() > 0u);
+    assert(rhs.isRoot());
+    assert(rhs.getRefCount() > 0u);
     assert(rhs.checkIndex());
+    data.ptr = rhs.data.ptr;
     static_cast<Container*>(data.ptr)->incRefCount();
   }
   else if(rhs.isA<Lisp::ManagedType>())

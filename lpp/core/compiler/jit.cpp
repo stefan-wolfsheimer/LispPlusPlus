@@ -25,6 +25,39 @@ Jit::Jit(std::shared_ptr<GarbageCollector> _gc,
 {
 }
 
+void Jit::compileSymbol(Function * f, const Cell & obj)
+{
+  std::pair<Function*, std::size_t> arg;
+  if(scope)
+  {
+    arg = scope->find(obj, true);
+  }
+  else
+  {
+    arg.first = nullptr;
+  }
+  if(arg.first)
+  {
+    if(arg.first == scope->getFunction())
+    {
+      // @todo modify to RETURNR after the function has been completed
+      f->appendInstruction(RETURNS, arg.first->numArguments() - arg.second);
+    }
+    else
+    {
+      // create shared argument -> return value
+      f->appendInstruction(RETURNV, f->dataSize());
+      f->appendData(std::move(arg.first->shareArgument(arg.second, gc)));
+    }
+  }
+  else
+  {
+    // lookup symbol in global scope
+    f->appendInstruction(RETURNL, f->dataSize());
+    f->appendData(obj);
+  }
+}
+
 void Jit::compile(Function * f, const Cell & obj)
 {
   auto cons = obj.as<Cons>();
@@ -73,29 +106,7 @@ void Jit::compile(Function * f, const Cell & obj)
   }
   else if(obj.isA<Symbol>())
   {
-    // sybmol
-    if(scope && scope->isSet(obj, true))
-    {
-      std::pair<Function*, std::size_t> arg(scope->find(obj, true));
-      if(arg.first == scope->getFunction())
-      {
-        // @todo modify to RETURNR after the function has been completed
-        f->appendInstruction(RETURNS, arg.first->numArguments() - arg.second);
-      }
-      else
-      {
-        // return shared variable
-        // @todo modify to RETURNR
-        f->appendInstruction(RETURNV, f->dataSize());
-        f->appendData(std::move(arg.first->shareArgument(arg.second, gc)));
-      }
-    }
-    else
-    {
-      // lookup symbol in global scope
-      f->appendInstruction(RETURNL, f->dataSize());
-      f->appendData(obj);
-    }
+    compileSymbol(f, obj);
   }
   else
   {

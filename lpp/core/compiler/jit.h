@@ -60,5 +60,7 @@ namespace Lisp
     std::shared_ptr<TypeContainer> tc;
     std::shared_ptr<Env> env;
     std::shared_ptr<Scope> scope;
+  private:
+    inline void compileSymbol(Function * f, const Cell & obj);
   };
 }

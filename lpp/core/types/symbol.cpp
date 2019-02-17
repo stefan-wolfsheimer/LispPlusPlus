@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2019, Stefan Wolfsheimer
+Copyright (c) 2017-2019, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -28,51 +28,21 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#include <catch.hpp>
-#include <lpp/core/cell.h>
-#include <lpp/core/object.h>
-#include <lpp/core/vm.h>
-#include <lpp/core/types/function.h>
-#include <lpp/core/types/reference.h>
+#include <lpp/core/types/symbol.h>
+#include <lpp/core/gc/symbol_container.h>
 
-using Vm = Lisp::Vm;
-using Object = Lisp::Object;
-using Cell = Lisp::Cell;
-using Function = Lisp::Function;
-using IntegerType = Lisp::IntegerType;
-using Reference = Lisp::Reference;
+using Symbol = Lisp::Symbol;
 
-TEST_CASE("eval_value", "[Value]")
+Lisp::Symbol::~Symbol()
 {
-  Vm vm;
-  std::size_t stackSize = vm.stackSize();
-  auto func = vm.compile(Object(1));
-  REQUIRE(func.getRefCount() == 1u);
-  REQUIRE(func.isA<Function>());
-  REQUIRE(stackSize == vm.stackSize());
-  vm.eval(func.as<Function>());
-  auto res = vm.top();
-  vm.pop();
-  REQUIRE(stackSize == vm.stackSize());
-  REQUIRE(res.isA<IntegerType>());
-  REQUIRE(res.as<IntegerType>() == 1u);
+  if(container)
+  {
+    container->remove(this); 
+  }
 }
 
-TEST_CASE("eval_reference", "[Value]")
+Symbol::Symbol(const std::string & _name, SymbolContainer * _container)
+  : name(_name), container(_container)
 {
-  Vm vm;
-  Object a(vm.symbol("a"));
-  Object refA(vm.reference(a, Cell(1)));
-  REQUIRE(refA.isA<Reference>());
-  std::size_t stackSize = vm.stackSize();
-  auto func = vm.compile(refA);
-  REQUIRE(func.getRefCount() == 1u);
-  REQUIRE(func.isA<Function>());
-  REQUIRE(stackSize == vm.stackSize());
-  vm.eval(func.as<Function>());
-  auto res = vm.top();
-  vm.pop();
-  REQUIRE(stackSize == vm.stackSize());
-  REQUIRE(res.isA<IntegerType>());
-  REQUIRE(res.as<IntegerType>() == 1u);
 }
+

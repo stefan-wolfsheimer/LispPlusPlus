@@ -37,6 +37,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <lpp/core/gc/cons_pages.h>
 #include <lpp/core/gc/collectible_container.h>
 #include <lpp/core/gc/unmanaged_collectible_container.h>
+#include <lpp/core/types/type_id.h>
 #include <lpp/core/types/cons.h>
 #include <lpp/core/types/container.h>
 

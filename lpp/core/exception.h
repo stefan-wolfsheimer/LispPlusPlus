@@ -69,14 +69,6 @@ namespace Lisp
     Object symbol;
   };
 
-  class NotFound : public ExceptionWithObject
-  {
-  public:
-    NotFound(const Cell & _symbol) : ExceptionWithObject(_symbol)
-    {
-    }
-  };
-
   class NonMatchingArguments : public ExceptionWithObject
   {
   public:

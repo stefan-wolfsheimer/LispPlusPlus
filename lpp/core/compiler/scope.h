@@ -110,7 +110,7 @@ inline std::pair<Lisp::Function*, std::size_t> Lisp::Scope::find(const Cell & sy
     }
     else
     {
-      throw NotFound(symb);
+      return std::make_pair(nullptr, 0);
     }
   }
   else

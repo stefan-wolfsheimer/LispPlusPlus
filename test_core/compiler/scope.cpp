@@ -126,7 +126,6 @@ TEST_CASE("scope_life_cycle", "[Scope]")
 
 TEST_CASE("scope_guard", "[Scope]")
 {
-
   auto gc = std::make_shared<GarbageCollector>();
   Object fobj1(gc->makeRoot<Function>());
   Object fobj2(gc->makeRoot<Function>());

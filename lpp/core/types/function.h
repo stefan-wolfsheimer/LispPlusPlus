@@ -44,6 +44,7 @@ namespace Lisp
 {
   class Object;
   class Vm;
+  class GarbageCollector;
 
   class ArgumentTraits
   {
@@ -105,6 +106,19 @@ namespace Lisp
      * return a const reference of the ith data element
      */
     inline const Cell & atCell(std::size_t i) const;
+
+    /**
+     * Return a const reference to the ith data element.
+     * If the cell is a a reference, resolve the value.
+     */
+    inline const Cell & getValue(std::size_t i) const;
+
+    /**
+     * Modifies stack values to references for each argument
+     * that has reference trait
+     */
+    inline void makeReference(std::vector<Object>::iterator stack_itr,
+                              std::shared_ptr<GarbageCollector> gc);
 
     //////////////////////////////////////////////////
     // implementation of the Container interface
@@ -276,4 +290,36 @@ inline Lisp::Function::const_iterator Lisp::Function::cend() const
 inline const Lisp::Cell & Lisp::Function::atCell(std::size_t i) const
 {
   return data.atCell(i);
+}
+
+inline const Lisp::Cell & Lisp::Function::getValue(std::size_t i) const
+{
+  const Cell & ret(data.atCell(i));
+  if(ret.isA<Reference>())
+  {
+    return ret.as<Reference>()->getValue();
+  }
+  else
+  {
+    return ret;
+  }
+}
+
+inline void Lisp::Function::makeReference(std::vector<Object>::iterator stack_itr,
+                                          std::shared_ptr<GarbageCollector> gc)
+{
+  std::size_t i = 0;
+  for(const ArgumentTraits & traits : argumentTraits)
+  {
+    if(traits.isReference())
+    {
+      if(!stack_itr->isA<Reference>())
+      {
+        data[traits.getReferenceIndex()].as<Reference>()->setCdr(*stack_itr);
+        *stack_itr = data[traits.getReferenceIndex()];
+      }
+    }
+    ++stack_itr;
+    i++;
+  }
 }

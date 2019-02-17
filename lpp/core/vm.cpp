@@ -37,6 +37,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <lpp/core/types/function.h>
 #include <lpp/core/types/type_id.h>
 #include <lpp/core/types/symbol.h>
+#include <lpp/core/types/reference.h>
 #include <lpp/core/exception.h>
 #include "config.h"
 
@@ -49,10 +50,14 @@ const bool Lisp::Vm::withDebug = true;
 
 using Vm = Lisp::Vm;
 using Object = Lisp::Object;
+using Cell = Lisp::Cell;
+using Env = Lisp::Env;
+
 using Function = Lisp::Function;
 using Cons = Lisp::Cons;
 using Symbol = Lisp::Symbol;
-using Env = Lisp::Env;
+using Reference = Lisp::Reference;
+
 
 // logging data stack
 #ifdef DO_ASM_LOG
@@ -87,6 +92,11 @@ Lisp::Object Lisp::Vm::symbol(const std::string & name)
   return sc->make(name);
 }
 
+Lisp::Object Lisp::Vm::reference(const Cell & car, const Cell & value)
+{
+  return gc->makeRoot<Reference>(car, value);
+}
+
 void Lisp::Vm::define(const std::string & name, const Object & rhs)
 {
   env->set(sc->make(name), rhs);
@@ -112,6 +122,7 @@ Object Vm::compileAndEval(const Object & obj)
   return ret;
 }
 
+// @todo move to separate module
 struct ExecutionState
 {
   Function * func;
@@ -171,7 +182,7 @@ void Lisp::Vm::eval(Function * __func)
   LOG_DATA_STACK(dataStack);
   ExecutionState state(__func, dataStack.size());
   std::vector<ExecutionState> executionStack;
-
+  std::size_t i;
   while(true)
   {
     while(state.itr != state.end)
@@ -188,12 +199,12 @@ void Lisp::Vm::eval(Function * __func)
                 " returnPos: " << state.returnPos);
         if(state.returnPos < dataStack.size())
         {
-          dataStack[state.returnPos] = state.func->data.at(state.itr[1]);
+          dataStack[state.returnPos] = state.func->getValue(state.itr[1]);
         }
         else
         {
           assert(state.returnPos == dataStack.size());
-          dataStack.push_back(state.func->data.at(state.itr[1]));
+          dataStack.push_back(Object(state.func->getValue(state.itr[1])));
         }
         state.itr += 2;
         break;
@@ -260,6 +271,7 @@ void Lisp::Vm::eval(Function * __func)
         LOG_DATA_STACK(dataStack);
         state = ExecutionState(state.func->data.atCell(state.itr[2]).as<Function>(),
                                dataStack.size() - state.itr[1]);
+        state.func->makeReference(dataStack.end() - state.func->numArguments(), gc);
         break;
       
       case DEFINES:

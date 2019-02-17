@@ -29,9 +29,6 @@ Symbol * SymbolContainer::make(const std::string & name)
   }
 }
 
-Symbol * makeRoot(const std::string & name)
-{
-}
 
 void SymbolContainer::remove(Symbol * symbol)
 {

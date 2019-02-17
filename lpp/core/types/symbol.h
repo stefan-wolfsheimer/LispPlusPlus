@@ -33,15 +33,15 @@ either expressed or implied, of the FreeBSD Project.
 #include <functional>
 #include <lpp/core/types/type_id.h>
 #include <lpp/core/types/managed_type.h>
-#include <lpp/core/gc/symbol_container.h>
-
 
 namespace Lisp
 {
+  class SymbolContainer;
+
   class Symbol : public ManagedType
   {
   public:
-    inline ~Symbol();
+    ~Symbol();
     inline const std::string& getName() const;
   private:
     friend class SymbolContainer;
@@ -52,19 +52,7 @@ namespace Lisp
   };
 }
 
-inline Lisp::Symbol::~Symbol()
-{
-  if(container)
-  {
-    container->remove(this); 
-  }
-}
-
-inline Lisp::Symbol::Symbol(const std::string & _name, SymbolContainer * _container)
-  : name(_name), container(_container)
-{
-}
-
+////////////////////////////////////////////////////////////////////////////
 inline const std::string& Lisp::Symbol::getName() const
 {
   return name;

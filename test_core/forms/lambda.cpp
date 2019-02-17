@@ -128,3 +128,92 @@ TEST_CASE("lambda_nested_lambdas", "[Lambda]")
   REQUIRE(res.isA<IntegerType>());
   REQUIRE(res.as<IntegerType>() == 3);
 }
+
+TEST_CASE("lambda_nested_scopes_1", "[Lambda]")
+{
+  Vm vm;
+  std::size_t initStackSize = vm.stackSize();
+  /**
+     func=(lambda (a b)
+                  (lambda (c d))
+                  a)
+  */
+  Object func = vm.compileAndEval(vm.list(vm.symbol("lambda"),
+                                          vm.list(vm.symbol("a"),
+                                                  vm.symbol("b")),
+                                          vm.list(vm.symbol("lambda"),
+                                                  vm.list(vm.symbol("c"),
+                                                          vm.symbol("d")),
+                                                  vm.symbol("a"))));
+  REQUIRE(func.isA<Function>());
+  REQUIRE(func.as<Function>()->numArguments() == 2);
+  REQUIRE(func.as<Function>()->getArgumentTraits(0).isReference());
+  REQUIRE_FALSE(func.as<Function>()->getArgumentTraits(1).isReference());
+  /* (func 1 2) -> (lambda (c d) 1)
+   */
+  auto func1 = vm.compileAndEval(vm.list(func, Object(1), Object(2)));
+  REQUIRE(vm.stackSize() == initStackSize);
+  REQUIRE(func1.isA<Function>());
+  auto res = vm.compileAndEval(vm.list(func1, Object(3), Object(4)));
+  REQUIRE(vm.stackSize() == initStackSize);
+  REQUIRE(res.isA<IntegerType>());
+  REQUIRE(res.as<IntegerType>() == 1);
+}
+
+TEST_CASE("lambda_nested_scopes_2", "[Lambda]")
+{
+  /*
+    (lambda (a b)
+      (lambda (c d)
+       (lambda (c d) a)))
+  */
+  Vm vm;
+  std::size_t initStackSize = vm.stackSize();
+  Object func = vm.compileAndEval(vm.list(vm.symbol("lambda"),
+                                          vm.list(vm.symbol("a"),
+                                                  vm.symbol("b")),
+                                          vm.list(vm.symbol("lambda"),
+                                                  vm.list(vm.symbol("c"),
+                                                          vm.symbol("d")),
+                                                  vm.list(vm.symbol("lambda"),
+                                                          vm.list(vm.symbol("c"),
+                                                                  vm.symbol("d")),
+                                                          vm.symbol("a")))));
+  REQUIRE(func.isA<Function>());
+  REQUIRE(func.as<Function>()->numArguments() == 2);
+  REQUIRE(func.as<Function>()->getArgumentTraits(0).isReference());
+  REQUIRE_FALSE(func.as<Function>()->getArgumentTraits(1).isReference());
+  auto res = vm.compileAndEval(vm.list(func, Object(1), Object(2)));
+}
+
+#if 0
+TEST_CASE("lambda_car_lambda", "[Lambda]")
+{
+  //@todo fix this
+  /*
+    ((lambda (a b) b)
+      ((lambda (a b) a)
+      Object(1), Object(2)))
+  */
+  Vm vm;
+  std::size_t initStackSize = vm.stackSize();
+  Object select = vm.compile(vm.list(vm.list(vm.symbol("lambda"),
+                                             vm.list(vm.symbol("a"), vm.symbol("b")),
+                                             vm.symbol("b")),
+                                     Object(3),
+                                     vm.list(vm.list(vm.symbol("lambda"),
+                                                     vm.list(vm.symbol("a"), vm.symbol("b")),
+                                                     vm.symbol("a")),
+                                             Object(1), Object(2))));
+
+  REQUIRE(select.isA<Function>());
+  REQUIRE(select.as<Function>()->numArguments() == 0);
+
+  vm.eval(select.as<Function>());
+  Object res = vm.top();
+  vm.pop();
+  REQUIRE(vm.stackSize() == initStackSize);
+  REQUIRE(res.isA<IntegerType>());
+  REQUIRE(res.as<IntegerType>() == 1);
+}
+#endif

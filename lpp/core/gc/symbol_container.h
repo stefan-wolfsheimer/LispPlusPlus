@@ -31,6 +31,9 @@ either expressed or implied, of the FreeBSD Project.
 #pragma once
 #include <string>
 #include <unordered_map>
+#include <lpp/core/types/type_id.h>
+#include <lpp/core/types/symbol.h>
+
 
 namespace Lisp
 {
@@ -41,7 +44,6 @@ namespace Lisp
   public:
     ~SymbolContainer();
     Symbol * make(const std::string & name);
-    //Symbol * makeRoot(const std::string & name);
   private:
     friend class Symbol;
     void remove(Symbol * symbol);

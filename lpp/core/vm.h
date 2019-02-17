@@ -68,11 +68,14 @@ namespace Lisp
     
     Object symbol(const std::string & name);
 
+    /**
+     * Create a reference to object.
+     * Usually car is the symbol representing the reference.
+     */
+    Object reference(const Cell & car, const Cell & value);
+
     void define(const std::string & name, const Object & rhs);
     Object find(const std::string & name) const;
-    //void setq(const std::string & name, const Object & obj);
-    //void setq(const Object & obj, const Object & rhs);
-    //void setq(Symbol * obj, const Object & rhs);
 
     inline void push(const Object & rhs);
     inline void push(Object && rhs);

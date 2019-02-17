@@ -5,6 +5,7 @@
 #include "types/container.h"
 #include <lpp/core/types/array.h> //@todo remove reference when functionality is re-implementated polymorphically
 #include <lpp/core/types/symbol.h> //@todo remove reference when functionality is re-implementated polymorphically
+#include <lpp/core/types/reference.h> //@todo remove reference when functionality is re-implementated polymorphically
 
 using Cell = Lisp::Cell;
 using BasicCons = Lisp::BasicCons;
@@ -141,14 +142,20 @@ std::ostream & operator<<(std::ostream & ost, const Lisp::Cell & cell)
   {
     ost << cell.as<Lisp::Symbol>()->getName();
   }
-  else if(cell.isA<BasicCons>())
+  else if(cell.isA<Lisp::Cons>())
   {
     ost << "[CONS " "#" << cell.as<BasicCons>() << " ";
-    if(cell.as<BasicCons>()->isRoot())
+    if(cell.as<Lisp::Cons>()->isRoot())
     {
-      ost << " ROOT " << cell.as<BasicCons>()->getRefCount() << " ";
+      ost << " ROOT " << cell.as<Lisp::Cons>()->getRefCount() << " ";
     }
-    ost << cell.as<BasicCons>()->getColor()  << "]";
+    ost << cell.as<Lisp::Cons>()->getColor()  << "]";
+  }
+  else if(cell.isA<Lisp::Reference>())
+  {
+    ost << "[REFERENCE #" << cell.as<Lisp::Reference>() << " ";
+    ost << cell.as<Lisp::Reference>()->getCarCell() << "=" << cell.as<Lisp::Reference>()->getValue();
+    ost << "]";
   }
   else if(cell.isA<Lisp::Array>())
   {
