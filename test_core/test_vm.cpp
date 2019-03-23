@@ -52,7 +52,7 @@ TEST_CASE("is_debug_enabled", "[Vm]")
 TEST_CASE("vm_move_cons", "[Vm]")
 {
   Vm vm;
-  Object cons = std::move(vm.cons(Lisp::nil, Lisp::nil));
+  Object cons = std::move(vm.make<Cons>(Lisp::nil, Lisp::nil));
   REQUIRE(cons.isA<Cons>());
   REQUIRE(cons.as<Cons>()->getRefCount() == 1u);
 }
@@ -61,7 +61,7 @@ TEST_CASE("vm_cons_does_not_create_temporary_objects", "[Vm]")
 {
   Vm vm;
   {
-    Object cons = vm.cons(Lisp::nil, Lisp::nil);
+    Object cons = vm.make<Cons>(Lisp::nil, Lisp::nil);
     REQUIRE(cons.isA<Cons>());
   }
 }
@@ -103,5 +103,5 @@ TEST_CASE("push_does_not_create_temporary_objects", "[Vm]")
 {
   Vm vm;
   vm.push(Lisp::nil);
-  vm.push(vm.cons(Lisp::nil, Lisp::nil));
+  vm.push(vm.make<Cons>(Lisp::nil, Lisp::nil));
 }

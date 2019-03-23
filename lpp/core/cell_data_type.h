@@ -35,10 +35,16 @@ namespace Lisp
   typedef ::std::uint_least16_t TypeId;
   typedef ::std::int_fast32_t IntegerType;
 
+  class ManagedType;
+  class BasicCons;
+  class Container;
+
   union CellDataType
   {
     IntegerType intValue;
-    void * ptr;
+    ManagedType * pManaged;
+    BasicCons * pCons;
+    Container * pContainer;
   };
 
 }

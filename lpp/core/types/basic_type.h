@@ -12,6 +12,7 @@ namespace Lisp
   {
   public:
     virtual ~BasicType() {}
+    // @todo move virtual method to form matcher
     virtual bool isInstance(const Cell & cell) = 0;
   };
 

@@ -35,6 +35,7 @@ either expressed or implied, of the FreeBSD Project.
 using Vm = Lisp::Vm;
 using Object = Lisp::Object;
 using Cell = Lisp::Cell;
+using Cons = Lisp::Cons;
 using IntegerType = Lisp::IntegerType;
 
 
@@ -46,9 +47,9 @@ TEST_CASE("is_a_list", "[Util]")
                                 Object(2),
                                 Object(3))));
   REQUIRE_FALSE(Lisp::isAList(Object(1)));
-  REQUIRE_FALSE(Lisp::isAList(vm.cons(Object(1),
-                                      vm.cons(Object(2),
-                                              Object(3)))));
+  REQUIRE_FALSE(Lisp::isAList(vm.make<Cons>(Object(1),
+                                            vm.make<Cons>(Object(2),
+                                                          Object(3)))));
 }
 
 TEST_CASE("list_length", "[Util]")
@@ -59,9 +60,9 @@ TEST_CASE("list_length", "[Util]")
                                    Object(2),
                                    Object(3))) == 3);
   REQUIRE_THROWS(Lisp::listLength(Object(1)));
-  REQUIRE_THROWS(Lisp::listLength(vm.cons(Object(1),
-                                          vm.cons(Object(2),
-                                                  Object(3)))));
+  REQUIRE_THROWS(Lisp::listLength(vm.make<Cons>(Object(1),
+                                                vm.make<Cons>(Object(2),
+                                                              Object(3)))));
 }
 
 TEST_CASE("for_each_car", "[Util]")
@@ -86,9 +87,9 @@ TEST_CASE("for_each_car", "[Util]")
     REQUIRE_THROWS(Lisp::forEachCar(Object(1),
                                     [&n](const Cell & cell) { n += cell.as<IntegerType>(); }));
                  
-    REQUIRE_THROWS(Lisp::forEachCar(vm.cons(Object(1),
-                                            vm.cons(Object(2),
-                                                    Object(3))),
+    REQUIRE_THROWS(Lisp::forEachCar(vm.make<Cons>(Object(1),
+                                                  vm.make<Cons>(Object(2),
+                                                                Object(3))),
                                     [&n](const Cell & cell) { n += cell.as<IntegerType>(); }));
   }
 }

@@ -29,11 +29,18 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
+#include <functional>
 #include <lpp/core/types/collectible.h>
 #include <lpp/core/gc/collectible_container.h>
 
 namespace Lisp
 {
+  class Cell;
+
+  /**
+   * Container classes such as Array or user defined complex objects.
+   * Children (of type Cell) are collected by the garbage collector.
+   */
   class Container : public Collectible,
                     public CollectibleMixin<Container>
   {
@@ -44,6 +51,5 @@ namespace Lisp
     virtual bool greyChildren() = 0;
     virtual void resetGcPosition() = 0;
     virtual bool recycleNextChild() = 0;
-  protected:
   };
 }

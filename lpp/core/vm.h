@@ -50,7 +50,11 @@ namespace Lisp
        std::shared_ptr<Env> _env = nullptr);
     
     inline std::shared_ptr<GarbageCollector> getGarbageCollector() const;
-    inline Object cons(const Object & car, const Object & cdr);
+
+    template<typename T, typename... ARGS>
+    inline Object make(const ARGS & ...rest);
+
+    //inline Object cons(const Object & car, const Object & cdr);
     inline Object list();
     inline Object list(const Object & a);
     inline Object list(Object && a);
@@ -109,10 +113,10 @@ std::shared_ptr<Lisp::GarbageCollector> Lisp::Vm::getGarbageCollector() const
   return gc;
 }
 
-inline Lisp::Object Lisp::Vm::cons(const Lisp::Object & _car,
-                                   const Lisp::Object & _cdr)
+template<typename T, typename... ARGS>
+inline Lisp::Object Lisp::Vm::make(const ARGS & ...rest)
 {
-  return Lisp::Object(gc->makeRoot<Cons>(_car, _cdr));
+  return Lisp::Object(gc->makeRoot<T>(rest...));
 }
 
 inline Lisp::Object Lisp::Vm::list()
@@ -122,24 +126,24 @@ inline Lisp::Object Lisp::Vm::list()
 
 inline Lisp::Object Lisp::Vm::list(const Object & a)
 {
-  return cons(a, Lisp::nil);
+  return make<Cons>(a, Lisp::nil);
 }
 
 inline Lisp::Object Lisp::Vm::list(Object && a)
 {
-  return cons(a, Lisp::nil);
+  return make<Cons>(a, Lisp::nil);
 }
 
 template<typename... ARGS>
 Lisp::Object Lisp::Vm::list(const Lisp::Object & a, const ARGS & ... rest)
 {
-  return cons(a, std::move(list(rest...)));
+  return make<Cons>(a, std::move(list(rest...)));
 }
 
 template<typename... ARGS>
 Lisp::Object Lisp::Vm::list(Lisp::Object && a, const ARGS & ... rest)
 {
-  return cons(a, std::move(list(rest...)));
+  return make<Cons>(a, std::move(list(rest...)));
 }
 
 inline Lisp::Object Lisp::Vm::array()

@@ -35,70 +35,42 @@ either expressed or implied, of the FreeBSD Project.
 #include <lpp/core/cell_data_type.h>
 #include <lpp/core/types/type_traits.h>
 
-#define DEF_TRAITS_NUL(CLS, ID)                                       \
-  template<>                                                          \
-  struct TypeTraits<CLS> : Traits::Null<Traits::Id<ID>> {};           \
-  template<>                                                          \
-  struct TypeTraits<const CLS> : Traits::Null<Traits::Id<ID>> {}
+#define POLYMORPHIC_OBJECT_TYPE_ID 0xbfffu
+#define POLYMORPHIC_CONTAINER_TYPE_ID 0xcfffu
 
-#define DEF_TRAITS_NUL_MATCH(CLS, ID)                                   \
+#define DEF_TRAITS(CLS, ID, BASE)                                       \
  template<>                                                             \
- struct TypeTraits<CLS> : Traits::Null<Traits::IdMask<ID>> {};          \
+ struct TypeTraits<CLS> : BASE<CLS, Traits::Id<ID>> {};                 \
  template<>                                                             \
- struct TypeTraits<const CLS> : Traits::Null<Traits::IdMask<ID>> {}
+ struct TypeTraits<const CLS> : BASE<const CLS, Traits::Id<ID>> {}
 
-#define DEF_TRAITS_INT(CLS, ID)                                         \
- template<>                                                             \
- struct TypeTraits<CLS> : Traits::Integer<Traits::Id<ID>> {};           \
- template<>                                                             \
- struct TypeTraits<const CLS> : Traits::Integer<Traits::Id<ID>> {}      \
+#define DEF_TRAITS_MATCH(CLS, ID, BASE)                                 \
+   template<>                                                           \
+ struct TypeTraits<CLS> : BASE<CLS,                                     \
+                               Traits::IdMask<ID>> {};                  \
+   template<>                                                           \
+   struct TypeTraits<const CLS> : BASE<const CLS,                       \
+                                       Traits::IdMask<ID>> {}
 
-#define DEF_TRAITS_PTR(CLS, ID)                                         \
+#define DEF_TRAITS_LT(CLS, ID, BASE)                                    \
  template<>                                                             \
- struct TypeTraits<CLS> : Traits::Pointer<CLS, Traits::Id<ID>> {};      \
- template<>                                                             \
- struct TypeTraits<const CLS> : Traits::Pointer<const CLS, Traits::Id<ID>> {}
+ struct TypeTraits<CLS> : BASE<CLS,                                     \
+                               Traits::IdLt<ID>> {};                    \
+   template<>                                                           \
+   struct TypeTraits<const CLS> : BASE<const CLS,                       \
+                                       Traits::IdLt<ID>> {}
 
-#define DEF_TRAITS_PTR_MATCH(CLS, ID)                                   \
+#define DEF_TRAITS_GT(CLS, ID, BASE)                                    \
  template<>                                                             \
- struct TypeTraits<CLS> : Traits::Pointer<CLS, Traits::IdMask<ID>> {};  \
- template<>                                                             \
- struct TypeTraits<const CLS> : Traits::Pointer<const CLS, Traits::IdMask<ID>> {}
-
-#define DEF_TRAITS_PTR_LT(CLS, ID)                                      \
- template<>                                                             \
- struct TypeTraits<CLS> : Traits::Pointer<CLS, Traits::IdLt<ID>> {};    \
- template<>                                                             \
- struct TypeTraits<const CLS> : Traits::Pointer<const CLS, Traits::IdLt<ID>> {}
-
-#define DEF_TRAITS_PTR_GT(CLS, ID)                                      \
- template<>                                                             \
- struct TypeTraits<CLS> : Traits::Pointer<CLS, Traits::IdGt<ID>> {};    \
- template<>                                                             \
- struct TypeTraits<const CLS> : Traits::Pointer<const CLS, Traits::IdGt<ID>> {}
-
-#define DEF_TRAITS_NUL_LT(CLS, ID)                                      \
- template<>                                                             \
- struct TypeTraits<CLS> : Traits::Null<Traits::IdLt<ID>> {};            \
- template<>                                                             \
- struct TypeTraits<const CLS> : Traits::Null<Traits::IdLt<ID>> {}
-
-#define DEF_TRAITS_NUL_GT(CLS, ID)                                      \
- template<>                                                             \
- struct TypeTraits<CLS> : Traits::Null<Traits::IdGt<ID>> {};            \
- template<>                                                             \
- struct TypeTraits<const CLS> : Traits::Null<Traits::IdGt<ID>> {}
-
-#define DEF_TRAITS_PTR_CHOIC(CLS, C1, C2)                               \
- template<>                                                             \
- struct TypeTraits<CLS> : Traits::PointerChoice<CLS, C1, C2> {};        \
- template<>                                                             \
- struct TypeTraits<const CLS> : Traits::PointerChoice<const CLS, const C1, const C2> {}
-
-
+ struct TypeTraits<CLS> : BASE<CLS,                                     \
+                               Traits::IdLt<ID>> {};                    \
+   template<>                                                           \
+   struct TypeTraits<const CLS> : BASE<const CLS,                       \
+                                       Traits::IdGt<ID>> {}
 
 namespace Lisp
 {
+
   /** typeId
    *  largest bit flags managed types
    *  00: value types             (0x0000)
@@ -125,57 +97,92 @@ namespace Lisp
   class BasicType;
   struct Undefined;
 
-  /* conses types */
-  class BasicCons;
-  class Cons;
-  class Reference;
-  
   /* managed types */
   class ManagedType;
   class String;
   class Symbol;
   class Form;
-  class BuiltinFunction;
-  class Function;
+  class PolymorphicObject;
 
-  /* collectible */
+  /* conses types */
+  class BasicCons;
+  class Cons;
+  class Reference;
+
+  /* container */
   class Container;
   class Array;
+  class Function;
+  class PolymorphicContainer;
 
-  DEF_TRAITS_NUL_LT(ValueType,      0x4000u);
-  DEF_TRAITS_NUL(Nil,               0x0000u);
-  DEF_TRAITS_NUL(Undefined,         0x0001u);
-  DEF_TRAITS_INT(BasicType,         0x0002u);
-  DEF_TRAITS_INT(IntegerType,       0x0003u);
+  template<typename CLS>
+  struct Traits::Polymorphic<CLS,
+                             std::true_type, std::false_type> : Traits::ManagedType<CLS,
+                                                                                    Id<POLYMORPHIC_OBJECT_TYPE_ID>,
+                                                                                    std::true_type>
+  {
+  };
 
+  template<typename CLS>
+  struct Traits::Polymorphic<CLS,
+                             std::false_type, std::true_type> : Traits::Container<CLS,
+                                                                                  Id<POLYMORPHIC_CONTAINER_TYPE_ID>,
+                                                                                  std::true_type>
+  {
+  };
+
+  template<typename CLS>
+  struct TypeTraits : Traits::Polymorphic<CLS,
+                                          typename std::is_base_of<ManagedType, CLS>::type,
+                                          typename std::is_base_of<Container, CLS>::type>
+  {
+  };
+
+  DEF_TRAITS_LT(ValueType,      0x4000u, Traits::Null);
+  DEF_TRAITS(Nil,               0x0000u, Traits::Null);
+  DEF_TRAITS(Undefined,         0x0001u, Traits::Null);
+  DEF_TRAITS(BasicType,         0x0002u, Traits::Integer);
+  DEF_TRAITS(IntegerType,       0x0003u, Traits::Integer);
 
   // conses
-  DEF_TRAITS_PTR_MATCH(BasicCons,   0x4000u);
-  DEF_TRAITS_PTR(Cons,              0x4001u);
-  DEF_TRAITS_PTR(Reference,         0x4002u);
+  DEF_TRAITS_MATCH(BasicCons,   0x4000u,                          Traits::BasicCons);
+  DEF_TRAITS(Cons,              0x4001u,                          Traits::BasicCons);
+  DEF_TRAITS(Reference,         0x4002u,                          Traits::BasicCons);
 
   // objects
-  DEF_TRAITS_PTR_MATCH(ManagedType, 0x8000u);
-  DEF_TRAITS_PTR(String,            0x8001u);
-  DEF_TRAITS_PTR(Symbol,            0x8002u);
-  DEF_TRAITS_PTR(BuiltinFunction,   0x8003u);
-  DEF_TRAITS_PTR(Form,              0x8005u);
+  DEF_TRAITS_MATCH(ManagedType, 0x8000u,                          Traits::ManagedType);
+  DEF_TRAITS(String,            0x8001u,                          Traits::ManagedType);
+  DEF_TRAITS(Symbol,            0x8002u,                          Traits::ManagedType);
+  DEF_TRAITS(Form,              0x8003u,                          Traits::ManagedType);
+  DEF_TRAITS(PolymorphicObject, POLYMORPHIC_OBJECT_TYPE_ID,       Traits::ManagedType);
 
-  DEF_TRAITS_PTR_MATCH(Container,   0xc000u);
-  DEF_TRAITS_PTR(Array,             0xc001u);
-  DEF_TRAITS_PTR(Function,          0xc002u);
-  
-  DEF_TRAITS_PTR_GT(Collectible,    0x0fffu);
+  // containers
+  DEF_TRAITS_MATCH(Container,      0xc000u,                       Traits::Container);
+  DEF_TRAITS(Array,                0xc001u,                       Traits::Container);
+  DEF_TRAITS(Function,             0xc002u,                       Traits::Container);
+  DEF_TRAITS(PolymorphicContainer, POLYMORPHIC_CONTAINER_TYPE_ID, Traits::Container);
+
+  /* Collectible TypeTraits
+   */
+  template<>
+  struct TypeTraits<Collectible> : Traits::IdGt<0x0fffu>
+  {
+    using StorageTrait = CollectibleStorageTrait;
+    using IsPolymorphic = std::false_type;
+  };
+
+  template<>
+  struct TypeTraits<const Collectible> : Traits::IdGt<0x0fffu>
+  {
+    using StorageTrait = CollectibleStorageTrait;
+    using IsPolymorphic = std::false_type;
+  };
 }
 
+#undef DEF_TRAITS
+#undef DEF_TRAITS_MATCH
+#undef DEF_TRAITS_LT
+#undef DEF_TRAITS_GT
 
-#undef DEF_TRAITS_NUL
-#undef DEF_TRAITS_NUL_MATCH
-#undef DEF_TRAITS_INT
-#undef DEF_TRAITS_PTR
-#undef DEF_TRAITS_PTR_MATCH
-#undef DEF_TRAITS_PTR_LT
-#undef DEF_TRAITS_PTR_GT
-#undef DEF_TRAITS_NUL_LT
-#undef DEF_TRAITS_NUL_GT
-#undef DEF_TRAITS_PCR_CHOIC
+#undef POLYMORPHIC_OBJECT_TYPE_ID
+#undef POLYMORPHIC_CONTAINER_TYPE_ID

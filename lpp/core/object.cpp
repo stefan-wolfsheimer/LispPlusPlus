@@ -43,11 +43,11 @@ Object::Object(const Object & rhs) : Cell(rhs)
 {
   if(rhs.isA<BasicCons>())
   {
-    static_cast<BasicCons*>(data.ptr)->root();
+    data.pCons->root();
   }
   else if(rhs.isA<Container>())
   {
-    static_cast<Container*>(data.ptr)->root();
+    data.pContainer->root();
   }
 }
 
@@ -55,11 +55,11 @@ Object::Object(const Cell & rhs) : Cell(rhs)
 {
   if(rhs.isA<BasicCons>())
   {
-    static_cast<BasicCons*>(data.ptr)->root();
+    data.pCons->root();
   }
   else if(rhs.isA<Container>())
   {
-    static_cast<Container*>(data.ptr)->root();
+    data.pContainer->root();
   }
 }
 
@@ -78,15 +78,15 @@ Object & Object::operator=(const Cell & rhs)
   {
     assert(!rhs.isRoot() || rhs.getRefCount() > 0u);
     assert(rhs.checkIndex());
-    data.ptr = rhs.data.ptr;
-    static_cast<BasicCons*>(data.ptr)->root();
+    data.pCons = rhs.data.pCons;
+    data.pCons->root();
   }
   else if(rhs.isA<Container>())
   {
     assert(!rhs.isRoot() || rhs.getRefCount() > 0u);
     assert(rhs.checkIndex());
-    data.ptr = rhs.data.ptr;
-    static_cast<Container*>(data.ptr)->root();
+    data.pContainer = rhs.data.pContainer;
+    data.pContainer->root();
   }
   else if(rhs.isA<ManagedType>())
   {
@@ -109,16 +109,16 @@ Object & Object::operator=(const Object & rhs)
     assert(rhs.isRoot());
     assert(rhs.getRefCount() > 0u);
     assert(rhs.checkIndex());
-    data.ptr = rhs.as<BasicCons>();
-    static_cast<BasicCons*>(data.ptr)->incRefCount();
+    data.pCons = rhs.data.pCons;
+    data.pCons->incRefCount();
   }
   else if(rhs.isA<Lisp::Container>())
   {
     assert(rhs.isRoot());
     assert(rhs.getRefCount() > 0u);
     assert(rhs.checkIndex());
-    data.ptr = rhs.data.ptr;
-    static_cast<Container*>(data.ptr)->incRefCount();
+    data.pContainer = rhs.data.pContainer;
+    data.pContainer->incRefCount();
   }
   else if(rhs.isA<Lisp::ManagedType>())
   {
@@ -159,22 +159,23 @@ void Object::unsetCons()
     assert(isRoot());
     assert(getRefCount() > 0u);
     assert(checkIndex());
-    auto coll = static_cast<BasicCons*>(data.ptr)->getCollector();
-    static_cast<BasicCons*>(data.ptr)->unroot();
+    auto coll = data.pCons->getCollector();
+    data.pCons->unroot();
     assert(checkIndex());
     coll->step();
-    assert(static_cast<BasicCons*>(data.ptr)->getCollector()->checkSanity());
+    assert(data.pCons->getCollector()->checkSanity());
     assert(checkIndex());
     coll->recycle();
     assert(checkIndex());
+
   }
   else if(isA<Container>())
   {
     assert(isRoot());
     assert(getRefCount() > 0u);
     assert(checkIndex());
-    auto coll = static_cast<Container*>(data.ptr)->getCollector();
-    static_cast<Container*>(data.ptr)->unroot();
+    auto coll = data.pContainer->getCollector();
+    data.pContainer->unroot();
     coll->step();
     coll->recycle();
   }

@@ -12,8 +12,10 @@ using BasicCons = Lisp::BasicCons;
 using Symbol = Lisp::Symbol;
 using ManagedType = Lisp::ManagedType;
 
+//@todo use traits to do type dispatch only once
 std::string Cell::getTypeName() const
 {
+  //@todo more types
   if(isA<BasicCons>())
   {
     return "Cons";
@@ -62,10 +64,12 @@ bool Lisp::Cell::isRoot() const
 {
   if(isA<BasicCons>())
   {
+    //@todo fast as (isA is executed twice)
     as<BasicCons>()->isRoot();
   }
   else if(isA<Container>())
   {
+    //@todo fast as
     as<Container>()->isRoot();
   }
   else
@@ -78,10 +82,12 @@ Lisp::Color Lisp::Cell::getColor() const
 {
   if(isA<BasicCons>())
   {
+    //@todo fast as
     return as<BasicCons>()->getColor();
   }
   else if(isA<Container>())
   {
+    //@todo fast as
     return as<Container>()->getColor();
   }
   else
@@ -94,14 +100,17 @@ std::size_t Lisp::Cell::getRefCount() const
 {
   if(isA<BasicCons>())
   {
+    // @todo fast as
     return as<BasicCons>()->getRefCount();
   }
   else if(isA<Container>())
   {
+    // @todo fast as
     return as<Container>()->getRefCount();
   }
   else if(isA<ManagedType>())
   {
+    // @todo fast as
     return as<ManagedType>()->getRefCount();
   }
   else
@@ -184,4 +193,57 @@ std::ostream & operator<<(std::ostream & ost, const Lisp::Cell & cell)
     ost << "[BasicType]";
   }
   return ost;
+}
+
+bool Cell::operator==(const Lisp::Cell & b) const
+{
+  if(isA<const ::Lisp::BasicCons>() && b.isA<const ::Lisp::BasicCons>())
+  {
+    return as<const ::Lisp::BasicCons>() ==  b.as<const ::Lisp::BasicCons>();
+  }
+  else if(isA<const ::Lisp::ManagedType>() && b.isA<const ::Lisp::ManagedType>())
+  {
+    return as<const ::Lisp::ManagedType>() == b.as<const ::Lisp::ManagedType>();
+  }
+  else if(isA<const ::Lisp::Container>() && b.isA<const ::Lisp::Container>())
+  {
+    return as<const ::Lisp::Container>() == b.as<const ::Lisp::Container>();
+  }
+  else if(isA<::Lisp::Nil>() && b.isA<::Lisp::Nil>())
+  {
+    return true;
+  }
+  else
+  {
+    // @todo more cases
+    return false;
+  }
+}
+
+std::size_t Cell::hash() const
+{
+  if(isA<const ::Lisp::BasicCons>())
+  {
+    static std::hash<const ::Lisp::BasicCons*> hasher;
+    return hasher(as<const ::Lisp::BasicCons>());
+  }
+  else if(isA<const ::Lisp::ManagedType>())
+  {
+    static std::hash<const ::Lisp::ManagedType*> hasher;
+    return hasher(as<const ::Lisp::ManagedType>());
+  }
+  else if(isA<const ::Lisp::Container>())
+  {
+    static std::hash<const ::Lisp::Container*> hasher;
+    return hasher(as<const ::Lisp::Container>());
+  }
+  else if(isA<::Lisp::Nil>())
+  {
+    return 0u;
+  }
+  else
+  {
+    /* @todo */
+    return 0u;
+  }
 }

@@ -90,7 +90,7 @@ inline Lisp::Object Lisp::Object::nil()
 {
   Object ret;
   ret.typeId = TypeTraits<Nil>::getTypeId();
-  ret.data.ptr = nullptr;
+  ret.data.pCons = nullptr;
   return ret;
 }
 
@@ -98,7 +98,7 @@ inline Lisp::Object Lisp::Object::undefined()
 {
   Object ret;
   ret.typeId = TypeTraits<Undefined>::getTypeId();
-  ret.data.ptr = nullptr;
+  ret.data.pCons = nullptr;
   return ret;
 }
 

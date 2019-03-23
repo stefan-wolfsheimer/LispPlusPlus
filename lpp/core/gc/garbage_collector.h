@@ -134,34 +134,34 @@ namespace Lisp
     inline C * makeRootCons();
 
     template<typename C>
-    inline C * _make(std::true_type, const Cell & car, const Cell & cdr);
+    inline C * _make(ConsStorageTrait, const Cell & car, const Cell & cdr);
 
     template<typename C>
-    inline C * _make(std::true_type, Cell && car, const Cell & cdr);
+    inline C * _make(ConsStorageTrait, Cell && car, const Cell & cdr);
 
     template<typename C>
-    inline C * _make(std::true_type, const Cell & car, Cell && cdr);
+    inline C * _make(ConsStorageTrait, const Cell & car, Cell && cdr);
 
     template<typename C>
-    inline C * _make(std::true_type, Cell && car, Cell && cdr);
+    inline C * _make(ConsStorageTrait, Cell && car, Cell && cdr);
 
     template<typename C>
-    inline C * _makeRoot(std::true_type, const Cell & car, const Cell & cdr);
+    inline C * _makeRoot(ConsStorageTrait, const Cell & car, const Cell & cdr);
 
     template<typename C>
-    inline C * _makeRoot(std::true_type, Cell && car, const Cell & cdr);
+    inline C * _makeRoot(ConsStorageTrait, Cell && car, const Cell & cdr);
 
     template<typename C>
-    inline C * _makeRoot(std::true_type, const Cell & car, Cell && cdr);
+    inline C * _makeRoot(ConsStorageTrait, const Cell & car, Cell && cdr);
 
     template<typename C>
-    inline C * _makeRoot(std::true_type, Cell && car, Cell && cdr);
+    inline C * _makeRoot(ConsStorageTrait, Cell && car, Cell && cdr);
 
     template<typename C,  typename... ARGS>
-    inline C * _make(std::false_type, ARGS... rest);
+    inline C * _make(ContainerStorageTrait, ARGS... rest);
 
     template<typename C,  typename... ARGS>
-    inline C * _makeRoot(std::false_type, ARGS... rest);
+    inline C * _makeRoot(ContainerStorageTrait, ARGS... rest);
 
     inline bool checkSanity(Color color, bool root) const;
   };
@@ -190,13 +190,14 @@ inline Lisp::GarbageCollector::GarbageCollector(std::size_t consPageSize,
 template<typename C, typename... ARGS>
 inline C * Lisp::GarbageCollector::make(const ARGS & ... rest)
 {
-  return _make<C>(typename std::is_base_of<BasicCons, C>::type(), rest...);
+
+  return _make<C>(typename TypeTraits<C>::StorageTrait(), rest...);
 }
 
 template<typename C,  typename... ARGS>
 inline C * Lisp::GarbageCollector::makeRoot(const ARGS & ... rest)
 {
-  return _makeRoot<C>(typename std::is_base_of<BasicCons, C>::type(), rest...);
+  return _makeRoot<C>(typename TypeTraits<C>::StorageTrait(), rest...);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -237,7 +238,7 @@ inline C * Lisp::GarbageCollector::makeRootCons()
 }
 
 template<typename C>
-inline C * Lisp::GarbageCollector::_make(std::true_type, const Cell & car, const Cell & cdr)
+inline C * Lisp::GarbageCollector::_make(ConsStorageTrait, const Cell & car, const Cell & cdr)
 {
   C * ret = makeCons<C>();
   ret->car = car;
@@ -246,7 +247,7 @@ inline C * Lisp::GarbageCollector::_make(std::true_type, const Cell & car, const
 }
 
 template<typename C>
-inline C * Lisp::GarbageCollector::_make(std::true_type, Cell && car, const Cell & cdr)
+inline C * Lisp::GarbageCollector::_make(ConsStorageTrait, Cell && car, const Cell & cdr)
 {
   C * ret = makeCons<C>();
   ret->car = car;
@@ -255,7 +256,7 @@ inline C * Lisp::GarbageCollector::_make(std::true_type, Cell && car, const Cell
 }
 
 template<typename C>
-inline C * Lisp::GarbageCollector::_make(std::true_type, const Cell & car, Cell && cdr)
+inline C * Lisp::GarbageCollector::_make(ConsStorageTrait, const Cell & car, Cell && cdr)
 {
   C * ret = makeCons<C>();
   ret->car = car;
@@ -264,7 +265,7 @@ inline C * Lisp::GarbageCollector::_make(std::true_type, const Cell & car, Cell 
 }
 
 template<typename C>
-inline C * Lisp::GarbageCollector::_make(std::true_type, Cell && car, Cell && cdr)
+inline C * Lisp::GarbageCollector::_make(ConsStorageTrait, Cell && car, Cell && cdr)
 {
   C * ret = makeCons<C>();
   ret->car = car;
@@ -273,7 +274,7 @@ inline C * Lisp::GarbageCollector::_make(std::true_type, Cell && car, Cell && cd
 }
 
 template<typename C>
-inline C * Lisp::GarbageCollector::_makeRoot(std::true_type, const Cell & car, const Cell & cdr)
+inline C * Lisp::GarbageCollector::_makeRoot(ConsStorageTrait, const Cell & car, const Cell & cdr)
 {
   C * ret = makeRootCons<C>();
   ret->car = car;
@@ -282,7 +283,7 @@ inline C * Lisp::GarbageCollector::_makeRoot(std::true_type, const Cell & car, c
 }
 
 template<typename C>
-inline C * Lisp::GarbageCollector::_makeRoot(std::true_type, Cell && car, const Cell & cdr)
+inline C * Lisp::GarbageCollector::_makeRoot(ConsStorageTrait, Cell && car, const Cell & cdr)
 {
   C * ret = makeRootCons<C>();
   ret->car = car;
@@ -291,7 +292,7 @@ inline C * Lisp::GarbageCollector::_makeRoot(std::true_type, Cell && car, const 
 }
 
 template<typename C>
-inline C * Lisp::GarbageCollector::_makeRoot(std::true_type, const Cell & car, Cell && cdr)
+inline C * Lisp::GarbageCollector::_makeRoot(ConsStorageTrait, const Cell & car, Cell && cdr)
 {
   C * ret = makeRootCons<C>();
   ret->car = car;
@@ -300,7 +301,7 @@ inline C * Lisp::GarbageCollector::_makeRoot(std::true_type, const Cell & car, C
 }
 
 template<typename C>
-inline C * Lisp::GarbageCollector::_makeRoot(std::true_type, Cell && car, Cell && cdr)
+inline C * Lisp::GarbageCollector::_makeRoot(ConsStorageTrait, Cell && car, Cell && cdr)
 {
   C * ret = makeRootCons<C>();
   ret->car = car;
@@ -314,7 +315,7 @@ inline C * Lisp::GarbageCollector::_makeRoot(std::true_type, Cell && car, Cell &
 //
 ////////////////////////////////////////////////////////////////////////////////
 template<typename C,  typename... ARGS>
-inline C * Lisp::GarbageCollector::_make(std::false_type, ARGS... rest)
+inline C * Lisp::GarbageCollector::_make(ContainerStorageTrait, ARGS... rest)
 {
   step();
   recycle();
@@ -325,13 +326,12 @@ inline C * Lisp::GarbageCollector::_make(std::false_type, ARGS... rest)
 }
 
 template<typename C,  typename... ARGS>
-inline C * Lisp::GarbageCollector::_makeRoot(std::false_type, ARGS... rest)
+inline C * Lisp::GarbageCollector::_makeRoot(ContainerStorageTrait, ARGS... rest)
 {
   step();
   recycle();
-  /* @todo delete C */
   C * ret = new C(rest...);
-  ret->setRefCount(1u);
+  ret->refCount = 1u;
   containerMap.addRoot(ret);
   return ret;
 }

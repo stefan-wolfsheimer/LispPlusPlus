@@ -43,6 +43,13 @@ namespace Lisp
   class GarbageCollector;
   template<typename T> class CollectibleContainer;
 
+  /**
+   * A Cons-like object that is managed by garbage collector.
+   * References of conses are only counted from Object instances (not from Cell).
+   * Conses are collected by the garbage collector through the reachability graph.
+   * It is possible to derive (non-polymorphic) classes from Cons, but no additional
+   * data members should be added.
+   */
   class BasicCons : public Collectible,
                     public CollectibleMixin<BasicCons>
   {
@@ -74,11 +81,9 @@ namespace Lisp
     inline bool greyChildren();
     inline bool recycleNextChild();
   private:
-    template<typename T>
-    inline bool setCar(T * cons, TypeId typeId);
-
-    template<typename T>
-    inline bool setCdr(T * cons, TypeId typeId);
+    inline void setCarCdr(Cell & carcdr, BasicCons * cons, TypeId typeId);
+    inline void setCarCdr(Cell & carcdr, Container * cons, TypeId typeId);
+    inline void setCarCdr(Cell & carcdr, ManagedType * cons, TypeId typeId);
 
     Cell car;
     Cell cdr;
@@ -143,54 +148,42 @@ inline void Lisp::BasicCons::unsetCdr()
 
 inline void Lisp::BasicCons::setCar(const Cell & rhs)
 {
-  if(!setCar<Cons>(rhs.as<Cons>(), rhs.getTypeId()))
+  if(rhs.isA<BasicCons>())
   {
-    if(!setCar<Container>(rhs.as<Container>(), rhs.getTypeId()))
-    {
-      car = rhs;
-    }
+    setCarCdr(car, rhs.data.pCons, rhs.getTypeId());
+  }
+  else if(rhs.isA<Container>())
+  {
+    setCarCdr(car, rhs.data.pContainer, rhs.getTypeId());
+  }
+  else if(rhs.isA<ManagedType>())
+  {
+    setCarCdr(car, rhs.data.pManaged, rhs.getTypeId());
+  }
+  else
+  {
+    car = rhs;
   }
 }
 
 inline void Lisp::BasicCons::setCdr(const Cell & rhs)
 {
-  if(!setCdr<Cons>(rhs.as<Cons>(), rhs.getTypeId()))
+  if(rhs.isA<BasicCons>())
   {
-    if(!setCdr<Container>(rhs.as<Container>(), rhs.getTypeId()))
-    {
-      cdr = rhs;
-    }
+    setCarCdr(cdr, rhs.data.pCons, rhs.getTypeId());
   }
-}
-
-template<typename T>
-inline bool Lisp::BasicCons::setCar(T * collectible, TypeId _typeId)
-{
-  if(collectible)
+  else if(rhs.isA<Container>())
   {
-    collectible->grey();
-    car = Lisp::nil;
-    car.typeId = _typeId;
-    car.data.ptr = collectible;
-    gcStep();
-    return true;
+    setCarCdr(cdr, rhs.data.pContainer, rhs.getTypeId());
   }
-  return false;
-}
-
-template<typename T>
-inline bool Lisp::BasicCons::setCdr(T * collectible, TypeId _typeId)
-{
-  if(collectible)
+  else if(rhs.isA<ManagedType>())
   {
-    collectible->grey();
-    cdr = Lisp::nil;
-    cdr.typeId = _typeId;
-    cdr.data.ptr = collectible;
-    gcStep();
-    return true;
+    setCarCdr(cdr, rhs.data.pManaged, rhs.getTypeId());
   }
-  return false;
+  else
+  {
+    cdr = rhs;
+  }
 }
 
 inline void Lisp::BasicCons::forEachChild(std::function<void(const Cell&)> func) const
@@ -229,4 +222,27 @@ inline void Lisp::BasicCons::gcStep()
     getContainer()->remove(this);
     toContainer->add(this);
   }
+}
+
+inline void Lisp::BasicCons::setCarCdr(Cell & carcdr, BasicCons * cons, TypeId typeId)
+{
+  cons->grey();
+  carcdr = Lisp::nil;
+  carcdr.init(cons, typeId);
+  gcStep();
+}
+
+inline void Lisp::BasicCons::setCarCdr(Cell & carcdr, Container * cons, TypeId typeId)
+{
+  cons->grey();
+  carcdr = Lisp::nil;
+  carcdr.init(cons, typeId);
+  gcStep();
+}
+
+inline void Lisp::BasicCons::setCarCdr(Cell & carcdr, ManagedType * cons, TypeId typeId)
+{
+  carcdr = Lisp::nil;
+  carcdr.init(cons, typeId);
+  gcStep();
 }

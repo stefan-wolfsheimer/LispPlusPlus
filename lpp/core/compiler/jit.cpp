@@ -4,6 +4,7 @@
 #include <lpp/core/gc/garbage_collector.h>
 #include <lpp/core/gc/symbol_container.h>
 #include <lpp/core/types/cons.h>
+#include <lpp/core/types/reference.h>
 #include <lpp/core/types/function.h>
 #include <lpp/core/types/array.h>
 #include <lpp/core/types/form.h>

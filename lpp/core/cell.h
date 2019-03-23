@@ -43,7 +43,7 @@ namespace Lisp
   class Object;
   class Container;
   class Collectible;
-
+  
   class Cell
   {
   public:
@@ -53,7 +53,10 @@ namespace Lisp
     Cell();
     Cell(const Cell & rhs);
     Cell(IntegerType rhs);
-    Cell(Collectible * rhs, TypeId typeId);
+    Cell(BasicCons * rhs, TypeId typeId);
+    Cell(Container * rhs, TypeId typeId);
+
+    //Cell(Collectible * rhs, TypeId typeId);
     
     template<typename T>
     Cell(T * obj);
@@ -74,7 +77,13 @@ namespace Lisp
     template<typename T>
     inline typename Lisp::TypeTraits<T>::Type as() const;
 
-    inline bool operator==(const Lisp::Cell & b) const;
+    bool operator==(const Lisp::Cell & b) const;
+
+    /**
+     * Hash value of the cell content.
+     * @todo complete for more types
+     */
+    size_t hash() const;
 
     /**
      * Operations for Collectible */
@@ -90,8 +99,30 @@ namespace Lisp
     TypeId typeId;
     CellDataType data;
     inline void unset();
-    inline void init(Collectible * cons, TypeId _typeId);
+    inline void init(BasicCons * cons, TypeId _typeId);
+    inline void init(Container * container, TypeId _typeId);
     inline void init(ManagedType * managedType, TypeId _typeId);
+  private:
+    template<typename T>
+    inline bool _isA(AtomStorageTrait, std::false_type) const;
+
+    template<typename T>
+    inline bool _isA(ManagedStorageTrait, std::false_type) const;
+
+    template<typename T>
+    inline bool _isA(ConsStorageTrait, std::false_type) const;
+
+    template<typename T>
+    inline bool _isA(CollectibleStorageTrait, std::false_type) const;
+
+    template<typename T>
+    inline bool _isA(ContainerStorageTrait, std::false_type) const;
+
+    template<typename T>
+    inline bool _isA(ManagedStorageTrait, std::true_type) const;
+
+    template<typename T>
+    inline bool _isA(ContainerStorageTrait, std::true_type) const;
   };
 }
 
@@ -108,17 +139,9 @@ namespace std
   class hash<::Lisp::Cell>
   {
   public:
-    size_t operator()(const ::Lisp::Cell & c) const
+    inline size_t operator()(const ::Lisp::Cell & c) const
     {
-      if(c.isA<const ::Lisp::Collectible>())
-      {
-        static hash<const ::Lisp::Collectible*> hasher;
-        return hasher(c.as<const ::Lisp::Collectible>());
-      }
-      else if(c.isA<::Lisp::Nil>())
-      {
-        return 0u;
-      }
+      return c.hash();
     }
   };
 }
@@ -134,18 +157,9 @@ namespace std
   class equal_to<::Lisp::Cell>
   {
   public:
-    size_t operator()(const ::Lisp::Cell & a, const ::Lisp::Cell & b) const
+    inline size_t operator()(const ::Lisp::Cell & a, const ::Lisp::Cell & b) const
     {
-      if(a.isA<const ::Lisp::Collectible>() && b.isA<const ::Lisp::Collectible>())
-      {
-        static equal_to<const Lisp::Collectible*> eq;
-        return eq(a.as<::Lisp::Collectible>(), b.as<::Lisp::Collectible>());
-      }
-      else if(a.isA<::Lisp::Nil>() && b.isA<::Lisp::Nil>())
-      {
-        return true;
-      }
-      return false;
+      return a == b;
     }
   };
 }
@@ -157,7 +171,7 @@ namespace std
 //////////////////////////////////////////////////////////////////////
 inline Lisp::Cell::Cell()
 {
-  data.ptr = nullptr;
+  data.pCons = nullptr;
   typeId = Lisp::TypeTraits<Lisp::Nil>::getTypeId();
 }
 
@@ -173,7 +187,7 @@ inline Lisp::Cell::Cell(const Cell & rhs)
   data = rhs.data;
   if(rhs.isA<ManagedType>())
   {
-    static_cast<ManagedType*>(data.ptr)->refCount++;
+    static_cast<ManagedType*>(data.pManaged)->refCount++;
   }
 }
 
@@ -183,11 +197,16 @@ inline Lisp::Cell::Cell(T * obj)
   init(obj, Lisp::TypeTraits<T>::getTypeId());
 }
 
-inline Lisp::Cell::Cell(Collectible * rhs, TypeId _typeId)
-  : typeId(_typeId)
+inline Lisp::Cell::Cell(BasicCons * rhs, TypeId _typeId) : typeId(_typeId)
 {
-  typeId = _typeId;
-  data.ptr = rhs;
+  assert(Lisp::TypeTraits<BasicCons>::isA(_typeId));
+  data.pCons = rhs;
+}
+
+inline Lisp::Cell::Cell(Container * rhs, TypeId _typeId) : typeId(_typeId)
+{
+  assert(Lisp::TypeTraits<Container>::isA(_typeId));
+  data.pContainer = rhs;
 }
 
 inline Lisp::Cell& Lisp::Cell::operator=(const Cell & rhs)
@@ -198,7 +217,7 @@ inline Lisp::Cell& Lisp::Cell::operator=(const Cell & rhs)
   data = rhs.data;
   if(isA<ManagedType>())
   {
-    static_cast<ManagedType*>(data.ptr)->refCount++;
+    data.pManaged->refCount++;
   }
   return *this;
 }
@@ -212,30 +231,35 @@ inline void Lisp::Cell::unset()
 {
   if(TypeTraits<ManagedType>::isA(typeId))
   {
-    ManagedType * obj = static_cast<ManagedType*>(data.ptr);
-    assert(obj->refCount);
-    if(! --obj->refCount)
+    assert(data.pManaged->refCount);
+    if(! --data.pManaged->refCount)
     {
-      delete obj;
-      data.ptr = nullptr;
+      delete data.pManaged;
+      data.pManaged = nullptr;
     }
   }
 }
 
-
-inline void Lisp::Cell::init(Lisp::ManagedType * obj,
-                             Lisp::TypeId _typeId)
+inline void Lisp::Cell::init(Lisp::ManagedType * obj, Lisp::TypeId _typeId)
 {
+  assert(Lisp::TypeTraits<ManagedType>::isA(_typeId));
   typeId = _typeId;
   obj->refCount++;
-  data.ptr = obj;
+  data.pManaged = obj;
 }
 
-inline void Lisp::Cell::init(Lisp::Collectible * cons,
-                             Lisp::TypeId _typeId)
+inline void Lisp::Cell::init(Lisp::Container * obj, Lisp::TypeId _typeId)
 {
+  assert(Lisp::TypeTraits<Container>::isA(_typeId));
   typeId = _typeId;
-  data.ptr = cons;
+  data.pContainer = obj;
+}
+
+inline void Lisp::Cell::init(Lisp::BasicCons * obj, Lisp::TypeId _typeId)
+{
+  assert(Lisp::TypeTraits<BasicCons>::isA(_typeId));
+  typeId = _typeId;
+  data.pCons = obj;
 }
 
 inline Lisp::TypeId Lisp::Cell::getTypeId() const
@@ -246,19 +270,58 @@ inline Lisp::TypeId Lisp::Cell::getTypeId() const
 template<typename T>
 inline bool Lisp::Cell::isA() const
 {
+  return _isA<T>(typename TypeTraits<T>::StorageTrait(),
+                 typename TypeTraits<T>::IsPolymorphic());
+}
+
+template<typename T>
+inline bool Lisp::Cell::_isA(AtomStorageTrait, std::false_type) const
+{
   return TypeTraits<T>::isA(typeId);
 }
+
+template<typename T>
+inline bool Lisp::Cell::_isA(ManagedStorageTrait, std::false_type) const
+{
+  return TypeTraits<T>::isA(typeId);
+}
+
+template<typename T>
+inline bool Lisp::Cell::_isA(ConsStorageTrait, std::false_type) const
+{
+  return TypeTraits<T>::isA(typeId);
+}
+
+template<typename T>
+inline bool Lisp::Cell::_isA(ContainerStorageTrait, std::false_type) const
+{
+  return TypeTraits<T>::isA(typeId);
+}
+
+template<typename T>
+inline bool Lisp::Cell::_isA(CollectibleStorageTrait, std::false_type) const
+{
+  return TypeTraits<T>::isA(typeId);
+}
+
+template<typename T>
+inline bool Lisp::Cell::_isA(ManagedStorageTrait, std::true_type) const
+{
+  return TypeTraits<T>::isA(typeId) && (dynamic_cast<const T*>(data.pManaged) != nullptr);
+}
+
+template<typename T>
+inline bool Lisp::Cell::_isA(ContainerStorageTrait, std::true_type) const
+{
+  return TypeTraits<T>::isA(typeId) && (dynamic_cast<const T*>(data.pContainer) != nullptr);
+}
+
+
 
 template<typename T>
 inline typename Lisp::TypeTraits<T>::Type Lisp::Cell::as() const
 {
   return TypeTraits<T>::as(data, typeId);
-}
-
-inline bool Lisp::Cell::operator==(const Lisp::Cell & b) const
-{
-  static std::equal_to<Lisp::Cell> eq;
-  return eq(*this, b);
 }
 
 inline void Lisp::Cell::forEachChild(std::function<void(const Cell&, std::size_t index)> func) const
@@ -269,4 +332,3 @@ inline void Lisp::Cell::forEachChild(std::function<void(const Cell&, std::size_t
       index++;
    });
 }
-

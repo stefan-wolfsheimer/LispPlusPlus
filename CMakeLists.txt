@@ -23,6 +23,7 @@ add_subdirectory (lpp/core)
 add_subdirectory (lpp/simul)
 
 
+
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
     message("debug mode")
     add_library(Catch INTERFACE)
@@ -37,6 +38,8 @@ IF(CMAKE_BUILD_TYPE MATCHES Debug)
       test_core/test_collectible_container.cpp
       test_core/test_cons.cpp
       test_core/test_array.cpp
+      test_core/types/polymorphic_object.cpp
+      test_core/types/polymorphic_container.cpp
       test_core/test_garbage_collector.cpp
       test_core/test_symbol_container.cpp
       test_core/test_type_container.cpp

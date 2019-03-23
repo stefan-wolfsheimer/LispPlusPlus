@@ -33,16 +33,32 @@ either expressed or implied, of the FreeBSD Project.
 
 namespace Lisp
 {
-  template<typename T>
-  struct TypeTraits
-  {
-  };
+  struct AtomStorageTrait {};
+  struct ManagedStorageTrait {};
+  struct ConsStorageTrait {};
+  struct ContainerStorageTrait {};
+
+  /* ConsStorageTrait or ContainerStorageTrait
+   */
+  struct CollectibleStorageTrait {};
 
   namespace Traits
   {
+    ///////////////////////////////////////////////////////////////////////////
+    //
+    // type matcher
+    //
+    ///////////////////////////////////////////////////////////////////////////
+
+    /**
+     * Matches exact type id
+     */
     template<TypeId TID>
     struct Id
     {
+      //using IsPolymorphic = std::false_type;
+      //using StorageTrait = STORAGE_TRAIT;
+
       static constexpr TypeId getTypeId()
       {
         return TID;
@@ -54,49 +70,69 @@ namespace Lisp
       }
     };
 
+    template<typename IS_MANAGED, typename IS_CONTAINER>
+    struct PolymorphicId
+    {
+      using IsPolymorphic = std::true_type;
+    };
+
+
+    /**
+     * Matches type by mask
+     */
     template<TypeId TID>
     struct IdMask
     {
       static const TypeId typeId = TID;
+      //using IsPolymorphic = std::false_type;
+
       static inline bool isA(TypeId tid)
       {
         return (tid & 0xc000) == TID;
       }
     };
 
+    /**
+     * Matches type id less than value
+     */
     template<TypeId TID>
     struct IdLt
     {
       static const TypeId typeId = TID;
+      //using IsPolymorphic = std::false_type;
+
       static inline bool isA(TypeId tid)
       {
         return (tid < TID);
       }
     };
 
+    /**
+     * Matches type id greater than value
+     */
     template<TypeId TID>
     struct IdGt
     {
       static const TypeId typeId = TID;
+      //using IsPolymorphic = std::false_type;
+
       static inline bool isA(TypeId tid)
       {
         return (tid > TID);
       }
     };
 
-    template<typename T1, typename T2>
-    struct IdChoice
-    {
-      static inline bool isA(TypeId tid)
-      {
-        return (T1::isA(tid)) || (T2::isA(tid));
-      }
-    };
-
-    template<typename TypeMatcher>
+    ///////////////////////////////////////////////////////////////////////////
+    //
+    // Basic type traits
+    //
+    ///////////////////////////////////////////////////////////////////////////
+    template<typename CLS, typename TypeMatcher>
     struct Integer : public TypeMatcher
     {
-      using Type = IntegerType;
+      using Type = CLS;
+      using StorageTrait = AtomStorageTrait;
+      using IsPolymorphic = std::false_type;
 
       static inline IntegerType as(const CellDataType & data, TypeId tid)
       {
@@ -111,25 +147,34 @@ namespace Lisp
       }
     };
 
-    template<typename TypeMatcher>
+    template<typename T, typename TypeMatcher>
     struct Null : public TypeMatcher
     {
+      using Type = T*;
+      using StorageTrait = AtomStorageTrait;
+      using IsPolymorphic = std::false_type;
+
       static inline void * as(const CellDataType & data, TypeId tid)
       {
         return nullptr;
       }
     };
 
-    template<typename T, typename TypeMatcher>
-    struct Pointer : public TypeMatcher
+    ///////////////////////////////////////////////////////////////////////////
+    // Managed Type
+    ///////////////////////////////////////////////////////////////////////////
+    template<typename T, typename TypeMatcher, typename POLY=std::false_type>
+    struct ManagedType : public TypeMatcher
     {
-      typedef T * Type;
+      using Type = T*;
+      using StorageTrait = ManagedStorageTrait;
+      using IsPolymorphic = POLY;
 
       static inline Type as(const CellDataType & data, TypeId tid)
       {
         if(TypeMatcher::isA(tid))
         {
-          return reinterpret_cast<T*>(data.ptr);
+          return dynamic_cast<T*>(data.pManaged);
         }
         else
         {
@@ -138,9 +183,57 @@ namespace Lisp
       }
     };
 
-    template<typename T, typename C1, typename C2>
-    struct PointerChoice : Pointer<T, IdChoice<TypeTraits<C1>, TypeTraits<C2>>>
-    {};
+    ///////////////////////////////////////////////////////////////////////////
+    // Cons Type
+    ///////////////////////////////////////////////////////////////////////////
+    template<typename T, typename TypeMatcher>
+    struct BasicCons : public TypeMatcher
+    {
+      using Type = T*;
+      using StorageTrait = ConsStorageTrait;
+      using IsPolymorphic = std::false_type;
+
+      static inline Type as(const CellDataType & data, TypeId tid)
+      {
+        if(TypeMatcher::isA(tid))
+        {
+          return static_cast<T*>(data.pCons);
+        }
+        else
+        {
+          return nullptr;
+        }
+      }
+    };
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Container Type
+    ///////////////////////////////////////////////////////////////////////////
+    template<typename T, typename TypeMatcher, typename POLY=std::false_type>
+    struct Container : public TypeMatcher
+    {
+      using Type = T*;
+      using StorageTrait = ContainerStorageTrait;
+      using IsPolymorphic = POLY;
+
+      static inline Type as(const CellDataType & data, TypeId tid)
+      {
+        if(TypeMatcher::isA(tid))
+        {
+          return dynamic_cast<T*>(data.pContainer);
+        }
+        else
+        {
+          return nullptr;
+        }
+      }
+    };
+
+
+    template<typename T, typename IS_MANAGED, typename IS_CONTAINER>
+    struct Polymorphic
+    {
+    };
 
   }
 }

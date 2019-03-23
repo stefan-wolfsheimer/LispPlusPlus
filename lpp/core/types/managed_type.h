@@ -36,6 +36,12 @@ namespace Lisp
   class Env;
   class Cell;
 
+  /**
+   * A dynamic object that has a reference count.
+   * All references of Cell and Object are counted.
+   * A managed object must not have Cell or Object members.
+   * In order to define more complex objects, use Container classes.
+   */
   class ManagedType
   {
   public:

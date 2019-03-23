@@ -59,7 +59,7 @@ TEST_CASE("nil_as_cons_is_pullptr", "[Cons]")
 TEST_CASE("cons_is_a_cons", "[Cons]")
 {
   Lisp::Vm vm;
-  auto obj = vm.cons(Lisp::nil, Lisp::nil);
+  auto obj = vm.make<Cons>(Lisp::nil, Lisp::nil);
   REQUIRE(obj.isA<Cons>());
   REQUIRE_FALSE(Lisp::nil.isA<Collectible>());
 }
@@ -67,21 +67,21 @@ TEST_CASE("cons_is_a_cons", "[Cons]")
 TEST_CASE("cons_as_cons_is_cons", "[Cons]")
 {
   Lisp::Vm vm;
-  auto obj = vm.cons(Lisp::nil, Lisp::nil);
+  auto obj = vm.make<Cons>(Lisp::nil, Lisp::nil);
   REQUIRE(obj.as<Cons>());
 }
 
 TEST_CASE("cons_has_refcount_1", "[Cons]")
 {
   Lisp::Vm vm;
-  auto obj = vm.cons(Lisp::nil, Lisp::nil);
+  auto obj = vm.make<Cons>(Lisp::nil, Lisp::nil);
   REQUIRE(obj.as<Cons>()->getRefCount() == 1u);
 }
 
 TEST_CASE("cons_is_root", "[Cons]")
 {
   Lisp::Vm vm;
-  auto obj = vm.cons(Lisp::nil, Lisp::nil);
+  auto obj = vm.make<Cons>(Lisp::nil, Lisp::nil);
   REQUIRE(obj.as<Cons>()->isRoot());
 }
 
@@ -90,8 +90,8 @@ TEST_CASE("cons_hash", "[Cons]")
   Lisp::Vm vm;
   std::hash<Cell> h;
   std::equal_to<Cell> eq;
-  auto o1 = vm.cons(Lisp::nil, Lisp::nil);
-  auto o2 = vm.cons(Lisp::nil, Lisp::nil);
+  auto o1 = vm.make<Cons>(Lisp::nil, Lisp::nil);
+  auto o2 = vm.make<Cons>(Lisp::nil, Lisp::nil);
   REQUIRE(h(o1) == h(o1));
   REQUIRE(h(o1) != h(o2));
   REQUIRE(eq(o1, o1));

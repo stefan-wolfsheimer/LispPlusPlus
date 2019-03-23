@@ -19,6 +19,7 @@ namespace Lisp
       return cell.isA<T>();
     }
 
+    // @todo remove static approach for defining forms
     static bool isInstanceStatic(const Cell & cell)
     {
       return cell.isA<T>();
@@ -45,10 +46,18 @@ namespace Lisp
     }
   };
 
+  /**
+   * Matches form against one of two types.
+   * @todo remove static version and build
+   *       virtual form definitions
+   */
   template<typename T1, typename T2>
   class ChoiceType : public BasicType
   {
   public:
+    /**
+     * @return true if cell is an instance of T1 or T2
+     */
     bool isInstance(const Cell & cell) override
     {
       return isInstanceStatic(cell);

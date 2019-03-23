@@ -321,7 +321,6 @@ inline void Lisp::ColorMap<T>::forEach(const CollectibleContainer<T> & container
 {
   for(auto itr = container.cbegin(); itr != container.cend(); ++itr)
   {
-    Cell cell(*itr, (*itr)->getTypeId());
     func(Cell(*itr, (*itr)->getTypeId()));
   }
 }

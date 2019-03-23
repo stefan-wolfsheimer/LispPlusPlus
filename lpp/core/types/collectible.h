@@ -14,26 +14,54 @@ namespace Lisp
   {
   };
 
+  /**
+   * Every class that has sub garbage collected sub-cells
+   * should be derived from this mixin class.
+   *
+   */
   template<typename T>
   class CollectibleMixin
   {
   public:
+    /* friendship for setting the index in the CollectibleContainer
+     */
     friend class CollectibleContainer<T>;
 
+    /* friendship for setting the reference count
+     */
+    friend class GarbageCollector;
+
+    /* friendship for increasing the reference count
+     */
+    friend class Object;
+
     CollectibleMixin();
+
+    /**
+     * Nuber of references to this object.
+     * The number of Object instances that box this object.
+     * Cell instances are not counted.
+     */
     inline std::size_t getRefCount() const;
-    inline void setRefCount(std::size_t);
-    inline void incRefCount();
+
     inline Color getColor() const;
     inline bool isRoot() const;
     inline std::size_t getIndex() const;
     inline GarbageCollector * getCollector() const;
     inline CollectibleContainer<T> * getContainer() const;
+    inline bool checkIndex();
+
+    /**
+     * If collectible is white, move it to grey.
+     * Otherwise do nothing.
+     */
+    inline void grey();
+  private:
+
+    inline void setRefCount(std::size_t);
+    inline void incRefCount();
     inline void unroot();
     inline void root();
-    inline void grey();
-    inline bool checkIndex();
-  private:
     CollectibleContainer<T> * container;
     std::size_t refCount;
     std::size_t index;
@@ -126,6 +154,7 @@ inline void Lisp::CollectibleMixin<T>::grey()
   auto greyContainer = container->getGreyContainer();
   if(greyContainer)
   {
+    // only if container is white
     container->remove(static_cast<T*>(this));
     greyContainer->add(static_cast<T*>(this));
   }

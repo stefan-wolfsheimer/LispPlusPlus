@@ -42,6 +42,12 @@ namespace Lisp
   class Env
   {
   public:
+
+    /**
+     * Defines the variable with symbol sym.
+     */
+    inline void define(const Cell & sym, const Cell & rhs);
+
     void set(const Cell & sym, const Object & obj);
     void set(const Cell & sym, Object && obj);
     bool unset(Symbol * symb);
@@ -84,6 +90,12 @@ inline bool Lisp::Env::Equal::operator()(const Cell & lhs, const Cell & rhs) con
   assert(lhs.isA<Symbol>());
   assert(rhs.isA<Symbol>());
   return symbolEq(lhs.as<Symbol>(), rhs.as<Symbol>());
+}
+
+inline void Lisp::Env::define(const Cell & symb, const Cell & rhs)
+{
+  assert(symb.isA<Symbol>());
+  bindings[symb] = rhs;
 }
 
 inline void Lisp::Env::set(const Cell & symb, const Object & obj)
