@@ -56,9 +56,6 @@ namespace Lisp
     template<TypeId TID>
     struct Id
     {
-      //using IsPolymorphic = std::false_type;
-      //using StorageTrait = STORAGE_TRAIT;
-
       static constexpr TypeId getTypeId()
       {
         return TID;
@@ -84,7 +81,6 @@ namespace Lisp
     struct IdMask
     {
       static const TypeId typeId = TID;
-      //using IsPolymorphic = std::false_type;
 
       static inline bool isA(TypeId tid)
       {
@@ -99,7 +95,6 @@ namespace Lisp
     struct IdLt
     {
       static const TypeId typeId = TID;
-      //using IsPolymorphic = std::false_type;
 
       static inline bool isA(TypeId tid)
       {
@@ -114,7 +109,6 @@ namespace Lisp
     struct IdGt
     {
       static const TypeId typeId = TID;
-      //using IsPolymorphic = std::false_type;
 
       static inline bool isA(TypeId tid)
       {
