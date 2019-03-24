@@ -33,12 +33,16 @@ either expressed or implied, of the FreeBSD Project.
 
 namespace Lisp
 {
-  class Lambda : public Form
+  class GarbageCollector;
+
+  /* @todo move to grammar framework */
+  class Lambda : public Form::Compilable
   {
   public:
-    Lambda();
+    Lambda(std::shared_ptr<GarbageCollector> _gc);
     virtual void compile(Jit & jit, Function *, const Cell & obj) const override;
+    bool isInstance(const Cell & cell) const override;
   private:
-    std::shared_ptr<BasicType> pattern;
+    Form * pattern;
   };
 }

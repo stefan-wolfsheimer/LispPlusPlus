@@ -3,8 +3,11 @@
 #include <lpp/core/cell.h>
 
 
+
 namespace Lisp
 {
+  //
+  // @todo replace by Forms::TypeOf
   template<typename T>
   class Type : public BasicType
   {
@@ -15,12 +18,6 @@ namespace Lisp
     }
 
     bool isInstance(const Cell & cell) override
-    {
-      return cell.isA<T>();
-    }
-
-    // @todo remove static approach for defining forms
-    static bool isInstanceStatic(const Cell & cell)
     {
       return cell.isA<T>();
     }
@@ -43,29 +40,6 @@ namespace Lisp
     static std::shared_ptr<AnyType> make()
     {
       return std::shared_ptr<AnyType>(new AnyType());
-    }
-  };
-
-  /**
-   * Matches form against one of two types.
-   * @todo remove static version and build
-   *       virtual form definitions
-   */
-  template<typename T1, typename T2>
-  class ChoiceType : public BasicType
-  {
-  public:
-    /**
-     * @return true if cell is an instance of T1 or T2
-     */
-    bool isInstance(const Cell & cell) override
-    {
-      return isInstanceStatic(cell);
-    }
-
-    static bool isInstanceStatic(const Cell & cell)
-    {
-      return T1::isInstanceStatic(cell) || T2::isInstanceStatic(cell);
     }
   };
 }

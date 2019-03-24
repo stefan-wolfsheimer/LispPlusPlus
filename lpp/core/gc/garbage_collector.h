@@ -49,6 +49,17 @@ namespace Lisp
   class GarbageCollector
   {
   public:
+    class Guard
+    {
+    public:
+      Guard(GarbageCollector & );
+      ~Guard();
+    private:
+      GarbageCollector & ref;
+      unsigned short int garbageSteps;
+      unsigned short int recycleSteps;
+    };
+
     GarbageCollector(std::size_t consPageSize=CONS_PAGE_SIZE,
                      unsigned short _garbageSteps=1,
                      unsigned short _recycleSteps=1);
@@ -113,6 +124,7 @@ namespace Lisp
     inline bool checkBulkSanity(Color color) const;
 
   private:
+    friend class Guard;
     ColorMap<BasicCons> consMap;
     ColorMap<Container> containerMap;
     Container * toBeRecycled;
@@ -172,6 +184,22 @@ namespace Lisp
 // Implementation
 //
 ////////////////////////////////////////////////////////////////////////////////
+
+inline Lisp::GarbageCollector::Guard::Guard(GarbageCollector & _ref)
+  : ref(_ref)
+{
+  garbageSteps = ref.garbageSteps;
+  recycleSteps = ref.recycleSteps;
+  ref.garbageSteps = 0;
+  ref.recycleSteps = 0;
+}
+
+inline Lisp::GarbageCollector::Guard::~Guard()
+{
+  ref.garbageSteps = garbageSteps;
+  ref.recycleSteps = recycleSteps;
+}
+
 inline Lisp::GarbageCollector::GarbageCollector(std::size_t consPageSize,
                                                 unsigned short _garbageSteps,
                                                 unsigned short _recycleSteps)

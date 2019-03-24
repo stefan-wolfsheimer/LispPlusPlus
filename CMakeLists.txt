@@ -20,6 +20,7 @@ include_directories (${PROJECT_SOURCE_DIR}/CSVPlusPlus/)
 include_directories (${PROJECT_SOURCE_DIR})
 
 add_subdirectory (lpp/core)
+# add_subdirectory (lpp/scheme)
 add_subdirectory (lpp/simul)
 
 
@@ -55,6 +56,7 @@ IF(CMAKE_BUILD_TYPE MATCHES Debug)
       test_core/test_compile_eval.cpp
       test_simul/test_gc_sim.cpp
       )
+    #    target_link_libraries(runtest Catch Core Scheme Simul)
     target_link_libraries(runtest Catch Core Simul)
 ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
 

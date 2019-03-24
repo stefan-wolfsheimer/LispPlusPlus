@@ -88,6 +88,8 @@ namespace Lisp
    *                    Array
    */
 
+  struct Any {};
+
   /* collectible types (container or BasicCons or Container) */
   class Collectible;
 
@@ -101,7 +103,6 @@ namespace Lisp
   class ManagedType;
   class String;
   class Symbol;
-  class Form;
   class PolymorphicObject;
 
   /* conses types */
@@ -153,7 +154,7 @@ namespace Lisp
   DEF_TRAITS_MATCH(ManagedType, 0x8000u,                          Traits::ManagedType);
   DEF_TRAITS(String,            0x8001u,                          Traits::ManagedType);
   DEF_TRAITS(Symbol,            0x8002u,                          Traits::ManagedType);
-  DEF_TRAITS(Form,              0x8003u,                          Traits::ManagedType);
+  //DEF_TRAITS(Form,              0x8003u,                          Traits::ManagedType);
   DEF_TRAITS(PolymorphicObject, POLYMORPHIC_OBJECT_TYPE_ID,       Traits::ManagedType);
 
   // containers
@@ -176,6 +177,31 @@ namespace Lisp
   {
     using StorageTrait = CollectibleStorageTrait;
     using IsPolymorphic = std::false_type;
+  };
+
+  template<>
+  struct TypeTraits<Any>
+  {
+    using StorageTrait = AtomStorageTrait;
+    using IsPolymorphic = std::false_type;
+
+    static inline bool isA(TypeId tid)
+    {
+      return true;
+    }
+
+  };
+
+  template<>
+  struct TypeTraits<const Any>
+  {
+    using StorageTrait = AtomStorageTrait;
+    using IsPolymorphic = std::false_type;
+
+    static inline bool isA(TypeId tid)
+    {
+      return true;
+    }
   };
 }
 

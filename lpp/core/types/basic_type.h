@@ -5,6 +5,7 @@ namespace Lisp
 {
   class Cell;
 
+  /* @todo replace by Form::TypeOf
   /**
    * Meta type
    */

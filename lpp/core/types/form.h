@@ -1,16 +1,32 @@
 #pragma once
-#include <lpp/core/types/managed_type.h>
-#include <lpp/core/object.h>
+#include <lpp/core/types/polymorphic_container.h>
+
 
 namespace Lisp
 {
-  class Cell;
+  // @todo refactor XForm -> Form
   class Jit;
 
-  class Form : public ManagedType
+  namespace Form
   {
-  public:
-    virtual ~Form(){}
-    virtual void compile(Jit & jit, Function *, const Cell & obj) const=0;
-  };
+    class Form : public PolymorphicContainer
+    {
+    public:
+      virtual bool isInstance(const Cell & cell) const = 0;
+      virtual void forEachChild(std::function<void(const Cell&)> func) const override;
+      virtual bool greyChildren() override;
+      virtual void resetGcPosition() override;
+      virtual bool recycleNextChild() override;
+
+    protected:
+      std::vector<Cell> cells;
+    };
+
+    //@todo move to grammar
+    class Compilable : public Form
+    {
+    public:
+      virtual void compile(Jit & jit, Function *, const Cell & obj) const=0;
+    };
+  }
 }

@@ -35,13 +35,14 @@ namespace Lisp
 {
   class BasicType;
 
-  class Define : public Form
+  /* @todo move to grammar framework */
+  class Define : public Form::Compilable
   {
   public:
-    Define();
+    Define(std::shared_ptr<GarbageCollector> _gc);
     virtual void compile(Jit & jit, Function *, const Cell & obj) const override;
+    virtual bool isInstance(const Cell & cell) const override;
   private:
-    std::shared_ptr<BasicType> pattern;
-
+    Form * pattern;
   };
 }

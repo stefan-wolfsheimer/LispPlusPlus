@@ -8,21 +8,22 @@
 
 using Env = Lisp::Env;
 using SymbolContainer = Lisp::SymbolContainer;
-using Form = Lisp::Form;
+using Compilable = Lisp::Form::Compilable;
 
 static void defineForm(std::shared_ptr<Env> env,
                        std::shared_ptr<SymbolContainer> sc,
                        const std::string & name,
-                       Form * form)
+                       Compilable * form)
 {
   env->set(sc->make(name), form);
 }
 
+//@todo move to grammar framework (scheme module)
 std::shared_ptr<Env> Lisp::makeDefaultEnv(std::shared_ptr<GarbageCollector> gc,
                                           std::shared_ptr<SymbolContainer> sc)
 {
   auto env = std::make_shared<Env>();
-  defineForm(env, sc, "define", new Lisp::Define());
-  defineForm(env, sc, "lambda", new Lisp::Lambda());
+  defineForm(env, sc, "define", gc->makeRoot<Lisp::Define>(gc));
+  defineForm(env, sc, "lambda", gc->makeRoot<Lisp::Lambda>(gc));
   return env;
 }
