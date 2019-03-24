@@ -23,7 +23,7 @@ std::shared_ptr<Env> Lisp::makeDefaultEnv(std::shared_ptr<GarbageCollector> gc,
                                           std::shared_ptr<SymbolContainer> sc)
 {
   auto env = std::make_shared<Env>();
-  defineForm(env, sc, "define", gc->makeRoot<Lisp::Define>(gc));
-  defineForm(env, sc, "lambda", gc->makeRoot<Lisp::Lambda>(gc));
+  defineForm(env, sc, "define", gc->makeRoot<Lisp::Define>());
+  defineForm(env, sc, "lambda", gc->makeRoot<Lisp::Lambda>());
   return env;
 }

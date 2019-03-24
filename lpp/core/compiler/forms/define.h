@@ -39,9 +39,12 @@ namespace Lisp
   class Define : public Form::Compilable
   {
   public:
-    Define(std::shared_ptr<GarbageCollector> _gc);
-    virtual void compile(Jit & jit, Function *, const Cell & obj) const override;
+    Define();
+    virtual void compile(Jit & jit,
+                         Function *,
+                         const Cell & obj) const override;
     virtual bool isInstance(const Cell & cell) const override;
+    virtual void init() override;
   private:
     Form * pattern;
   };

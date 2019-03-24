@@ -18,15 +18,19 @@ using NilForm = Lisp::Form::TypeOf<Nil>;
 using AnyForm = Lisp::Form::TypeOf<Any>;
 
 
-Define::Define(std::shared_ptr<GarbageCollector> gc)
+Define::Define() : pattern(nullptr)
 {
-  Lisp::GarbageCollector::Guard _lock(*gc);
-  pattern = gc->make<ConsOf>(gc->make<SymbolForm>(),
-                             gc->make<ConsOf>(gc->make<SymbolForm>(),
-                                              gc->make<ConsOf>(gc->make<AnyForm>(),
-                                                               gc->make<NilForm>())));
-  cells.push_back(pattern);
 }
+
+void Define::init()
+{
+  Lisp::GarbageCollector::Guard _lock(*getCollector());
+  pattern = makeRoot<ConsOf>(make<SymbolForm>(),
+                             make<ConsOf>(make<SymbolForm>(),
+                                          make<ConsOf>(make<AnyForm>(),
+                                                       make<NilForm>())));
+}
+
 
 bool Define::isInstance(const Cell & cell) const
 {

@@ -3,13 +3,12 @@
 
 namespace Lisp
 {
-  //@todo refactor XForm -> Form
   namespace Form
   {
     class ConsOf : public Form
     {
     public:
-      ConsOf(const Cell & _car, const Cell & _cdr);
+      ConsOf(Form * _car, Form * _cdr);
       bool isInstance(const Cell & cell) const override;
     private:
       Form * car;

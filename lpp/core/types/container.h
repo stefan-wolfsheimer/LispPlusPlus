@@ -46,6 +46,12 @@ namespace Lisp
   {
   public:
     virtual ~Container(){}
+    /**
+     * This function is called after the object has been
+     * added to the garbage collector.
+     * The function getCollector() is available.
+     */
+    virtual void init() {};
     virtual TypeId getTypeId() const = 0;
     virtual void forEachChild(std::function<void(const Cell&)> func) const = 0;
     virtual bool greyChildren() = 0;

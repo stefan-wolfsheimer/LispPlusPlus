@@ -25,14 +25,17 @@ using NilForm = Lisp::Form::TypeOf<Nil>;
 using AnyForm = Lisp::Form::TypeOf<Any>;
 
 
-Lambda::Lambda(std::shared_ptr<GarbageCollector> gc)
+Lambda::Lambda() : pattern(nullptr)
 {
-    Lisp::GarbageCollector::Guard _lock(*gc);
-    pattern = gc->make<ConsOf>(gc->make<SymbolForm>(),
-                               gc->make<ConsOf>(gc->make<ListOf>(gc->make<SymbolForm>()),
-                                                gc->make<ConsOf>(gc->make<AnyForm>(),
-                                                                 gc->make<NilForm>())));
-    cells.push_back(pattern);
+}
+
+void Lambda::init()
+{
+  Lisp::GarbageCollector::Guard _lock(*getCollector());
+  pattern = makeRoot<ConsOf>(make<SymbolForm>(),
+                             make<ConsOf>(make<ListOf>(make<SymbolForm>()),
+                                          make<ConsOf>(make<AnyForm>(),
+                                                       make<NilForm>())));
 }
 
 bool Lambda::isInstance(const Cell & cell) const

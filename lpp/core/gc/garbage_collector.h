@@ -348,8 +348,9 @@ inline C * Lisp::GarbageCollector::_make(ContainerStorageTrait, ARGS... rest)
   step();
   recycle();
   C * ret = new C(rest...);
-  ret->setRefCount(1u);
+  ret->refCount = 1u;
   containerMap.add(ret);
+  ret->init();
   return ret;
 }
 
@@ -361,6 +362,7 @@ inline C * Lisp::GarbageCollector::_makeRoot(ContainerStorageTrait, ARGS... rest
   C * ret = new C(rest...);
   ret->refCount = 1u;
   containerMap.addRoot(ret);
+  ret->init();
   return ret;
 }
 

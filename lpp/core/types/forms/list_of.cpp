@@ -7,12 +7,9 @@ using Cons = Lisp::Cons;
 using Nil = Lisp::Nil;
 using Cell = Lisp::Cell;
 
-ListOf::ListOf(const Cell & _member)
+ListOf::ListOf(Form * _member) : member(_member)
 {
-  /* @todo make exection */
-  assert(_member.isA<Form>());
   cells.push_back(_member);
-  member = _member.as<Form>();
 }
 
 bool ListOf::isInstance(const Cell & cell) const

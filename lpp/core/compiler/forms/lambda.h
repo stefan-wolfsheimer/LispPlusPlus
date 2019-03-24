@@ -39,9 +39,12 @@ namespace Lisp
   class Lambda : public Form::Compilable
   {
   public:
-    Lambda(std::shared_ptr<GarbageCollector> _gc);
-    virtual void compile(Jit & jit, Function *, const Cell & obj) const override;
+    Lambda();
+    virtual void compile(Jit & jit,
+                         Function *,
+                         const Cell & obj) const override;
     bool isInstance(const Cell & cell) const override;
+    virtual void init() override;
   private:
     Form * pattern;
   };
