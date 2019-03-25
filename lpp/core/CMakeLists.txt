@@ -3,9 +3,9 @@ add_library( Core
   types/reference.cpp
   types/symbol.cpp
   types/form.cpp
-  # types/grammar.cpp
   types/forms/cons_of.cpp
   types/forms/list_of.cpp
+  types/forms/choice_of.cpp
   gc/cons_pages.cpp
   gc/garbage_collector.cpp
   gc/symbol_container.cpp

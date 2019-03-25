@@ -89,6 +89,7 @@ namespace Lisp
    */
 
   struct Any {};
+  struct Idempotent {};
 
   /* collectible types (container or BasicCons or Container) */
   class Collectible;
@@ -200,6 +201,32 @@ namespace Lisp
     static inline bool isA(TypeId tid)
     {
       return true;
+    }
+  };
+
+  //////////////////////////////////////////////////////////
+  // Idempotent
+  //////////////////////////////////////////////////////////
+  template<>
+  struct TypeTraits<Idempotent>
+  {
+    using StorageTrait = AtomStorageTrait;
+    using IsPolymorphic = std::false_type;
+    static inline bool isA(TypeId tid)
+    {
+      return !TypeTraits<BasicCons>::isA(tid) && !TypeTraits<Symbol>::isA(tid);
+    }
+
+  };
+
+  template<>
+  struct TypeTraits<const Idempotent>
+  {
+    using StorageTrait = AtomStorageTrait;
+    using IsPolymorphic = std::false_type;
+    static inline bool isA(TypeId tid)
+    {
+      return !TypeTraits<BasicCons>::isA(tid) && !TypeTraits<Symbol>::isA(tid);
     }
   };
 }

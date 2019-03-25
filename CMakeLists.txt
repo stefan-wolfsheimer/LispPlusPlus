@@ -20,7 +20,7 @@ include_directories (${PROJECT_SOURCE_DIR}/CSVPlusPlus/)
 include_directories (${PROJECT_SOURCE_DIR})
 
 add_subdirectory (lpp/core)
-# add_subdirectory (lpp/scheme)
+add_subdirectory (lpp/scheme)
 add_subdirectory (lpp/simul)
 
 
@@ -54,10 +54,10 @@ IF(CMAKE_BUILD_TYPE MATCHES Debug)
       test_core/forms/lambda.cpp
       test_core/test_builtin_function.cpp
       test_core/test_compile_eval.cpp
+      test_scheme/scheme.cpp
       test_simul/test_gc_sim.cpp
       )
-    #    target_link_libraries(runtest Catch Core Scheme Simul)
-    target_link_libraries(runtest Catch Core Simul)
+    target_link_libraries(runtest Catch Scheme Core Simul)
 ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
 
 # add_library(Simul INTERFACE)
@@ -65,5 +65,5 @@ ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
 target_include_directories(Catch INTERFACE test)
 
 add_executable(gc_sim gc_sim.cpp)
-target_link_libraries(gc_sim Simul Core)
+target_link_libraries(gc_sim Simul Scheme Core)
 

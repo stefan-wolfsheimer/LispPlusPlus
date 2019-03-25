@@ -53,6 +53,7 @@ namespace Lisp
     {
     public:
       Guard(GarbageCollector & );
+      Guard(GarbageCollector * );
       ~Guard();
     private:
       GarbageCollector & ref;
@@ -175,6 +176,9 @@ namespace Lisp
     template<typename C,  typename... ARGS>
     inline C * _makeRoot(ContainerStorageTrait, ARGS... rest);
 
+    template<typename C,  typename... ARGS>
+    inline C * _makeRoot(ManagedStorageTrait, ARGS... rest);
+
     inline bool checkSanity(Color color, bool root) const;
   };
 }
@@ -193,6 +197,16 @@ inline Lisp::GarbageCollector::Guard::Guard(GarbageCollector & _ref)
   ref.garbageSteps = 0;
   ref.recycleSteps = 0;
 }
+
+inline Lisp::GarbageCollector::Guard::Guard(GarbageCollector * _ref)
+  : ref(*_ref)
+{
+  garbageSteps = _ref->garbageSteps;
+  recycleSteps = _ref->recycleSteps;
+  _ref->garbageSteps = 0;
+  _ref->recycleSteps = 0;
+}
+
 
 inline Lisp::GarbageCollector::Guard::~Guard()
 {
@@ -366,6 +380,11 @@ inline C * Lisp::GarbageCollector::_makeRoot(ContainerStorageTrait, ARGS... rest
   return ret;
 }
 
+template<typename C,  typename... ARGS>
+inline C * Lisp::GarbageCollector::_makeRoot(ManagedStorageTrait, ARGS... rest)
+{
+  return new C(rest...);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 //
