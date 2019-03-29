@@ -32,22 +32,40 @@ either expressed or implied, of the FreeBSD Project.
 #include <lpp/core/vm.h>
 #include <lpp/core/types/lisp_string.h>
 
-#include <lpp/scheme/scheme.h>
+#include <lpp/scheme/language.h>
 
 using Vm = Lisp::Vm;
 
-using Scheme = Lisp::Scheme::Scheme;
+using Language = Lisp::Scheme::Language;
 using Object = Lisp::Object;
-using Form = Lisp::Form::Form;
+using Form = Lisp::Form;
 using String = Lisp::String;
+using Function = Lisp::Function;
+using IntegerType = Lisp::IntegerType;
 
-TEST_CASE("scheme_primitive", "[Scheme]")
+TEST_CASE("scheme_primitive", "[Language]")
 {
   Vm vm;
-  Object objScheme = vm.make<Scheme>();
-  Form * form = objScheme.as<Form>();
-  Object numeric(10);
-  Object str = vm.make<String>("hello");
-  REQUIRE(form->isInstance(numeric));
-  REQUIRE(form->isInstance(str));
+  Object formObj = vm.make<Language>();
+  Language * form = formObj.as<Language>();
+  {
+    Object atom(10); // = vm.make<IntegerType>(10);
+    REQUIRE(form->isInstance(atom));
+    Object func = form->compile(atom);
+    REQUIRE(func.isA<Function>());
+    REQUIRE(func.getRefCount() == 1u);
+    Object res = vm.compileAndEval(atom);
+    REQUIRE(res.isA<IntegerType>());
+    REQUIRE(res.as<IntegerType>() == 10);
+  }
+  {
+    Object atom = vm.make<String>("hello");
+    REQUIRE(form->isInstance(atom));
+    Object func = form->compile(atom);
+    REQUIRE(func.isA<Function>());
+    REQUIRE(func.getRefCount() == 1u);
+    Object res = vm.compileAndEval(atom);
+    REQUIRE(res.isA<String>());
+    REQUIRE(res.as<String>()->getCString() == "hello");
+  }
 }

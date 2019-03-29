@@ -4,50 +4,46 @@
 
 namespace Lisp
 {
-  // @todo refactor XForm -> Form
   class Jit;
 
-  namespace Form
+  class Form : public PolymorphicContainer
   {
-    class Form : public PolymorphicContainer
-    {
-    public:
-      /**
-       * Create a temporary form that can be used
-       * as subform.
-       */
-      template<typename T,  typename... ARGS>
-      T * make(ARGS ...rest);
+  public:
+    /**
+     * Create a temporary form that can be used
+     * as subform.
+     */
+    template<typename T,  typename... ARGS>
+    T * make(ARGS ...rest);
 
-      /**
-       * Create a form
-       */
-      template<typename T,  typename... ARGS>
-      T * makeRoot(ARGS ...rest);
+    /**
+     * Create a form
+     */
+    template<typename T,  typename... ARGS>
+    T * makeRoot(ARGS ...rest);
 
-      virtual bool isInstance(const Cell & cell) const = 0;
-      virtual void forEachChild(std::function<void(const Cell&)> func) const override;
-      virtual bool greyChildren() override;
-      virtual void resetGcPosition() override;
-      virtual bool recycleNextChild() override;
+    virtual bool isInstance(const Cell & cell) const = 0;
+    virtual void forEachChild(std::function<void(const Cell&)> func) const override;
+    virtual bool greyChildren() override;
+    virtual void resetGcPosition() override;
+    virtual bool recycleNextChild() override;
 
-    protected:
-      std::vector<Cell> cells;
-    private:
-      template<typename T,  typename... ARGS>
-      T * _make(std::true_type, ARGS ...rest);
+  protected:
+    std::vector<Cell> cells;
+  private:
+    template<typename T,  typename... ARGS>
+    T * _make(std::true_type, ARGS ...rest);
 
-      template<typename T,  typename... ARGS>
-      T * _makeRoot(std::true_type, ARGS ...rest);
-    };
+    template<typename T,  typename... ARGS>
+    T * _makeRoot(std::true_type, ARGS ...rest);
+  };
 
-    //@todo move to grammar
-    class Compilable : public Form
-    {
-    public:
-      virtual void compile(Jit & jit, Function *, const Cell & obj) const=0;
-    };
-  }
+  //@todo move to grammar
+  class Compilable : public Form
+  {
+  public:
+    virtual void compile(Jit & jit, Function *, const Cell & obj) const=0;
+  };
 }
 
 template<typename T,  typename... ARGS>

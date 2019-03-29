@@ -5,14 +5,17 @@
 /////////////////////////////////////////////////////////////////
 namespace Lisp
 {
+  class GarbageCollector;
+
   namespace Scheme
   {
-    class Scheme : public ::Lisp::Form::Form
+    class Language : public ::Lisp::Form
     {
     public:
-      Scheme();
+      Language();
       void init() override;
       bool isInstance(const Cell & cell) const override;
+      Object compile(const Cell & cell) const;
     private:
       Form * expression;
     };

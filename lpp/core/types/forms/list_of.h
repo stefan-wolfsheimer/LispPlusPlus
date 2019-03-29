@@ -3,15 +3,13 @@
 
 namespace Lisp
 {
-  namespace Form
+  class ListOf : public Form
   {
-    class ListOf : public Form
-    {
-    public:
-      ListOf(Form * _member);
-      bool isInstance(const Cell & cell) const override;
-    private:
-      Form * member;
-    };
-  }
+  public:
+    ListOf(Form * _member, std::function<void(const Cell & car)> func=nullptr);
+    bool isInstance(const Cell & cell) const override;
+  private:
+    Form * member;
+    std::function<void(const Cell & car)> cb;
+  };
 }

@@ -11,11 +11,11 @@ using Define = Lisp::Define;
 using Nil = Lisp::Nil;
 using Any = Lisp::Any;
 using Symbol = Lisp::Symbol;
-using ConsOf = Lisp::Form::ConsOf;
-using ListOf = Lisp::Form::ListOf;
-using SymbolForm = Lisp::Form::TypeOf<Symbol>;
-using NilForm = Lisp::Form::TypeOf<Nil>;
-using AnyForm = Lisp::Form::TypeOf<Any>;
+using ConsOf = Lisp::ConsOf;
+using ListOf = Lisp::ListOf;
+using SymbolForm = Lisp::TypeOf<Symbol>;
+using NilForm = Lisp::TypeOf<Nil>;
+using AnyForm = Lisp::TypeOf<Any>;
 
 
 Define::Define() : pattern(nullptr)

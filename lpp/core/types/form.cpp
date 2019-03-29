@@ -2,7 +2,7 @@
 #include <lpp/core/cell.h>
 #include <lpp/core/object.h>
 
-using Form = Lisp::Form::Form;
+using Form = Lisp::Form;
 
 void Form::forEachChild(std::function<void(const Cell&)> func) const
 {

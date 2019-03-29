@@ -67,7 +67,7 @@ void Jit::compile(Function * f, const Cell & obj)
     if(cons->getCarCell().isA<Symbol>())
     {
       // (form ...)
-      auto form = env->find(cons->getCarCell()).as<Form::Compilable>();
+      auto form = env->find(cons->getCarCell()).as<Compilable>();
       if(form)
       {
         form->compile(*this, f, obj);

@@ -8,7 +8,7 @@
 
 using Env = Lisp::Env;
 using SymbolContainer = Lisp::SymbolContainer;
-using Compilable = Lisp::Form::Compilable;
+using Compilable = Lisp::Compilable;
 
 static void defineForm(std::shared_ptr<Env> env,
                        std::shared_ptr<SymbolContainer> sc,

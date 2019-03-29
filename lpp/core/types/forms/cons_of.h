@@ -3,16 +3,14 @@
 
 namespace Lisp
 {
-  namespace Form
+  class ConsOf : public Form
   {
-    class ConsOf : public Form
-    {
-    public:
-      ConsOf(Form * _car, Form * _cdr);
-      bool isInstance(const Cell & cell) const override;
-    private:
-      Form * car;
-      Form * cdr;
-    };
-  }
+  public:
+    ConsOf(Form * _car, Form * _cdr, std::function<void(Form *, const Cell & car, Form *, const Cell & cdr)> func=nullptr);
+    bool isInstance(const Cell & cell) const override;
+  private:
+    std::function<void(Form *, const Cell & car, Form *, const Cell & cdr)> cb;
+    Form * car;
+    Form * cdr;
+  };
 }

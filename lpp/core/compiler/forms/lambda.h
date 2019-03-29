@@ -36,7 +36,7 @@ namespace Lisp
   class GarbageCollector;
 
   /* @todo move to grammar framework */
-  class Lambda : public Form::Compilable
+  class Lambda : public Compilable
   {
   public:
     Lambda();

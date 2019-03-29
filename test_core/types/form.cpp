@@ -28,24 +28,56 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#pragma once
-#include <lpp/core/types/form.h>
+#include <functional>
+#include <catch.hpp>
+#include <lpp/core/vm.h>
+#include <lpp/core/types/lisp_string.h>
+#include <lpp/core/types/forms/choice_of.h>
+#include <lpp/core/types/forms/type_of.h>
 
-namespace Lisp
+using Vm = Lisp::Vm;
+using Object = Lisp::Object;
+using Cell = Lisp::Cell;
+using String = Lisp::String;
+using Form = Lisp::Form;
+using IntegerType = Lisp::IntegerType;
+using StringForm = Lisp::TypeOf<String>;
+using IntegerForm = Lisp::TypeOf<IntegerType>;
+using ChoiceOf = Lisp::ChoiceOf;
+
+
+TEST_CASE("choice_of", "[Form]")
 {
-  class BasicType;
+  Vm vm;
+  const Form * matchedForm = nullptr;
+  Object strForm = vm.make<StringForm>([&matchedForm](const Form * form, const Cell & cell){
+      matchedForm = form; });
+  Object intForm = vm.make<IntegerForm>([&matchedForm](const Form * form, const Cell & cell){
+      matchedForm = form; });
+  Object choiceForm = vm.make<ChoiceOf>(std::vector<Form*>{
+      strForm.as<Form>(),
+      intForm.as<Form>()
+    });
+  Object str = vm.make<String>("hello");
+  Object intval(1);
+  
+  REQUIRE(choiceForm.as<Form>()->isInstance(str));
+  REQUIRE(choiceForm.as<Form>()->isInstance(intval));
 
-  /* @todo move to grammar framework */
-  class Define : public Compilable
   {
-  public:
-    Define();
-    virtual void compile(Jit & jit,
-                         Function *,
-                         const Cell & obj) const override;
-    virtual bool isInstance(const Cell & cell) const override;
-    virtual void init() override;
-  private:
-    Form * pattern;
-  };
+    matchedForm = nullptr;
+    REQUIRE_FALSE(choiceForm.as<Form>()->isInstance(Lisp::nil));
+    REQUIRE(matchedForm == nullptr);
+  }
+  {
+    matchedForm = nullptr;
+    REQUIRE(choiceForm.as<Form>()->isInstance(str));
+    REQUIRE(matchedForm == strForm.as<Form>());
+  }
+
+  {
+    matchedForm = nullptr;
+    REQUIRE(choiceForm.as<Form>()->isInstance(intval));
+    REQUIRE(matchedForm == intForm.as<Form>());
+  }
 }
