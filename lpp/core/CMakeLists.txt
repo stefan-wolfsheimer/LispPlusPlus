@@ -8,7 +8,6 @@ add_library( Core
   types/forms/choice_of.cpp
   memory/cons_pages.cpp
   memory/allocator.cpp
-  memory/symbol_container.cpp
   compiler/jit.cpp
   compiler/forms/define.cpp
   compiler/forms/lambda.cpp

@@ -47,7 +47,7 @@ namespace Lisp
     inline Color getColor() const;
     inline bool isRoot() const;
     inline std::size_t getIndex() const;
-    inline Allocator * getCollector() const;
+    inline Allocator * getAllocator() const;
     inline CollectibleContainer<T> * getContainer() const;
     inline bool checkIndex();
 
@@ -115,9 +115,9 @@ std::size_t Lisp::CollectibleMixin<T>::getIndex() const
 }
 
 template<typename T>
-inline Lisp::Allocator * Lisp::CollectibleMixin<T>::getCollector() const
+inline Lisp::Allocator * Lisp::CollectibleMixin<T>::getAllocator() const
 {
-  return container->getCollector();
+  return container->getAllocator();
 }
 
 template<typename T>

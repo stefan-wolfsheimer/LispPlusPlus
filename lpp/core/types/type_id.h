@@ -154,7 +154,7 @@ namespace Lisp
   // objects
   DEF_TRAITS_MATCH(ManagedType, 0x8000u,                          Traits::ManagedType);
   DEF_TRAITS(String,            0x8001u,                          Traits::ManagedType);
-  DEF_TRAITS(Symbol,            0x8002u,                          Traits::ManagedType);
+  DEF_TRAITS(Symbol,            0x8002u,                          Traits::Symbol);
   DEF_TRAITS(PolymorphicObject, POLYMORPHIC_OBJECT_TYPE_ID,       Traits::ManagedType);
 
   // containers

@@ -23,8 +23,6 @@ namespace Lisp
     }
 
   protected:
-    friend class TypeContainer;
-
     Type()
     {}
   };

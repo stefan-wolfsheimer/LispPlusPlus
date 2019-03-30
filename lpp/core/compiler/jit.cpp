@@ -2,7 +2,6 @@
 #include <lpp/core/cell.h>
 #include <lpp/core/env.h>
 #include <lpp/core/memory/allocator.h>
-#include <lpp/core/memory/symbol_container.h>
 #include <lpp/core/types/cons.h>
 #include <lpp/core/types/reference.h>
 #include <lpp/core/types/function.h>
@@ -15,14 +14,12 @@ using Jit = Lisp::Jit;
 using Object = Lisp::Object;
 using Scope = Lisp::Scope;
 
-Jit::Jit(const Jit & rhs) : gc(rhs.gc), sc(rhs.sc), tc(rhs.tc), env(rhs.env)
+Jit::Jit(const Jit & rhs) : alloc(rhs.alloc), env(rhs.env)
 {
 }
 
-Jit::Jit(std::shared_ptr<Allocator> _gc,
-         std::shared_ptr<SymbolContainer> _sc,
-         std::shared_ptr<TypeContainer> _tc,
-         std::shared_ptr<Env> _env) : gc(_gc), sc(_sc), tc(_tc), env(_env)
+Jit::Jit(std::shared_ptr<Allocator> _alloc,
+         std::shared_ptr<Env> _env) : alloc(_alloc), env(_env)
 {
 }
 
@@ -48,7 +45,7 @@ void Jit::compileSymbol(Function * f, const Cell & obj)
     {
       // create shared argument -> return value
       f->appendInstruction(RETURNV, f->dataSize());
-      f->appendData(std::move(arg.first->shareArgument(arg.second, gc)));
+      f->appendData(std::move(arg.first->shareArgument(arg.second, alloc)));
     }
   }
   else
@@ -81,7 +78,7 @@ void Jit::compile(Function * f, const Cell & obj)
     {
       // ((..) ..)
       //  |
-      Jit jit(gc, sc, tc, env);
+      Jit jit(alloc, env);
       InstructionType n = 0;
       forEachCar(cons->getCdrCell(), [&jit, &n, f](const Cell& arg){
           jit.compile(f, arg);
@@ -119,7 +116,7 @@ void Jit::compile(Function * f, const Cell & obj)
 
 Object Jit::compile(const Cell & obj)
 {
-  Function * f = gc->makeRoot<Function>();
+  Function * f = alloc->makeRoot<Function>();
   Object ret(f);
   compile(f, obj);
   f->shrink();

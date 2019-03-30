@@ -67,7 +67,7 @@ namespace Lisp
     inline void unroot(T * obj);
     inline void collect();
 
-    inline Allocator * getCollector() const;
+    inline Allocator * getAllocator() const;
     inline CollectibleContainer<T> * getOtherContainer() const;
     inline CollectibleContainer<T> * getGreyContainer() const;
     inline CollectibleContainer<T> * getToContainer() const;
@@ -183,7 +183,7 @@ inline void Lisp::CollectibleContainer<T>::unroot(T * obj)
 }
 
 template<typename T>
-inline Lisp::Allocator * Lisp::CollectibleContainer<T>::getCollector() const
+inline Lisp::Allocator * Lisp::CollectibleContainer<T>::getAllocator() const
 {
   return gc;
 }

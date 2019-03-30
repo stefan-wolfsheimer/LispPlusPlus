@@ -96,7 +96,7 @@ bool Language::isInstance(const Cell & cell) const
 
 Object Language::compile(const Cell & cell) const
 {
-  Details::Context ctx(getCollector());
+  Details::Context ctx(getAllocator());
   //MainMatcher matcher;
   if(isInstance(cell))
   {
@@ -110,8 +110,9 @@ Object Language::compile(const Cell & cell) const
 
 void Language::init()
 {
-  Guard _lock(getCollector());
-  auto collector = getCollector();
+  auto allocator = getAllocator();
+  Guard _lock(allocator);
+
   // @todo move IdempotentForm trait to Scheme submodule (it depends on the grammar of the language)
   //expressions 11.4
   expression = makeRoot<ChoiceOf>(std::vector<Form*>{

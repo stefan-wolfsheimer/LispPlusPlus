@@ -75,41 +75,38 @@ using Reference = Lisp::Reference;
 
 
 
-Vm::Vm(std::shared_ptr<Allocator> _gc,
-       std::shared_ptr<SymbolContainer> _sc,
-       std::shared_ptr<TypeContainer> _tc,
+Vm::Vm(std::shared_ptr<Allocator> _alloc,
        std::shared_ptr<Env> _env)
-  : gc(_gc ? _gc : std::make_shared<Allocator>()),
-    sc(_sc ? _sc : std::make_shared<SymbolContainer>()),
-    tc(_tc ? _tc : std::make_shared<TypeContainer>()),
-    env(_env ? _env : makeDefaultEnv(gc, sc))
+  : alloc(_alloc ? _alloc : std::make_shared<Allocator>()),
+    env(_env ? _env : makeDefaultEnv(alloc))
 {
   dataStack.reserve(1024);
 }
 
 Lisp::Object Lisp::Vm::symbol(const std::string & name)
 {
-  return sc->make(name);
+  //@todo: remove this function
+  return alloc->makeRoot<Symbol>(name);
 }
 
 Lisp::Object Lisp::Vm::reference(const Cell & car, const Cell & value)
 {
-  return gc->makeRoot<Reference>(car, value);
+  return alloc->makeRoot<Reference>(car, value);
 }
 
 void Lisp::Vm::define(const std::string & name, const Object & rhs)
 {
-  env->set(sc->make(name), rhs);
+  env->set(alloc->makeRoot<Symbol>(name), rhs);
 }
 
 Object Lisp::Vm::find(const std::string & name) const
 {
-  return env->find(sc->make(name));
+  return env->find(alloc->makeRoot<Symbol>(name));
 }
 
 Object Vm::compile(const Object & obj) const
 {
-  Jit jit(gc, sc, tc, env);
+  Jit jit(alloc, env);
   return jit.compile(obj);
 }
 
@@ -271,7 +268,7 @@ void Lisp::Vm::eval(Function * __func)
         LOG_DATA_STACK(dataStack);
         state = ExecutionState(state.func->data.atCell(state.itr[2]).as<Function>(),
                                dataStack.size() - state.itr[1]);
-        state.func->makeReference(dataStack.end() - state.func->numArguments(), gc);
+        state.func->makeReference(dataStack.end() - state.func->numArguments(), alloc);
         break;
       
       case DEFINES:

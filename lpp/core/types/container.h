@@ -49,7 +49,7 @@ namespace Lisp
     /**
      * This function is called after the object has been
      * added to the garbage collector.
-     * The function getCollector() is available.
+     * The function getAllocator() is available.
      */
     virtual void init() {};
     virtual TypeId getTypeId() const = 0;

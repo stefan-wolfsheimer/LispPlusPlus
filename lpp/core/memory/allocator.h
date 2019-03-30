@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
 #include <vector>
+#include <unordered_map>
 #include <functional>
 #include <type_traits>
 #include <assert.h>
@@ -40,6 +41,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <lpp/core/types/type_id.h>
 #include <lpp/core/types/cons.h>
 #include <lpp/core/types/container.h>
+#include <lpp/core/types/symbol.h>
 
 // @todo move to config.h
 #define CONS_PAGE_SIZE 512
@@ -77,6 +79,11 @@ namespace Lisp
     template<typename C,  typename... ARGS>
     inline C * makeRoot(const ARGS & ... rest);
 
+    /**
+     * Remove a symbol
+     */
+    inline void remove(Symbol * symbol);
+    
     inline std::size_t numCollectible() const;
     inline std::size_t numRootCollectible() const;
     inline std::size_t numBulkCollectible() const;
@@ -111,7 +118,6 @@ namespace Lisp
     inline void setGarbageSteps(unsigned short steps);
     inline void setRecycleSteps(unsigned short steps);
 
-
     void cycle();
     inline void step();
     void recycle();
@@ -128,6 +134,7 @@ namespace Lisp
     friend class Guard;
     ColorMap<BasicCons> consMap;
     ColorMap<Container> containerMap;
+    std::unordered_map<std::string, Symbol*> symbols;
     Container * toBeRecycled;
     ConsPages consPages;
     unsigned short int garbageSteps;
@@ -178,6 +185,9 @@ namespace Lisp
 
     template<typename C,  typename... ARGS>
     inline C * _makeRoot(ManagedStorageTrait, ARGS... rest);
+
+    template<typename C,  typename... ARGS>
+    inline C * _makeRoot(SymbolStorageTrait, const std::string & name);
 
     inline bool checkSanity(Color color, bool root) const;
   };
@@ -384,6 +394,28 @@ template<typename C,  typename... ARGS>
 inline C * Lisp::Allocator::_makeRoot(ManagedStorageTrait, ARGS... rest)
 {
   return new C(rest...);
+}
+
+template<typename C,  typename... ARGS>
+inline C * Lisp::Allocator::_makeRoot(SymbolStorageTrait, const std::string & name)
+{
+  auto res = symbols.insert(std::make_pair(name, (Symbol*)nullptr));
+  if(res.second)
+  {
+    res.first->second = new Symbol(res.first->first.c_str(), this);
+    return res.first->second;
+  }
+  else
+  {
+    return res.first->second;
+  }
+}
+
+inline void Lisp::Allocator::remove(Symbol * symbol)
+{
+  auto itr = symbols.find(symbol->getName());
+  assert(itr != symbols.end());
+  symbols.erase(itr);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

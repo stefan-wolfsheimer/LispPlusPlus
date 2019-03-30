@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2018, Stefan Wolfsheimer
+Copyright (c) 2018-2019, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -38,6 +38,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <lpp/core/memory/allocator.h>
 #include <lpp/core/types/cons.h>
 #include <lpp/core/types/array.h>
+#include <lpp/core/types/symbol.h>
 #include <lpp/core/object.h>
 
 #include <lpp/simul/collectible_graph.h>
@@ -54,6 +55,7 @@ using Object = Lisp::Object;
 using Nil = Lisp::Nil;
 using CollectibleGraph = Lisp::CollectibleGraph;
 using Array = Lisp::Array;
+using Symbol = Lisp::Symbol;
 
 // helper constants
 static const std::size_t undef = std::numeric_limits<std::size_t>::max();
@@ -962,7 +964,32 @@ TEST_CASE("simul", "[Allocator]")
   coll->enableRecycling();
   auto obj = std::make_shared<Object>(coll->makeRoot<Cons>(Lisp::nil, Lisp::nil));
   obj->as<Cons>()->setCar(Cell(coll->make<Array>()));
-  
+}
+
+//////////////////////////////////////////////////////////
+// Symbol
+/////////////////////////////////////////////////////////
+TEST_CASE("symbol_life_cycle", "[Allcator]")
+{
+  Allocator alloc;
+  Symbol * psymb = alloc.makeRoot<Symbol>("symb1");
+  REQUIRE(psymb->getRefCount() == 0);
+  Object symb1(psymb);
+  REQUIRE(psymb->getRefCount() == 1);
+  REQUIRE(symb1.isA<Symbol>());
+  REQUIRE(symb1.as<Symbol>() == psymb);
+  REQUIRE(symb1.as<Lisp::Symbol>()->getName() == "symb1");
+  {
+    Object symb1Copy1(symb1);
+    REQUIRE(symb1Copy1.isA<Symbol>());
+    REQUIRE(symb1Copy1.as<Lisp::Symbol>() == psymb);
+    REQUIRE(psymb->getRefCount() == 2);
+    Object symb1Copy2(alloc.makeRoot<Symbol>("symb1"));
+    REQUIRE(symb1Copy2.isA<Symbol>());
+    REQUIRE(psymb->getRefCount() == 3);
+    REQUIRE(symb1Copy2.as<Lisp::Symbol>() == psymb);
+  }
+  REQUIRE(psymb->getRefCount() == 1);
 }
 
 //////////////////////////////////////////////////////////

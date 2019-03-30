@@ -36,8 +36,6 @@ either expressed or implied, of the FreeBSD Project.
 namespace Lisp
 {
   class Allocator;
-  class SymbolContainer;
-  class TypeContainer;
   class Env;
   class Cell;
   class Function;
@@ -47,17 +45,13 @@ namespace Lisp
   {
   public:
     Jit(const Jit & rhs);
-    Jit(std::shared_ptr<Allocator> _gc,
-        std::shared_ptr<SymbolContainer> _sc,
-        std::shared_ptr<TypeContainer> _tc,
+    Jit(std::shared_ptr<Allocator> _alloc,
         std::shared_ptr<Env> _env);
 
     Object compile(const Cell & obj);
     void compile(Function * f, const Cell & obj);
 
-    std::shared_ptr<Allocator> gc;
-    std::shared_ptr<SymbolContainer> sc;
-    std::shared_ptr<TypeContainer> tc;
+    std::shared_ptr<Allocator> alloc;
     std::shared_ptr<Env> env;
     std::shared_ptr<Scope> scope;
   private:

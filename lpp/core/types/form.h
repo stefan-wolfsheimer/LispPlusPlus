@@ -63,13 +63,13 @@ T * Lisp::Form::Form::makeRoot(ARGS ...rest)
 template<typename T,  typename... ARGS>
 T * Lisp::Form::Form::_make(std::true_type, ARGS ...rest)
 {
-  return getCollector()->make<T>(rest...);
+  return getAllocator()->make<T>(rest...);
 }
 
 template<typename T,  typename... ARGS>
 T * Lisp::Form::Form::_makeRoot(std::true_type, ARGS ...rest)
 {
-  T * form = getCollector()->make<T>(rest...);
+  T * form = getAllocator()->make<T>(rest...);
   cells.push_back(form);
   return form;
 }

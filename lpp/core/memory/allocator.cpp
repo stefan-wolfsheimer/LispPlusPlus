@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2018, Stefan Wolfsheimer
+Copyright (c) 2018-2019, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -39,6 +39,11 @@ using Cell = Lisp::Cell;
 Allocator::~Allocator()
 {
   cycle();
+  for(auto & p : symbols)
+  {
+    assert(p.second->allocator == this);
+    p.second->allocator = nullptr;
+  }
 }
 
 void Allocator::forEachContainer(const CollectibleContainer<Container> & containers,

@@ -31,7 +31,7 @@ Lambda::Lambda() : pattern(nullptr)
 
 void Lambda::init()
 {
-  Lisp::Allocator::Guard _lock(*getCollector());
+  Lisp::Allocator::Guard _lock(*getAllocator());
   pattern = makeRoot<ConsOf>(make<SymbolForm>(),
                              make<ConsOf>(make<ListOf>(make<SymbolForm>()),
                                           make<ConsOf>(make<AnyForm>(),
@@ -49,7 +49,7 @@ void Lambda::compile(Jit & jit, Function * f0, const Cell & obj) const
   //
   if(pattern->isInstance(obj))
   {
-    Function * f = jit.gc->makeRoot<Function>();
+    Function * f = jit.alloc->makeRoot<Function>();
     Object funcObject(f);
     Cons * cons = obj.as<Cons>()->getCdrCell().as<Cons>();
     ScopeGuard scope_guard(jit.scope, funcObject);

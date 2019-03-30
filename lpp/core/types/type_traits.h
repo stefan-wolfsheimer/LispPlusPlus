@@ -224,7 +224,30 @@ namespace Lisp
       }
     };
 
+    ///////////////////////////////////////////////////////////////////////////
+    // Container Type
+    ///////////////////////////////////////////////////////////////////////////
+    template<typename T, typename TypeMatcher>
+    struct Symbol : public TypeMatcher
+    {
+      using Type = T*;
+      using StorageTrait = SymbolStorageTrait;
+      using IsPolymorphic = std::false_type;
 
+      static inline Type as(const CellDataType & data, TypeId tid)
+      {
+        if(TypeMatcher::isA(tid))
+        {
+          return dynamic_cast<T*>(data.pManaged);
+        }
+        else
+        {
+          return nullptr;
+        }
+      }
+
+    };
+    
     template<typename T, typename IS_MANAGED, typename IS_CONTAINER>
     struct Polymorphic
     {

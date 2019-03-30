@@ -159,11 +159,11 @@ void Object::unsetCons()
     assert(isRoot());
     assert(getRefCount() > 0u);
     assert(checkIndex());
-    auto coll = data.pCons->getCollector();
+    auto coll = data.pCons->getAllocator();
     data.pCons->unroot();
     assert(checkIndex());
     coll->step();
-    assert(data.pCons->getCollector()->checkSanity());
+    assert(data.pCons->getAllocator()->checkSanity());
     assert(checkIndex());
     coll->recycle();
     assert(checkIndex());
@@ -174,7 +174,7 @@ void Object::unsetCons()
     assert(isRoot());
     assert(getRefCount() > 0u);
     assert(checkIndex());
-    auto coll = data.pContainer->getCollector();
+    auto coll = data.pContainer->getAllocator();
     data.pContainer->unroot();
     coll->step();
     coll->recycle();

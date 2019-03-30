@@ -29,20 +29,20 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include <lpp/core/types/symbol.h>
-#include <lpp/core/memory/symbol_container.h>
+#include <lpp/core/memory/allocator.h>
 
 using Symbol = Lisp::Symbol;
 
 Lisp::Symbol::~Symbol()
 {
-  if(container)
+  if(allocator)
   {
-    container->remove(this); 
+    allocator->remove(this); 
   }
 }
 
-Symbol::Symbol(const std::string & _name, SymbolContainer * _container)
-  : name(_name), container(_container)
+Symbol::Symbol(const std::string & _name, Allocator * _allocator)
+  : name(_name), allocator(_allocator)
 {
 }
 

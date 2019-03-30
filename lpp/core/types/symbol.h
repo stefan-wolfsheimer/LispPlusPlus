@@ -36,7 +36,7 @@ either expressed or implied, of the FreeBSD Project.
 
 namespace Lisp
 {
-  class SymbolContainer;
+  class Allocator;
 
   class Symbol : public ManagedType
   {
@@ -44,11 +44,11 @@ namespace Lisp
     ~Symbol();
     inline const std::string& getName() const;
   private:
-    friend class SymbolContainer;
+    friend class Allocator;
     friend class Cell;
-    Symbol(const std::string & _name, SymbolContainer * _factory=nullptr);
+    Symbol(const std::string & _name, Allocator * _allocator=nullptr);
     std::string name;
-    SymbolContainer * container;
+    Allocator * allocator;
   };
 }
 

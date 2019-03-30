@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2017, Stefan Wolfsheimer
+Copyright (c) 2017-2019, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -32,8 +32,6 @@ either expressed or implied, of the FreeBSD Project.
 #include <memory>
 #include <lpp/core/object.h>
 #include <lpp/core/memory/allocator.h>
-#include <lpp/core/memory/symbol_container.h>
-#include <lpp/core/memory/type_container.h>
 #include <lpp/core/types/array.h>
 #include <lpp/core/default_env.h>
 
@@ -44,9 +42,8 @@ namespace Lisp
   {
   public:
     static const bool withDebug;
-    Vm(std::shared_ptr<Allocator> _gc = nullptr,
-       std::shared_ptr<SymbolContainer> _sc = nullptr,
-       std::shared_ptr<TypeContainer> _tc = nullptr,
+
+    Vm(std::shared_ptr<Allocator> _alloc = nullptr,
        std::shared_ptr<Env> _env = nullptr);
     
     inline std::shared_ptr<Allocator> getAllocator() const;
@@ -97,9 +94,7 @@ namespace Lisp
     void eval(Function * func);
 
   private:
-    std::shared_ptr<Allocator> gc;
-    std::shared_ptr<SymbolContainer> sc;
-    std::shared_ptr<TypeContainer> tc;
+    std::shared_ptr<Allocator> alloc;
     std::shared_ptr<Env> env;
     std::vector<Object> dataStack;
   };
@@ -110,13 +105,13 @@ namespace Lisp
  ******************************************************************************/
 std::shared_ptr<Lisp::Allocator> Lisp::Vm::getAllocator() const
 {
-  return gc;
+  return alloc;
 }
 
 template<typename T, typename... ARGS>
 inline Lisp::Object Lisp::Vm::make(const ARGS & ...rest)
 {
-  return Lisp::Object(gc->makeRoot<T>(rest...));
+  return Lisp::Object(alloc->makeRoot<T>(rest...));
 }
 
 inline Lisp::Object Lisp::Vm::list()
@@ -148,13 +143,13 @@ Lisp::Object Lisp::Vm::list(Lisp::Object && a, const ARGS & ... rest)
 
 inline Lisp::Object Lisp::Vm::array()
 {
-  return gc->makeRoot<Lisp::Array>();
+  return alloc->makeRoot<Lisp::Array>();
 }
 
 template<typename... ARGS>
 inline Lisp::Object Lisp::Vm::array(const ARGS & ... rest)
 {
-  Object ret(gc->makeRoot<Lisp::Array>());
+  Object ret(alloc->makeRoot<Lisp::Array>());
   ret.as<Array>()->append(rest...);
   return ret;
 }

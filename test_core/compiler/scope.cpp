@@ -31,7 +31,6 @@ either expressed or implied, of the FreeBSD Project.
 #include <catch.hpp>
 #include <memory>
 #include <lpp/core/memory/allocator.h>
-#include <lpp/core/memory/symbol_container.h>
 #include <lpp/core/object.h>
 #include <lpp/core/types/function.h>
 #include <lpp/core/types/reference.h>
@@ -42,24 +41,23 @@ using Object = Lisp::Object;
 using Scope = Lisp::Scope;
 using ScopeGuard = Lisp::ScopeGuard;
 using Allocator = Lisp::Allocator;
-using SymbolContainer = Lisp::SymbolContainer;
 using Function = Lisp::Function;
 using Reference = Lisp::Reference;
+using Symbol = Lisp::Symbol;
 
 
 TEST_CASE("scope_life_cycle", "[Scope]")
 {
 
-  SymbolContainer sc;
-  auto gc = std::make_shared<Allocator>();
-  Object a(sc.make("a"));
-  Object b(sc.make("b"));
-  Object c(sc.make("c"));
-  Object d(sc.make("d"));
+  auto alloc = std::make_shared<Allocator>();
+  Object a(alloc->makeRoot<Symbol>("a"));
+  Object b(alloc->makeRoot<Symbol>("b"));
+  Object c(alloc->makeRoot<Symbol>("c"));
+  Object d(alloc->makeRoot<Symbol>("d"));
   std::shared_ptr<Scope> root;
   std::pair<Function*, std::size_t> itr;
-  Object fobj1(gc->makeRoot<Function>());
-  Object fobj2(gc->makeRoot<Function>());
+  Object fobj1(alloc->makeRoot<Function>());
+  Object fobj2(alloc->makeRoot<Function>());
 
   // first scope
   auto s1 = std::make_shared<Scope>(root, fobj1);
@@ -113,7 +111,7 @@ TEST_CASE("scope_life_cycle", "[Scope]")
   REQUIRE(itr.second == 1);
 
   // create reference in parent scope
-  auto sharedArgument = fobj1.as<Function>()->shareArgument(0, gc);
+  auto sharedArgument = fobj1.as<Function>()->shareArgument(0, alloc);
 
   REQUIRE(fobj1.as<Function>()->numArguments() == 2);
   REQUIRE(fobj1.as<Function>()->getArgumentTraits(0).isReference());
@@ -126,10 +124,10 @@ TEST_CASE("scope_life_cycle", "[Scope]")
 
 TEST_CASE("scope_guard", "[Scope]")
 {
-  auto gc = std::make_shared<Allocator>();
-  Object fobj1(gc->makeRoot<Function>());
-  Object fobj2(gc->makeRoot<Function>());
-  Object fobj3(gc->makeRoot<Function>());
+  auto alloc = std::make_shared<Allocator>();
+  Object fobj1(alloc->makeRoot<Function>());
+  Object fobj2(alloc->makeRoot<Function>());
+  Object fobj3(alloc->makeRoot<Function>());
   std::shared_ptr<Scope> root;
   std::shared_ptr<Scope> current = root;
   REQUIRE(current == root);

@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2017, Stefan Wolfsheimer
+Copyright (c) 2017-2019, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -117,6 +117,9 @@ namespace Lisp
 
     template<typename T>
     inline bool _isA(ContainerStorageTrait, std::false_type) const;
+
+    template<typename T>
+    inline bool _isA(SymbolStorageTrait, std::false_type) const;
 
     template<typename T>
     inline bool _isA(ManagedStorageTrait, std::true_type) const;
@@ -294,6 +297,12 @@ inline bool Lisp::Cell::_isA(ConsStorageTrait, std::false_type) const
 
 template<typename T>
 inline bool Lisp::Cell::_isA(ContainerStorageTrait, std::false_type) const
+{
+  return TypeTraits<T>::isA(typeId);
+}
+
+template<typename T>
+inline bool Lisp::Cell::_isA(SymbolStorageTrait, std::false_type) const
 {
   return TypeTraits<T>::isA(typeId);
 }

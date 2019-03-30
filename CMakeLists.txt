@@ -42,9 +42,7 @@ IF(CMAKE_BUILD_TYPE MATCHES Debug)
       test_core/types/polymorphic_object.cpp
       test_core/types/polymorphic_container.cpp
       test_core/types/form.cpp
-      test_core/test_garbage_collector.cpp
-      test_core/test_symbol_container.cpp
-      test_core/test_type_container.cpp
+      test_core/memory/allocator.cpp
       test_core/test_function.cpp
       test_core/test_env.cpp
       test_core/test_util.cpp
