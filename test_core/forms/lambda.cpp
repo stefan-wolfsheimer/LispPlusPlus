@@ -32,15 +32,17 @@ either expressed or implied, of the FreeBSD Project.
 #include <lpp/core/vm.h>
 #include <lpp/core/default_env.h>
 #include <lpp/core/exception.h>
-#include <lpp/core/types/function.h>
 #include <lpp/core/exception.h>
+#include <lpp/core/types/function.h>
+#include <lpp/core/types/symbol.h>
 
 using Vm = Lisp::Vm;
 using Object = Lisp::Object;
-using Function = Lisp::Function;
 using IntegerType = Lisp::IntegerType;
 using NotAList = Lisp::NotAList;
 using NonMatchingArguments = Lisp::NonMatchingArguments;
+using Function = Lisp::Function;
+using Symbol = Lisp::Symbol;
 
 
 TEST_CASE("lambda_constant", "[Lambda]")
@@ -48,8 +50,8 @@ TEST_CASE("lambda_constant", "[Lambda]")
   // (lambda (a b) 1) -> #Function
   Vm vm;
   std::size_t initStackSize = vm.stackSize(); 
-  Object func = vm.compile(vm.list(vm.symbol("lambda"),
-                                   vm.list(vm.symbol("a"), vm.symbol("b")),
+  Object func = vm.compile(vm.list(vm.make<Symbol>("lambda"),
+                                   vm.list(vm.make<Symbol>("a"), vm.make<Symbol>("b")),
                                    Object(1)));
 
   REQUIRE(func.getRefCount() == 1u);
@@ -78,14 +80,14 @@ TEST_CASE("lambda_nested_lambdas", "[Lambda]")
   Object res;
   std::size_t initStackSize = vm.stackSize();
 
-  Object first = vm.compileAndEval(vm.list(vm.symbol("lambda"),
-                                           vm.list(vm.symbol("a"), vm.symbol("b")),
-                                           vm.symbol("a")));
+  Object first = vm.compileAndEval(vm.list(vm.make<Symbol>("lambda"),
+                                           vm.list(vm.make<Symbol>("a"), vm.make<Symbol>("b")),
+                                           vm.make<Symbol>("a")));
 
   REQUIRE(vm.stackSize() == initStackSize);
-  Object second = vm.compileAndEval(vm.list(vm.symbol("lambda"),
-                                            vm.list(vm.symbol("a"), vm.symbol("b")),
-                                            vm.symbol("b")));
+  Object second = vm.compileAndEval(vm.list(vm.make<Symbol>("lambda"),
+                                            vm.list(vm.make<Symbol>("a"), vm.make<Symbol>("b")),
+                                            vm.make<Symbol>("b")));
   REQUIRE(vm.stackSize() == initStackSize);
 
   REQUIRE(first.isA<Function>());
@@ -138,13 +140,13 @@ TEST_CASE("lambda_nested_scopes_1", "[Lambda]")
                   (lambda (c d))
                   a)
   */
-  Object func = vm.compileAndEval(vm.list(vm.symbol("lambda"),
-                                          vm.list(vm.symbol("a"),
-                                                  vm.symbol("b")),
-                                          vm.list(vm.symbol("lambda"),
-                                                  vm.list(vm.symbol("c"),
-                                                          vm.symbol("d")),
-                                                  vm.symbol("a"))));
+  Object func = vm.compileAndEval(vm.list(vm.make<Symbol>("lambda"),
+                                          vm.list(vm.make<Symbol>("a"),
+                                                  vm.make<Symbol>("b")),
+                                          vm.list(vm.make<Symbol>("lambda"),
+                                                  vm.list(vm.make<Symbol>("c"),
+                                                          vm.make<Symbol>("d")),
+                                                  vm.make<Symbol>("a"))));
   REQUIRE(func.isA<Function>());
   REQUIRE(func.as<Function>()->numArguments() == 2);
   REQUIRE(func.as<Function>()->getArgumentTraits(0).isReference());
@@ -169,16 +171,16 @@ TEST_CASE("lambda_nested_scopes_2", "[Lambda]")
   */
   Vm vm;
   std::size_t initStackSize = vm.stackSize();
-  Object func = vm.compileAndEval(vm.list(vm.symbol("lambda"),
-                                          vm.list(vm.symbol("a"),
-                                                  vm.symbol("b")),
-                                          vm.list(vm.symbol("lambda"),
-                                                  vm.list(vm.symbol("c"),
-                                                          vm.symbol("d")),
-                                                  vm.list(vm.symbol("lambda"),
-                                                          vm.list(vm.symbol("c"),
-                                                                  vm.symbol("d")),
-                                                          vm.symbol("a")))));
+  Object func = vm.compileAndEval(vm.list(vm.make<Symbol>("lambda"),
+                                          vm.list(vm.make<Symbol>("a"),
+                                                  vm.make<Symbol>("b")),
+                                          vm.list(vm.make<Symbol>("lambda"),
+                                                  vm.list(vm.make<Symbol>("c"),
+                                                          vm.make<Symbol>("d")),
+                                                  vm.list(vm.make<Symbol>("lambda"),
+                                                          vm.list(vm.make<Symbol>("c"),
+                                                                  vm.make<Symbol>("d")),
+                                                          vm.make<Symbol>("a")))));
   REQUIRE(func.isA<Function>());
   REQUIRE(func.as<Function>()->numArguments() == 2);
   REQUIRE(func.as<Function>()->getArgumentTraits(0).isReference());
@@ -197,13 +199,13 @@ TEST_CASE("lambda_car_lambda", "[Lambda]")
   */
   Vm vm;
   std::size_t initStackSize = vm.stackSize();
-  Object select = vm.compile(vm.list(vm.list(vm.symbol("lambda"),
-                                             vm.list(vm.symbol("a"), vm.symbol("b")),
-                                             vm.symbol("b")),
+  Object select = vm.compile(vm.list(vm.list(vm.make<Symbol>("lambda"),
+                                             vm.list(vm.make<Symbol>("a"), vm.make<Symbol>("b")),
+                                             vm.make<Symbol>("b")),
                                      Object(3),
-                                     vm.list(vm.list(vm.symbol("lambda"),
-                                                     vm.list(vm.symbol("a"), vm.symbol("b")),
-                                                     vm.symbol("a")),
+                                     vm.list(vm.list(vm.make<Symbol>("lambda"),
+                                                     vm.list(vm.make<Symbol>("a"), vm.make<Symbol>("b")),
+                                                     vm.make<Symbol>("a")),
                                              Object(1), Object(2))));
 
   REQUIRE(select.isA<Function>());

@@ -34,6 +34,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <lpp/core/vm.h>
 #include <lpp/core/types/function.h>
 #include <lpp/core/types/reference.h>
+#include <lpp/core/types/symbol.h>
 
 using Vm = Lisp::Vm;
 using Object = Lisp::Object;
@@ -41,6 +42,7 @@ using Cell = Lisp::Cell;
 using Function = Lisp::Function;
 using IntegerType = Lisp::IntegerType;
 using Reference = Lisp::Reference;
+using Symbol = Lisp::Symbol;
 
 TEST_CASE("eval_value", "[Value]")
 {
@@ -61,7 +63,7 @@ TEST_CASE("eval_value", "[Value]")
 TEST_CASE("eval_reference", "[Value]")
 {
   Vm vm;
-  Object a(vm.symbol("a"));
+  Object a(vm.make<Symbol>("a"));
   Object refA(vm.reference(a, Cell(1)));
   REQUIRE(refA.isA<Reference>());
   std::size_t stackSize = vm.stackSize();

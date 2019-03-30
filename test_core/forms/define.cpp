@@ -31,15 +31,14 @@ either expressed or implied, of the FreeBSD Project.
 #include <catch.hpp>
 #include <lpp/core/vm.h>
 #include <lpp/core/opcode.h>
- //#include <lpp/core/types/cons.h>
+#include <lpp/core/types/symbol.h>
 #include <lpp/core/types/function.h>
 
 using Vm = Lisp::Vm;
 using Object = Lisp::Object;
-//using Cons = Lisp::Cons;
-//using Nil = Lisp::Nil;
 using Function = Lisp::Function;
 using IntegerType = Lisp::IntegerType;
+using Symbol = Lisp::Symbol;
 
 
 TEST_CASE("eval_lookup", "[Define]")
@@ -47,7 +46,7 @@ TEST_CASE("eval_lookup", "[Define]")
   using Undefined = Lisp::Undefined;
   Vm vm;
   std::size_t stackSize = vm.stackSize();
-  auto func = vm.compile(vm.symbol("a"));
+  auto func = vm.compile(vm.make<Symbol>("a"));
   REQUIRE(func.isA<Function>());
   REQUIRE(func.getRefCount() == 1u);
   // @todo exception if unbound
@@ -66,8 +65,8 @@ TEST_CASE("eval_define", "[Vm]")
   std::size_t stackSize = vm.stackSize();
   Function * f;
   {
-    Object func(std::move(vm.compile(vm.list(vm.symbol("define"),
-                                             vm.symbol("a"),
+    Object func(std::move(vm.compile(vm.list(vm.make<Symbol>("define"),
+                                             vm.make<Symbol>("a"),
                                              Object(1)))));
     REQUIRE(func.getRefCount() == 1u);
     REQUIRE(func.isA<Function>());
@@ -80,7 +79,7 @@ TEST_CASE("eval_define", "[Vm]")
   REQUIRE(res.isA<IntegerType>());
   REQUIRE(res.as<IntegerType>() == 1);
   {
-    auto func = vm.compile(vm.symbol("a"));
+    auto func = vm.compile(vm.make<Symbol>("a"));
     vm.eval(func.as<Function>());
     auto res = vm.top();
     vm.pop();

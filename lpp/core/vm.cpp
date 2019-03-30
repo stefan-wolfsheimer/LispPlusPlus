@@ -83,12 +83,6 @@ Vm::Vm(std::shared_ptr<Allocator> _alloc,
   dataStack.reserve(1024);
 }
 
-Lisp::Object Lisp::Vm::symbol(const std::string & name)
-{
-  //@todo: remove this function
-  return alloc->makeRoot<Symbol>(name);
-}
-
 Lisp::Object Lisp::Vm::reference(const Cell & car, const Cell & value)
 {
   return alloc->makeRoot<Reference>(car, value);

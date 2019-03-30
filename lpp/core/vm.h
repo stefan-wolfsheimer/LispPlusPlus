@@ -66,8 +66,6 @@ namespace Lisp
 
     template<typename... ARGS>
     inline Object array(const ARGS & ... rest);
-    
-    Object symbol(const std::string & name);
 
     /**
      * Create a reference to object.
