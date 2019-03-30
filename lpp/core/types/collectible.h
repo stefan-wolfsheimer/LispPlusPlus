@@ -3,12 +3,12 @@
 #include <functional>
 #include <lpp/core/config.h>
 #include <lpp/core/types/type_id.h>
-#include <lpp/core/gc/color.h>
-#include <lpp/core/gc/collectible_container.h>
+#include <lpp/core/memory/color.h>
+#include <lpp/core/memory/collectible_container.h>
 
 namespace Lisp
 {
-  class GarbageCollector;
+  class Allocator;
 
   class Collectible
   {
@@ -29,7 +29,7 @@ namespace Lisp
 
     /* friendship for setting the reference count
      */
-    friend class GarbageCollector;
+    friend class Allocator;
 
     /* friendship for increasing the reference count
      */
@@ -47,7 +47,7 @@ namespace Lisp
     inline Color getColor() const;
     inline bool isRoot() const;
     inline std::size_t getIndex() const;
-    inline GarbageCollector * getCollector() const;
+    inline Allocator * getCollector() const;
     inline CollectibleContainer<T> * getContainer() const;
     inline bool checkIndex();
 
@@ -115,7 +115,7 @@ std::size_t Lisp::CollectibleMixin<T>::getIndex() const
 }
 
 template<typename T>
-inline Lisp::GarbageCollector * Lisp::CollectibleMixin<T>::getCollector() const
+inline Lisp::Allocator * Lisp::CollectibleMixin<T>::getCollector() const
 {
   return container->getCollector();
 }

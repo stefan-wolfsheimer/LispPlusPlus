@@ -32,7 +32,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <lpp/core/object.h>
 #include <lpp/core/types/cons.h>
 #include <lpp/core/types/container.h>
-#include <lpp/core/gc/garbage_collector.h>
+#include <lpp/core/memory/allocator.h>
 
 using Nil = Lisp::Nil;
 using Object = Lisp::Object;

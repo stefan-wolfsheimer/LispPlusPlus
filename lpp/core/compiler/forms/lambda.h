@@ -33,7 +33,7 @@ either expressed or implied, of the FreeBSD Project.
 
 namespace Lisp
 {
-  class GarbageCollector;
+  class Allocator;
 
   /* @todo move to grammar framework */
   class Lambda : public Compilable

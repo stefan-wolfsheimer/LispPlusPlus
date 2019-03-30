@@ -62,7 +62,7 @@ TEST_CASE("eval_define", "[Vm]")
 {
   using Undefined = Lisp::Undefined;
   Vm vm;
-  vm.getGarbageCollector()->disableCollector();
+  vm.getAllocator()->disableCollector();
   std::size_t stackSize = vm.stackSize();
   Function * f;
   {
@@ -73,7 +73,7 @@ TEST_CASE("eval_define", "[Vm]")
     REQUIRE(func.isA<Function>());
     vm.eval(func.as<Function>());
     vm.pop();
-    vm.getGarbageCollector()->cycle();
+    vm.getAllocator()->cycle();
     f = func.as<Function>();
   }
   auto res = vm.find("a");

@@ -31,7 +31,7 @@ either expressed or implied, of the FreeBSD Project.
 #include "test_random_access_iterator.h"
 
 #include <catch.hpp>
-#include <lpp/core/gc/cons_pages.h>
+#include <lpp/core/memory/cons_pages.h>
 #include <lpp/core/types/cons.h>
 
 using ConsPages = Lisp::ConsPages;

@@ -29,8 +29,8 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include <catch.hpp>
-#include <lpp/core/gc/garbage_collector.h>
-#include <lpp/core/gc/symbol_container.h>
+#include <lpp/core/memory/allocator.h>
+#include <lpp/core/memory/symbol_container.h>
 #include <lpp/core/env.h>
 #include <lpp/core/types/reference.h>
 
@@ -41,13 +41,13 @@ using Undefined = Lisp::Undefined;
 using IntegerType = Lisp::IntegerType;
 using ManagedType = Lisp::ManagedType;
 using Reference = Lisp::Reference;
-using GarbageCollector = Lisp::GarbageCollector;
+using Allocator = Lisp::Allocator;
 using SymbolContainer = Lisp::SymbolContainer;
 
 TEST_CASE("make_reference", "[Env]")
 {
   auto sc = std::make_shared<SymbolContainer>();
-  auto gc = std::make_shared<GarbageCollector>();
+  auto gc = std::make_shared<Allocator>();
   Object ref_a;
   {
     Object a(sc->make("a"));
@@ -65,7 +65,7 @@ TEST_CASE("make_reference", "[Env]")
 TEST_CASE("env_make_reference", "[Env]")
 {
   SymbolContainer sc;
-  //GarbageCollector gc;
+  //Allocator gc;
   Env env;
   Object a(sc.make("a"));
   //@todo exception

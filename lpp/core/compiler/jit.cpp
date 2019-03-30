@@ -1,8 +1,8 @@
 #include <lpp/core/compiler/jit.h>
 #include <lpp/core/cell.h>
 #include <lpp/core/env.h>
-#include <lpp/core/gc/garbage_collector.h>
-#include <lpp/core/gc/symbol_container.h>
+#include <lpp/core/memory/allocator.h>
+#include <lpp/core/memory/symbol_container.h>
 #include <lpp/core/types/cons.h>
 #include <lpp/core/types/reference.h>
 #include <lpp/core/types/function.h>
@@ -19,7 +19,7 @@ Jit::Jit(const Jit & rhs) : gc(rhs.gc), sc(rhs.sc), tc(rhs.tc), env(rhs.env)
 {
 }
 
-Jit::Jit(std::shared_ptr<GarbageCollector> _gc,
+Jit::Jit(std::shared_ptr<Allocator> _gc,
          std::shared_ptr<SymbolContainer> _sc,
          std::shared_ptr<TypeContainer> _tc,
          std::shared_ptr<Env> _env) : gc(_gc), sc(_sc), tc(_tc), env(_env)

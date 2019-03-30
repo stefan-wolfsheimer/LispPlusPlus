@@ -31,7 +31,7 @@ either expressed or implied, of the FreeBSD Project.
 #pragma once
 #include <vector>
 #include <assert.h>
-#include <lpp/core/gc/color.h>
+#include <lpp/core/memory/color.h>
 #include <lpp/core/config.h>
 
 namespace Lisp
@@ -42,7 +42,7 @@ namespace Lisp
   template<typename T>
   class ColorMap;
   
-  class GarbageCollector;
+  class Allocator;
 
   template<typename T>
   class CollectibleContainer
@@ -51,7 +51,7 @@ namespace Lisp
     friend class ColorMap<T>;
     friend class UnmanagedCollectibleContainer<T>;
 
-    CollectibleContainer(Color _color, bool _isRoot, GarbageCollector * _gc);
+    CollectibleContainer(Color _color, bool _isRoot, Allocator * _gc);
     inline void remove(T * obj);
     inline void add(T * obj);
     inline void move(T * obj);
@@ -67,7 +67,7 @@ namespace Lisp
     inline void unroot(T * obj);
     inline void collect();
 
-    inline GarbageCollector * getCollector() const;
+    inline Allocator * getCollector() const;
     inline CollectibleContainer<T> * getOtherContainer() const;
     inline CollectibleContainer<T> * getGreyContainer() const;
     inline CollectibleContainer<T> * getToContainer() const;
@@ -86,13 +86,13 @@ namespace Lisp
     CollectibleContainer<T> * toElements;
     Color color;
     bool _isRoot;
-    GarbageCollector * gc;
+    Allocator * gc;
   };
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 template<typename T>
-inline Lisp::CollectibleContainer<T>::CollectibleContainer(Color _color, bool __isRoot, GarbageCollector * _gc)
+inline Lisp::CollectibleContainer<T>::CollectibleContainer(Color _color, bool __isRoot, Allocator * _gc)
   : color(_color), _isRoot(__isRoot), gc(_gc)
 {
 }
@@ -183,7 +183,7 @@ inline void Lisp::CollectibleContainer<T>::unroot(T * obj)
 }
 
 template<typename T>
-inline Lisp::GarbageCollector * Lisp::CollectibleContainer<T>::getCollector() const
+inline Lisp::Allocator * Lisp::CollectibleContainer<T>::getCollector() const
 {
   return gc;
 }

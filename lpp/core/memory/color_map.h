@@ -31,19 +31,19 @@ either expressed or implied, of the FreeBSD Project.
 #pragma once
 #include <functional>
 #include <unordered_set>
-#include <lpp/core/gc/color.h>
-#include <lpp/core/gc/collectible_container.h>
+#include <lpp/core/memory/color.h>
+#include <lpp/core/memory/collectible_container.h>
 #include <lpp/core/cell.h>
 
 namespace Lisp
 {
-  class GarbageCollector;
+  class Allocator;
 
   template<typename T>
   class ColorMap
   {
   public:
-    ColorMap(GarbageCollector * _parent);
+    ColorMap(Allocator * _parent);
     ~ColorMap();
     inline void add(T * obj);
     inline void addRoot(T * obj);
@@ -62,7 +62,7 @@ namespace Lisp
   private:
     inline void forEach(const CollectibleContainer<T> & elements,
                         std::function<void(const Cell &)> func) const;
-    GarbageCollector * parent;
+    Allocator * parent;
     CollectibleContainer<T> * white;
     CollectibleContainer<T> * grey;
     CollectibleContainer<T> * black;
@@ -74,7 +74,7 @@ namespace Lisp
 }
 
 template<typename T>
-Lisp::ColorMap<T>::ColorMap(GarbageCollector * p)
+Lisp::ColorMap<T>::ColorMap(Allocator * p)
   : parent(p)
 {
   white     = new CollectibleContainer<T>(Lisp::Color::White, false, p);

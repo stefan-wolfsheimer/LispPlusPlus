@@ -29,7 +29,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include <lpp/core/types/symbol.h>
-#include <lpp/core/gc/symbol_container.h>
+#include <lpp/core/memory/symbol_container.h>
 
 using Symbol = Lisp::Symbol;
 

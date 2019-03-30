@@ -28,7 +28,7 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#include <lpp/core/gc/type_container.h>
+#include <lpp/core/memory/type_container.h>
 #include <lpp/core/types/type_id.h>
 #include <lpp/core/types/basic_type.h>
 #include <lpp/core/object.h>

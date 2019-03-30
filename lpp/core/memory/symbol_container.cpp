@@ -1,4 +1,4 @@
-#include <lpp/core/gc/symbol_container.h>
+#include <lpp/core/memory/symbol_container.h>
 #include <lpp/core/types/symbol.h>
 #include <assert.h>
 

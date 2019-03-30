@@ -37,6 +37,7 @@ namespace Lisp
   struct ManagedStorageTrait {};
   struct ConsStorageTrait {};
   struct ContainerStorageTrait {};
+  struct SymbolStorageTrait {};
 
   /* ConsStorageTrait or ContainerStorageTrait
    */

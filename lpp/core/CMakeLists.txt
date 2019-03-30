@@ -6,9 +6,9 @@ add_library( Core
   types/forms/cons_of.cpp
   types/forms/list_of.cpp
   types/forms/choice_of.cpp
-  gc/cons_pages.cpp
-  gc/garbage_collector.cpp
-  gc/symbol_container.cpp
+  memory/cons_pages.cpp
+  memory/allocator.cpp
+  memory/symbol_container.cpp
   compiler/jit.cpp
   compiler/forms/define.cpp
   compiler/forms/lambda.cpp

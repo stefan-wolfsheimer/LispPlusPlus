@@ -33,14 +33,14 @@ either expressed or implied, of the FreeBSD Project.
 #include <lpp/simul/collectible_graph.h>
 #include <lpp/simul/collectible_node.h>
 #include <lpp/simul/collectible_edge.h>
-#include <lpp/core/gc/garbage_collector.h>
+#include <lpp/core/memory/allocator.h>
 #include <lpp/core/types/collectible.h>
 
 using CollectibleGraph = Lisp::CollectibleGraph;
 using CollectibleEdge =  Lisp::CollectibleEdge;
 using CollectibleNode = Lisp::CollectibleNode;
 
-CollectibleGraph::CollectibleGraph(const GarbageCollector & collector)
+CollectibleGraph::CollectibleGraph(const Allocator & collector)
 {
   std::unordered_set<std::shared_ptr<CollectibleNode>> todo;
   std::unordered_set<std::shared_ptr<CollectibleNode>> done;

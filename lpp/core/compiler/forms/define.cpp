@@ -24,7 +24,7 @@ Define::Define() : pattern(nullptr)
 
 void Define::init()
 {
-  Lisp::GarbageCollector::Guard _lock(*getCollector());
+  Lisp::Allocator::Guard _lock(*getCollector());
   pattern = makeRoot<ConsOf>(make<SymbolForm>(),
                              make<ConsOf>(make<SymbolForm>(),
                                           make<ConsOf>(make<AnyForm>(),

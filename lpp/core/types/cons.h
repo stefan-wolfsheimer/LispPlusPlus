@@ -32,7 +32,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <cstdint>
 #include <functional>
 #include <type_traits>
-#include <lpp/core/gc/collectible_container.h>
+#include <lpp/core/memory/collectible_container.h>
 #include <lpp/core/types/collectible.h>
 #include <lpp/core/types/type_id.h>
 #include <lpp/core/object.h>
@@ -40,7 +40,7 @@ either expressed or implied, of the FreeBSD Project.
 
 namespace Lisp
 {
-  class GarbageCollector;
+  class Allocator;
   template<typename T> class CollectibleContainer;
 
   /**
@@ -54,7 +54,7 @@ namespace Lisp
                     public CollectibleMixin<BasicCons>
   {
   public:
-    friend class GarbageCollector;
+    friend class Allocator;
     friend class ConsPages;
     friend class Object;
 

@@ -75,11 +75,11 @@ using Reference = Lisp::Reference;
 
 
 
-Vm::Vm(std::shared_ptr<GarbageCollector> _gc,
+Vm::Vm(std::shared_ptr<Allocator> _gc,
        std::shared_ptr<SymbolContainer> _sc,
        std::shared_ptr<TypeContainer> _tc,
        std::shared_ptr<Env> _env)
-  : gc(_gc ? _gc : std::make_shared<GarbageCollector>()),
+  : gc(_gc ? _gc : std::make_shared<Allocator>()),
     sc(_sc ? _sc : std::make_shared<SymbolContainer>()),
     tc(_tc ? _tc : std::make_shared<TypeContainer>()),
     env(_env ? _env : makeDefaultEnv(gc, sc))

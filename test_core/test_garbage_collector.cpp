@@ -35,7 +35,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <sstream>
 #include <catch.hpp>
 
-#include <lpp/core/gc/garbage_collector.h>
+#include <lpp/core/memory/allocator.h>
 #include <lpp/core/types/cons.h>
 #include <lpp/core/types/array.h>
 #include <lpp/core/object.h>
@@ -45,7 +45,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <lpp/simul/collectible_node.h>
 
 // helper types
-using GarbageCollector = Lisp::GarbageCollector;
+using Allocator = Lisp::Allocator;
 using Cons = Lisp::Cons;
 using Cell = Lisp::Cell;
 using Collectible = Lisp::Collectible;
@@ -60,16 +60,16 @@ static const std::size_t undef = std::numeric_limits<std::size_t>::max();
 static const std::size_t error = std::numeric_limits<std::size_t>::max() - 1;
 
 // helper functions
-static std::shared_ptr<GarbageCollector> makeCollector(std::size_t pageSize=12);
+static std::shared_ptr<Allocator> makeCollector(std::size_t pageSize=12);
 
 static std::pair<Color, std::size_t> operator==(Color, std::size_t);
 
 static std::vector<std::pair<Color, std::size_t> > fillMissingColor(const std::vector<std::pair<Color, std::size_t> > & input);
   
-static bool checkCollectible(std::shared_ptr<GarbageCollector> factory,
+static bool checkCollectible(std::shared_ptr<Allocator> factory,
                              const std::vector<std::pair<Color, std::size_t> > & rootConses,
                              const std::vector<std::pair<Color, std::size_t> > & conses);
-static bool checkCollectible(std::shared_ptr<GarbageCollector> factory,
+static bool checkCollectible(std::shared_ptr<Allocator> factory,
                              std::size_t disposed,
                              const std::vector<std::pair<Color, std::size_t> > & rootConses,
                              const std::vector<std::pair<Color, std::size_t> > & conses);
@@ -84,7 +84,7 @@ static std::unordered_set<Cell> Parents(const CollectibleGraph & graph,
                                         const Cell & cell);
 
 
-SCENARIO("cons_life_cycle", "[GarbageCollector]")
+SCENARIO("cons_life_cycle", "[Allocator]")
 {
   GIVEN("An empty cons factory")
   {
@@ -114,7 +114,7 @@ SCENARIO("cons_life_cycle", "[GarbageCollector]")
   }
 }
 
-SCENARIO("one cons without children", "[GarbageCollector]")
+SCENARIO("one cons without children", "[Allocator]")
 {
   GIVEN("A root cons")
   {
@@ -130,7 +130,7 @@ SCENARIO("one cons without children", "[GarbageCollector]")
     REQUIRE(obj->getColor() == Color::White);
     REQUIRE(obj->getRefCount() == 1u);
     REQUIRE(Parents(graph, *obj) == Set());
-    REQUIRE(Set(coll->get(&GarbageCollector::forEachReachable)) == Set(Cell(cons)));
+    REQUIRE(Set(coll->get(&Allocator::forEachReachable)) == Set(Cell(cons)));
     REQUIRE(coll->numVoidCollectible() == 7u);
     REQUIRE(checkCollectible(coll, 0u, { Color::White == 1u}, {}));
 
@@ -142,15 +142,15 @@ SCENARIO("one cons without children", "[GarbageCollector]")
       REQUIRE(cons->getColor() == Color::Grey);
       REQUIRE(coll->numVoidCollectible() == 7u);
       REQUIRE(checkCollectible(coll, 0u, {}, { Color::Grey == 1u }));
-      REQUIRE(Set(coll->get(&GarbageCollector::forEachReachable)) == Set());
-      THEN("GarbageCollector::cycle() cleans it up")
+      REQUIRE(Set(coll->get(&Allocator::forEachReachable)) == Set());
+      THEN("Allocator::cycle() cleans it up")
       {
         coll->cycle();
         REQUIRE(coll->getCycles() == 1u);
         REQUIRE(coll->numVoidCollectible() == 8u);
         REQUIRE(checkCollectible(coll, 0u, {}, {}));
       }
-      THEN("GarbageCollector::step() cleans it up")
+      THEN("Allocator::step() cleans it up")
       {
         coll->enableCollector();
         coll->enableRecycling();
@@ -169,7 +169,7 @@ SCENARIO("one cons without children", "[GarbageCollector]")
   }
 }
 
-SCENARIO("one cons with self-ref", "[GarbageCollector]")
+SCENARIO("one cons with self-ref", "[Allocator]")
 {
   GIVEN("A root cons with children referring to itself")
   {
@@ -189,10 +189,10 @@ SCENARIO("one cons with self-ref", "[GarbageCollector]")
     REQUIRE(cons->getCdrCell().as<Cons>() == cons);
     REQUIRE(cons->getRefCount() == 1u);
     REQUIRE(Parents(graph, *obj) == Set(Cell(cons)));
-    REQUIRE(Set(coll->get(&GarbageCollector::forEachReachable)) == Set(Cell(cons)));
+    REQUIRE(Set(coll->get(&Allocator::forEachReachable)) == Set(Cell(cons)));
     REQUIRE(coll->numVoidCollectible() == 7u);
     REQUIRE(checkCollectible(coll, 0u, {Color::Black==1}, {}));
-    THEN("GarbageCollector::cycle() turns it white")
+    THEN("Allocator::cycle() turns it white")
     {
       coll->cycle();
       REQUIRE(coll->getCycles() == 1u);
@@ -201,7 +201,7 @@ SCENARIO("one cons with self-ref", "[GarbageCollector]")
       CollectibleGraph graph(*coll);
       REQUIRE(Parents(graph, *obj) == Set(Cell(cons)));
     }
-    THEN("GarbageCollector::step() turns it white")
+    THEN("Allocator::step() turns it white")
     {
       coll->enableCollector();
       coll->enableRecycling();
@@ -218,18 +218,18 @@ SCENARIO("one cons with self-ref", "[GarbageCollector]")
     THEN("unsetting")
     {
       REQUIRE(checkCollectible(coll, 0u, {Color::Black==1}, {}));
-      REQUIRE(Set(coll->get(&GarbageCollector::forEachReachable)) == Set(Cell(cons)));
+      REQUIRE(Set(coll->get(&Allocator::forEachReachable)) == Set(Cell(cons)));
       obj.reset();
-      REQUIRE(Set(coll->get(&GarbageCollector::forEachReachable)) == Set());
+      REQUIRE(Set(coll->get(&Allocator::forEachReachable)) == Set());
       REQUIRE(checkCollectible(coll, 0u, {}, {Color::Black==1}));
-      THEN("GarbageCollector::cycle() removes it")
+      THEN("Allocator::cycle() removes it")
       {
         coll->cycle();
         REQUIRE(coll->getCycles() == 1u);
         REQUIRE(coll->numVoidCollectible() == 8u);
         REQUIRE(checkCollectible(coll, 0u, {}, {}));
       }
-      THEN("GarbageCollector::step() removes it")
+      THEN("Allocator::step() removes it")
       {
         coll->enableCollector();
         coll->enableRecycling();
@@ -249,7 +249,7 @@ SCENARIO("one cons with self-ref", "[GarbageCollector]")
   }
 }
 
-SCENARIO("a cons with 2 children", "[GarbageCollector]")
+SCENARIO("a cons with 2 children", "[Allocator]")
 {
   /*
               o
@@ -271,7 +271,7 @@ SCENARIO("a cons with 2 children", "[GarbageCollector]")
     REQUIRE(Parents(graph, cons) == Set());
     REQUIRE(Parents(graph, cons->getCarCell()) == Set(Cell(cons)));
     REQUIRE(Parents(graph, cons->getCdrCell()) == Set(Cell(cons)));
-    REQUIRE(Set(coll->get(&GarbageCollector::forEachReachable)) == Set(Cell(cons),
+    REQUIRE(Set(coll->get(&Allocator::forEachReachable)) == Set(Cell(cons),
                                                                        cons->getCarCell(),
                                                                        cons->getCdrCell()));
     REQUIRE(coll->numVoidCollectible() == 5u);
@@ -296,13 +296,13 @@ SCENARIO("a cons with 2 children", "[GarbageCollector]")
                                0u,
                                { Color::White == 1u},
                                { Color::Grey == 2u}));
-      THEN("GarbageCollector::cycle() does not remove it")
+      THEN("Allocator::cycle() does not remove it")
       {
         coll->cycle();
         REQUIRE(coll->getCycles() == 1u);
         REQUIRE(checkCollectible(coll, 0u, {Color::White == 1u}, {Color::White == 2u}));
       }
-      THEN("GarbageCollector::step() does not remove it")
+      THEN("Allocator::step() does not remove it")
       {
         coll->enableCollector();
         coll->enableRecycling();
@@ -323,17 +323,17 @@ SCENARIO("a cons with 2 children", "[GarbageCollector]")
       THEN("unsetting one child")
       {
         cons->unsetCar();
-        REQUIRE(Set(coll->get(&GarbageCollector::forEachReachable)) == Set(Cell(cons),
+        REQUIRE(Set(coll->get(&Allocator::forEachReachable)) == Set(Cell(cons),
                                                                            cons->getCdrCell()));
         REQUIRE(checkCollectible(coll, 0u, {Color::White==1}, {Color::Grey==2}));
-        THEN("GarbageCollector::cycle() does remove it")
+        THEN("Allocator::cycle() does remove it")
         {
           coll->cycle();
           REQUIRE(coll->getCycles() == 1u);
           REQUIRE(coll->numVoidCollectible() == 6u);
           REQUIRE(checkCollectible(coll, 0u, {Color::White == 1u}, {Color::White == 1u}));
         }
-        THEN("GarbageCollector::step() does remove it")
+        THEN("Allocator::step() does remove it")
         {
           REQUIRE(checkCollectible(coll, 0u, {Color::White==1}, {Color::Grey==2}));
           coll->enableCollector();
@@ -390,7 +390,7 @@ SCENARIO("a cons with 2 children", "[GarbageCollector]")
   }
 }
  
-SCENARIO("3 conses with 4 children", "[GarbageCollector]")
+SCENARIO("3 conses with 4 children", "[Allocator]")
 {
   GIVEN("2 conses")
   {
@@ -414,7 +414,7 @@ SCENARIO("3 conses with 4 children", "[GarbageCollector]")
     REQUIRE(checkCollectible(coll, 0u,
                              { Color::White == 2u},
                              { Color::Grey == 4u}));
-    REQUIRE(Set(coll->get(&GarbageCollector::forEachReachable)) == Set(cons1,
+    REQUIRE(Set(coll->get(&Allocator::forEachReachable)) == Set(cons1,
                                                                        cons1.as<Cons>()->getCarCell(),
                                                                        cons1.as<Cons>()->getCdrCell(),
                                                                        cons2,
@@ -434,7 +434,7 @@ SCENARIO("3 conses with 4 children", "[GarbageCollector]")
       REQUIRE(checkCollectible(coll, 0u,
                                { Color::White == 3u},
                                { Color::Grey == 4u}));
-      REQUIRE(Set(coll->get(&GarbageCollector::forEachReachable)) == Set(cons1,
+      REQUIRE(Set(coll->get(&Allocator::forEachReachable)) == Set(cons1,
                                                                          cons1.as<Cons>()->getCarCell(),
                                                                          cons1.as<Cons>()->getCdrCell(),
                                                                          cons2,
@@ -455,7 +455,7 @@ SCENARIO("3 conses with 4 children", "[GarbageCollector]")
         REQUIRE(checkCollectible(coll, 0u,
                                  { Color::White == 2u },
                                  { Color::Grey == 5u }));
-        REQUIRE(Set(coll->get(&GarbageCollector::forEachReachable)) == Set(cons1,
+        REQUIRE(Set(coll->get(&Allocator::forEachReachable)) == Set(cons1,
                                                                            cons1.as<Cons>()->getCarCell(),
                                                                            cons1.as<Cons>()->getCdrCell(),
                                                                            cons3.as<Cons>(),
@@ -463,7 +463,7 @@ SCENARIO("3 conses with 4 children", "[GarbageCollector]")
         REQUIRE(coll->getCycles() == 0);
         coll->cycle();
         REQUIRE(coll->getCycles() == 1);
-        REQUIRE(Set(coll->get(&GarbageCollector::forEachReachable)) == Set(cons1,
+        REQUIRE(Set(coll->get(&Allocator::forEachReachable)) == Set(cons1,
                                                                            cons1.as<Cons>()->getCarCell(),
                                                                            cons1.as<Cons>()->getCdrCell(),
                                                                            cons3.as<Cons>(),
@@ -477,7 +477,7 @@ SCENARIO("3 conses with 4 children", "[GarbageCollector]")
   }
 }
 
-SCENARIO("copy cons object with object copy constructor", "[GarbageCollector]")
+SCENARIO("copy cons object with object copy constructor", "[Allocator]")
 {
   GIVEN("A cons with 2 children")
   {
@@ -519,7 +519,7 @@ SCENARIO("copy cons object with object copy constructor", "[GarbageCollector]")
   }
 }
 
-SCENARIO("copy cons object with object assignement operator", "[GarbageCollector]")
+SCENARIO("copy cons object with object assignement operator", "[Allocator]")
 {
   GIVEN("conses with 4 children")
   {
@@ -554,7 +554,7 @@ SCENARIO("copy cons object with object assignement operator", "[GarbageCollector
   }
 }
 
-TEST_CASE("automatic collection with lots of temporary objects", "[GarbageCollector]")
+TEST_CASE("automatic collection with lots of temporary objects", "[Allocator]")
 {
   auto coll = makeCollector(512);
   coll->enableCollector();
@@ -571,7 +571,7 @@ TEST_CASE("automatic collection with lots of temporary objects", "[GarbageCollec
                              { Color::White == 1u, Color::Grey == 2u}));
     
     REQUIRE(coll->checkSanity());
-    REQUIRE(Set(coll->get(&GarbageCollector::forEachReachable)) == Set(obj,
+    REQUIRE(Set(coll->get(&Allocator::forEachReachable)) == Set(obj,
                                                                        obj.as<Cons>()->getCdrCell(),
                                                                        obj.as<Cons>()->getCdrCell().as<Cons>()->getCdrCell(),
                                                                        obj.as<Cons>()->getCdrCell().as<Cons>()->getCdrCell().as<Cons>()->getCdrCell()));
@@ -603,7 +603,7 @@ TEST_CASE("automatic collection with lots of temporary objects", "[GarbageCollec
 // Array tests
 //
 ////////////////////////////////////////////////////////////////////////////////
-SCENARIO("one_array_with_cons_children", "[GarbageCollector]")
+SCENARIO("one_array_with_cons_children", "[Allocator]")
 {
   auto coll = makeCollector(8);
   GIVEN("A root array")
@@ -632,7 +632,7 @@ SCENARIO("one_array_with_cons_children", "[GarbageCollector]")
     REQUIRE(array->atCell(4).isA<Cons>());
     REQUIRE(array->atCell(4).isRoot() == false);
     REQUIRE(array->atCell(4).getColor() == Color::Grey);
-    REQUIRE(Set(coll->get(&GarbageCollector::forEachReachable)) == Set(Cell(array),
+    REQUIRE(Set(coll->get(&Allocator::forEachReachable)) == Set(Cell(array),
                                                                        array->atCell(0),
                                                                        array->atCell(2),
                                                                        array->atCell(4),
@@ -800,7 +800,7 @@ SCENARIO("one_array_with_cons_children", "[GarbageCollector]")
     {
       obj = Lisp::nil;
       cons1 = Lisp::nil;
-      REQUIRE(Set(coll->get(&GarbageCollector::forEachReachable)) == Set());
+      REQUIRE(Set(coll->get(&Allocator::forEachReachable)) == Set());
       REQUIRE(array->getGcPosition() == 0u);
       coll->enableCollector();
       coll->enableRecycling();
@@ -811,7 +811,7 @@ SCENARIO("one_array_with_cons_children", "[GarbageCollector]")
   }
 }
 
-SCENARIO("a cons with 2 array children", "[GarbageCollector]")
+SCENARIO("a cons with 2 array children", "[Allocator]")
 {
   /*
               o
@@ -836,7 +836,7 @@ SCENARIO("a cons with 2 array children", "[GarbageCollector]")
     REQUIRE(Parents(graph, cons) == Set());
     REQUIRE(Parents(graph, cons->getCarCell()) == Set(Cell(cons)));
     REQUIRE(Parents(graph, cons->getCdrCell()) == Set(Cell(cons)));
-    REQUIRE(Set(coll->get(&GarbageCollector::forEachReachable)) == Set(Cell(cons),
+    REQUIRE(Set(coll->get(&Allocator::forEachReachable)) == Set(Cell(cons),
                                                                        cons->getCarCell(),
                                                                        cons->getCdrCell()));
     REQUIRE(coll->numVoidCollectible() == 7u);
@@ -862,13 +862,13 @@ SCENARIO("a cons with 2 array children", "[GarbageCollector]")
                                0u,
                                { Color::White == 1u},
                                { Color::Grey == 2u}));
-      THEN("GarbageCollector::cycle() does not remove it")
+      THEN("Allocator::cycle() does not remove it")
       {
         coll->cycle();
         REQUIRE(coll->getCycles() == 1u);
         REQUIRE(checkCollectible(coll, 0u, {Color::White == 1u}, {Color::White == 2u}));
       }
-      THEN("GarbageCollector::step() does not remove it")
+      THEN("Allocator::step() does not remove it")
       {
         coll->enableCollector();
         coll->enableRecycling();
@@ -892,17 +892,17 @@ SCENARIO("a cons with 2 array children", "[GarbageCollector]")
       THEN("unsetting one child")
       {
         cons->unsetCar();
-        REQUIRE(Set(coll->get(&GarbageCollector::forEachReachable)) == Set(Cell(cons),
+        REQUIRE(Set(coll->get(&Allocator::forEachReachable)) == Set(Cell(cons),
                                                                            cons->getCdrCell()));
         REQUIRE(checkCollectible(coll, 0u, {Color::White==1}, {Color::Grey==2}));
-        THEN("GarbageCollector::cycle() does remove it")
+        THEN("Allocator::cycle() does remove it")
         {
           coll->cycle();
           REQUIRE(coll->getCycles() == 1u);
           REQUIRE(coll->numVoidCollectible() == 7u);
           REQUIRE(checkCollectible(coll, 0u, {Color::White == 1u}, {Color::White == 1u}));
         }
-        THEN("GarbageCollector::step() does remove it")
+        THEN("Allocator::step() does remove it")
         {
           REQUIRE(checkCollectible(coll, 0u, {Color::White==1}, {Color::Grey==2}));
           coll->enableCollector();
@@ -925,7 +925,7 @@ SCENARIO("a cons with 2 array children", "[GarbageCollector]")
         {
           REQUIRE(checkCollectible(coll, 0u, {Color::White == 1u}, {Color::Grey == 2u}));
           cons->setCdr(obj);
-          REQUIRE(Set(coll->get(&GarbageCollector::forEachReachable)) == Set(Cell(cons)));
+          REQUIRE(Set(coll->get(&Allocator::forEachReachable)) == Set(Cell(cons)));
 
           REQUIRE(checkCollectible(coll, 0u, {Color::Black == 1u}, {Color::White == 0u, Color::Grey == 2}));
           coll->enableCollector();
@@ -955,7 +955,7 @@ SCENARIO("a cons with 2 array children", "[GarbageCollector]")
   }
 }
 
-TEST_CASE("simul", "[GarbageCollector]")
+TEST_CASE("simul", "[Allocator]")
 {
   auto coll = makeCollector(8);
   coll->enableCollector();
@@ -968,9 +968,9 @@ TEST_CASE("simul", "[GarbageCollector]")
 //////////////////////////////////////////////////////////
 /// implementation
 //////////////////////////////////////////////////////////
-static std::shared_ptr<GarbageCollector> makeCollector(std::size_t pageSize)
+static std::shared_ptr<Allocator> makeCollector(std::size_t pageSize)
 {
-  auto ret = std::make_shared<GarbageCollector>(pageSize, 1, 1);
+  auto ret = std::make_shared<Allocator>(pageSize, 1, 1);
   ret->disableRecycling();
   ret->disableCollector();
   return ret;
@@ -981,7 +981,7 @@ std::pair<Color, std::size_t> operator==(Color color, std::size_t n)
   return std::pair<Color, std::size_t>(color, n);
 }
 
-bool checkCollectible(std::shared_ptr<GarbageCollector> coll,
+bool checkCollectible(std::shared_ptr<Allocator> coll,
                       std::size_t disposed,
                       const std::vector<std::pair<Color, std::size_t> > & root,
                       const std::vector<std::pair<Color, std::size_t> > & bulk)
@@ -1027,7 +1027,7 @@ static std::string asString(const std::vector<std::pair<Color, std::size_t> > & 
   return ss.str();
 }
 
-bool checkCollectible(std::shared_ptr<GarbageCollector> coll,
+bool checkCollectible(std::shared_ptr<Allocator> coll,
                       const std::vector<std::pair<Color, std::size_t> > & root,
                       const std::vector<std::pair<Color, std::size_t> > & bulk)
 {

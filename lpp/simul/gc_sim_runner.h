@@ -59,7 +59,7 @@ namespace Lisp
     double targetChildFraction = 0.5;
     std::size_t numEdgeRewireSteps = 5;
     std::size_t numBulkSteps = 3;
-    std::size_t garbageSteps = 1; // parameters for GarbageCollector
+    std::size_t garbageSteps = 1; // parameters for Allocator
     std::size_t recycleSteps = 1;
     std::size_t numSteps = 100;
     

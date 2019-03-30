@@ -5,7 +5,7 @@
 #include <lpp/core/compiler/jit.h>
 #include <lpp/core/compiler/scope_guard.h>
 
-#include <lpp/core/gc/garbage_collector.h>
+#include <lpp/core/memory/allocator.h>
 
 #include <lpp/core/types/cons.h>
 #include <lpp/core/types/symbol.h>
@@ -31,7 +31,7 @@ Lambda::Lambda() : pattern(nullptr)
 
 void Lambda::init()
 {
-  Lisp::GarbageCollector::Guard _lock(*getCollector());
+  Lisp::Allocator::Guard _lock(*getCollector());
   pattern = makeRoot<ConsOf>(make<SymbolForm>(),
                              make<ConsOf>(make<ListOf>(make<SymbolForm>()),
                                           make<ConsOf>(make<AnyForm>(),

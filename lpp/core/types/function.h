@@ -33,7 +33,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <vector>
 #include <lpp/core/opcode.h>
 #include <lpp/core/object.h>
-#include <lpp/core/gc/garbage_collector.h>
+#include <lpp/core/memory/allocator.h>
 #include <lpp/core/types/type_id.h>
 #include <lpp/core/types/container.h>
 #include <lpp/core/types/array.h>
@@ -44,7 +44,7 @@ namespace Lisp
 {
   class Object;
   class Vm;
-  class GarbageCollector;
+  class Allocator;
 
   class ArgumentTraits
   {
@@ -77,7 +77,7 @@ namespace Lisp
                                   const InstructionType & i3);
     inline void appendData(const Cell & rhs);
     inline void addArgument(const Cell & cell);
-    inline Object shareArgument(std::size_t i, std::shared_ptr<GarbageCollector> gc);
+    inline Object shareArgument(std::size_t i, std::shared_ptr<Allocator> gc);
 
     inline std::size_t dataSize() const;
     inline std::size_t numArguments() const;
@@ -118,7 +118,7 @@ namespace Lisp
      * that has reference trait
      */
     inline void makeReference(std::vector<Object>::iterator stack_itr,
-                              std::shared_ptr<GarbageCollector> gc);
+                              std::shared_ptr<Allocator> gc);
 
     //////////////////////////////////////////////////
     // implementation of the Container interface
@@ -208,7 +208,7 @@ inline void Lisp::Function::addArgument(const Cell & cell)
   appendData(cell);
 }
 
-inline Lisp::Object Lisp::Function::shareArgument(std::size_t i, std::shared_ptr<GarbageCollector> gc)
+inline Lisp::Object Lisp::Function::shareArgument(std::size_t i, std::shared_ptr<Allocator> gc)
 {
   assert(i < argumentTraits.size());
   if(argumentTraits[i].isReference())
@@ -306,7 +306,7 @@ inline const Lisp::Cell & Lisp::Function::getValue(std::size_t i) const
 }
 
 inline void Lisp::Function::makeReference(std::vector<Object>::iterator stack_itr,
-                                          std::shared_ptr<GarbageCollector> gc)
+                                          std::shared_ptr<Allocator> gc)
 {
   std::size_t i = 0;
   for(const ArgumentTraits & traits : argumentTraits)

@@ -33,10 +33,10 @@ either expressed or implied, of the FreeBSD Project.
 #include <functional>
 #include <type_traits>
 #include <assert.h>
-#include <lpp/core/gc/color_map.h>
-#include <lpp/core/gc/cons_pages.h>
-#include <lpp/core/gc/collectible_container.h>
-#include <lpp/core/gc/unmanaged_collectible_container.h>
+#include <lpp/core/memory/color_map.h>
+#include <lpp/core/memory/cons_pages.h>
+#include <lpp/core/memory/collectible_container.h>
+#include <lpp/core/memory/unmanaged_collectible_container.h>
 #include <lpp/core/types/type_id.h>
 #include <lpp/core/types/cons.h>
 #include <lpp/core/types/container.h>
@@ -46,25 +46,25 @@ either expressed or implied, of the FreeBSD Project.
 
 namespace Lisp
 {
-  class GarbageCollector
+  class Allocator
   {
   public:
     class Guard
     {
     public:
-      Guard(GarbageCollector & );
-      Guard(GarbageCollector * );
+      Guard(Allocator & );
+      Guard(Allocator * );
       ~Guard();
     private:
-      GarbageCollector & ref;
+      Allocator & ref;
       unsigned short int garbageSteps;
       unsigned short int recycleSteps;
     };
 
-    GarbageCollector(std::size_t consPageSize=CONS_PAGE_SIZE,
+    Allocator(std::size_t consPageSize=CONS_PAGE_SIZE,
                      unsigned short _garbageSteps=1,
                      unsigned short _recycleSteps=1);
-    ~GarbageCollector();
+    ~Allocator();
 
 
     template<typename C,  typename... ARGS>
@@ -86,9 +86,9 @@ namespace Lisp
     inline std::size_t numVoidCollectible() const;
     inline std::size_t numDisposedCollectible() const;
 
-    inline std::vector<Cell> get(void(GarbageCollector::*func)(std::function<void(const Cell &)> func) const) const;
+    inline std::vector<Cell> get(void(Allocator::*func)(std::function<void(const Cell &)> func) const) const;
     inline std::vector<Cell> get(Color color,
-                                 void(GarbageCollector::*func)(Color color,
+                                 void(Allocator::*func)(Color color,
                                                                std::function<void(const Cell &)> func) const) const;
 
     inline void forEachCollectible(std::function<void(const Cell &)> func) const;
@@ -189,7 +189,7 @@ namespace Lisp
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-inline Lisp::GarbageCollector::Guard::Guard(GarbageCollector & _ref)
+inline Lisp::Allocator::Guard::Guard(Allocator & _ref)
   : ref(_ref)
 {
   garbageSteps = ref.garbageSteps;
@@ -198,7 +198,7 @@ inline Lisp::GarbageCollector::Guard::Guard(GarbageCollector & _ref)
   ref.recycleSteps = 0;
 }
 
-inline Lisp::GarbageCollector::Guard::Guard(GarbageCollector * _ref)
+inline Lisp::Allocator::Guard::Guard(Allocator * _ref)
   : ref(*_ref)
 {
   garbageSteps = _ref->garbageSteps;
@@ -208,13 +208,13 @@ inline Lisp::GarbageCollector::Guard::Guard(GarbageCollector * _ref)
 }
 
 
-inline Lisp::GarbageCollector::Guard::~Guard()
+inline Lisp::Allocator::Guard::~Guard()
 {
   ref.garbageSteps = garbageSteps;
   ref.recycleSteps = recycleSteps;
 }
 
-inline Lisp::GarbageCollector::GarbageCollector(std::size_t consPageSize,
+inline Lisp::Allocator::Allocator(std::size_t consPageSize,
                                                 unsigned short _garbageSteps,
                                                 unsigned short _recycleSteps)
   : consPages(consPageSize),
@@ -230,14 +230,14 @@ inline Lisp::GarbageCollector::GarbageCollector(std::size_t consPageSize,
 }
 
 template<typename C, typename... ARGS>
-inline C * Lisp::GarbageCollector::make(const ARGS & ... rest)
+inline C * Lisp::Allocator::make(const ARGS & ... rest)
 {
 
   return _make<C>(typename TypeTraits<C>::StorageTrait(), rest...);
 }
 
 template<typename C,  typename... ARGS>
-inline C * Lisp::GarbageCollector::makeRoot(const ARGS & ... rest)
+inline C * Lisp::Allocator::makeRoot(const ARGS & ... rest)
 {
   return _makeRoot<C>(typename TypeTraits<C>::StorageTrait(), rest...);
 }
@@ -248,7 +248,7 @@ inline C * Lisp::GarbageCollector::makeRoot(const ARGS & ... rest)
 //
 ////////////////////////////////////////////////////////////////////////////////
 template<typename C>
-inline C * Lisp::GarbageCollector::makeCons()
+inline C * Lisp::Allocator::makeCons()
 {
   // is derived from BasicCons and no members have been added
   typedef std::is_base_of<BasicCons, C> is_base_of_basic_cons;
@@ -264,7 +264,7 @@ inline C * Lisp::GarbageCollector::makeCons()
 }
 
 template<typename C>
-inline C * Lisp::GarbageCollector::makeRootCons()
+inline C * Lisp::Allocator::makeRootCons()
 {
   // is derived from BasicCons and no members have been added
   typedef std::is_base_of<BasicCons, C> is_base_of_basic_cons;
@@ -280,7 +280,7 @@ inline C * Lisp::GarbageCollector::makeRootCons()
 }
 
 template<typename C>
-inline C * Lisp::GarbageCollector::_make(ConsStorageTrait, const Cell & car, const Cell & cdr)
+inline C * Lisp::Allocator::_make(ConsStorageTrait, const Cell & car, const Cell & cdr)
 {
   C * ret = makeCons<C>();
   ret->car = car;
@@ -289,7 +289,7 @@ inline C * Lisp::GarbageCollector::_make(ConsStorageTrait, const Cell & car, con
 }
 
 template<typename C>
-inline C * Lisp::GarbageCollector::_make(ConsStorageTrait, Cell && car, const Cell & cdr)
+inline C * Lisp::Allocator::_make(ConsStorageTrait, Cell && car, const Cell & cdr)
 {
   C * ret = makeCons<C>();
   ret->car = car;
@@ -298,7 +298,7 @@ inline C * Lisp::GarbageCollector::_make(ConsStorageTrait, Cell && car, const Ce
 }
 
 template<typename C>
-inline C * Lisp::GarbageCollector::_make(ConsStorageTrait, const Cell & car, Cell && cdr)
+inline C * Lisp::Allocator::_make(ConsStorageTrait, const Cell & car, Cell && cdr)
 {
   C * ret = makeCons<C>();
   ret->car = car;
@@ -307,7 +307,7 @@ inline C * Lisp::GarbageCollector::_make(ConsStorageTrait, const Cell & car, Cel
 }
 
 template<typename C>
-inline C * Lisp::GarbageCollector::_make(ConsStorageTrait, Cell && car, Cell && cdr)
+inline C * Lisp::Allocator::_make(ConsStorageTrait, Cell && car, Cell && cdr)
 {
   C * ret = makeCons<C>();
   ret->car = car;
@@ -316,7 +316,7 @@ inline C * Lisp::GarbageCollector::_make(ConsStorageTrait, Cell && car, Cell && 
 }
 
 template<typename C>
-inline C * Lisp::GarbageCollector::_makeRoot(ConsStorageTrait, const Cell & car, const Cell & cdr)
+inline C * Lisp::Allocator::_makeRoot(ConsStorageTrait, const Cell & car, const Cell & cdr)
 {
   C * ret = makeRootCons<C>();
   ret->car = car;
@@ -325,7 +325,7 @@ inline C * Lisp::GarbageCollector::_makeRoot(ConsStorageTrait, const Cell & car,
 }
 
 template<typename C>
-inline C * Lisp::GarbageCollector::_makeRoot(ConsStorageTrait, Cell && car, const Cell & cdr)
+inline C * Lisp::Allocator::_makeRoot(ConsStorageTrait, Cell && car, const Cell & cdr)
 {
   C * ret = makeRootCons<C>();
   ret->car = car;
@@ -334,7 +334,7 @@ inline C * Lisp::GarbageCollector::_makeRoot(ConsStorageTrait, Cell && car, cons
 }
 
 template<typename C>
-inline C * Lisp::GarbageCollector::_makeRoot(ConsStorageTrait, const Cell & car, Cell && cdr)
+inline C * Lisp::Allocator::_makeRoot(ConsStorageTrait, const Cell & car, Cell && cdr)
 {
   C * ret = makeRootCons<C>();
   ret->car = car;
@@ -343,7 +343,7 @@ inline C * Lisp::GarbageCollector::_makeRoot(ConsStorageTrait, const Cell & car,
 }
 
 template<typename C>
-inline C * Lisp::GarbageCollector::_makeRoot(ConsStorageTrait, Cell && car, Cell && cdr)
+inline C * Lisp::Allocator::_makeRoot(ConsStorageTrait, Cell && car, Cell && cdr)
 {
   C * ret = makeRootCons<C>();
   ret->car = car;
@@ -357,7 +357,7 @@ inline C * Lisp::GarbageCollector::_makeRoot(ConsStorageTrait, Cell && car, Cell
 //
 ////////////////////////////////////////////////////////////////////////////////
 template<typename C,  typename... ARGS>
-inline C * Lisp::GarbageCollector::_make(ContainerStorageTrait, ARGS... rest)
+inline C * Lisp::Allocator::_make(ContainerStorageTrait, ARGS... rest)
 {
   step();
   recycle();
@@ -369,7 +369,7 @@ inline C * Lisp::GarbageCollector::_make(ContainerStorageTrait, ARGS... rest)
 }
 
 template<typename C,  typename... ARGS>
-inline C * Lisp::GarbageCollector::_makeRoot(ContainerStorageTrait, ARGS... rest)
+inline C * Lisp::Allocator::_makeRoot(ContainerStorageTrait, ARGS... rest)
 {
   step();
   recycle();
@@ -381,7 +381,7 @@ inline C * Lisp::GarbageCollector::_makeRoot(ContainerStorageTrait, ARGS... rest
 }
 
 template<typename C,  typename... ARGS>
-inline C * Lisp::GarbageCollector::_makeRoot(ManagedStorageTrait, ARGS... rest)
+inline C * Lisp::Allocator::_makeRoot(ManagedStorageTrait, ARGS... rest)
 {
   return new C(rest...);
 }
@@ -391,12 +391,12 @@ inline C * Lisp::GarbageCollector::_makeRoot(ManagedStorageTrait, ARGS... rest)
 // numCollectible
 //
 ////////////////////////////////////////////////////////////////////////////////
-inline std::size_t Lisp::GarbageCollector::numCollectible() const
+inline std::size_t Lisp::Allocator::numCollectible() const
 {
   return numRootCollectible()  + numBulkCollectible();
 }
 
-inline std::size_t Lisp::GarbageCollector::numRootCollectible() const
+inline std::size_t Lisp::Allocator::numRootCollectible() const
 {
   return
     numRootCollectible(Color::White) +
@@ -404,7 +404,7 @@ inline std::size_t Lisp::GarbageCollector::numRootCollectible() const
     numRootCollectible(Color::Black);
 }
 
-inline std::size_t Lisp::GarbageCollector::numBulkCollectible() const
+inline std::size_t Lisp::Allocator::numBulkCollectible() const
 {
   return
     numBulkCollectible(Color::White) +
@@ -412,27 +412,27 @@ inline std::size_t Lisp::GarbageCollector::numBulkCollectible() const
     numBulkCollectible(Color::Black);
 }
 
-inline std::size_t Lisp::GarbageCollector::numCollectible(Color color) const
+inline std::size_t Lisp::Allocator::numCollectible(Color color) const
 {
   return numRootCollectible(color) + numBulkCollectible(color);
 }
 
-inline std::size_t Lisp::GarbageCollector::numRootCollectible(Color color) const
+inline std::size_t Lisp::Allocator::numRootCollectible(Color color) const
 {
   return consMap.rootSize(color) + containerMap.rootSize(color);
 }
 
-inline std::size_t Lisp::GarbageCollector::numBulkCollectible(Color color) const
+inline std::size_t Lisp::Allocator::numBulkCollectible(Color color) const
 {
   return consMap.size(color) + containerMap.size(color);
 }
 
-inline std::size_t Lisp::GarbageCollector::numVoidCollectible() const
+inline std::size_t Lisp::Allocator::numVoidCollectible() const
 {
   return consPages.getNumVoid();
 }
 
-inline std::size_t Lisp::GarbageCollector::numDisposedCollectible() const
+inline std::size_t Lisp::Allocator::numDisposedCollectible() const
 {
   return consMap.numDisposed() + containerMap.numDisposed();
 }
@@ -443,7 +443,7 @@ inline std::size_t Lisp::GarbageCollector::numDisposedCollectible() const
 //
 ////////////////////////////////////////////////////////////////////////////////
 inline std::vector<Lisp::Cell>
-Lisp::GarbageCollector::get(void(GarbageCollector::*func)(std::function<void(const Cell &)> func) const) const
+Lisp::Allocator::get(void(Allocator::*func)(std::function<void(const Cell &)> func) const) const
 {
   std::vector<Lisp::Cell> ret;
   (this->*func)([&ret](const Cell & cell) { ret.push_back(cell); });
@@ -451,8 +451,8 @@ Lisp::GarbageCollector::get(void(GarbageCollector::*func)(std::function<void(con
 }
 
 inline std::vector<Lisp::Cell>
-Lisp::GarbageCollector::get(Color color,
-                            void(GarbageCollector::*func)(Color color,
+Lisp::Allocator::get(Color color,
+                            void(Allocator::*func)(Color color,
                                                           std::function<void(const Cell &)> func) const) const
 {
   std::vector<Lisp::Cell> ret;
@@ -460,46 +460,46 @@ Lisp::GarbageCollector::get(Color color,
   return ret;
 }
  
-inline void Lisp::GarbageCollector::forEachCollectible(std::function<void(const Cell &)> func) const
+inline void Lisp::Allocator::forEachCollectible(std::function<void(const Cell &)> func) const
 {
   forEachRootCollectible(func);
   forEachBulkCollectible(func);
 }
 
 
-inline void Lisp::GarbageCollector::forEachRootCollectible(std::function<void(const Cell &)> func) const
+inline void Lisp::Allocator::forEachRootCollectible(std::function<void(const Cell &)> func) const
 {
   forEachRootCollectible(Color::White, func);
   forEachRootCollectible(Color::Grey, func);
   forEachRootCollectible(Color::Black, func);
 }
 
-inline void Lisp::GarbageCollector::forEachBulkCollectible(std::function<void(const Cell &)> func) const
+inline void Lisp::Allocator::forEachBulkCollectible(std::function<void(const Cell &)> func) const
 {
   forEachBulkCollectible(Color::White, func);
   forEachBulkCollectible(Color::Grey, func);
   forEachBulkCollectible(Color::Black, func);
 }
 
-inline void Lisp::GarbageCollector::forEachCollectible(Color color, std::function<void(const Cell &)> func) const
+inline void Lisp::Allocator::forEachCollectible(Color color, std::function<void(const Cell &)> func) const
 {
   forEachBulkCollectible(color, func);
   forEachRootCollectible(color, func);
 }
 
-inline void Lisp::GarbageCollector::forEachRootCollectible(Color color, std::function<void(const Cell &)> func) const
+inline void Lisp::Allocator::forEachRootCollectible(Color color, std::function<void(const Cell &)> func) const
 {
   consMap.forEachRoot(color, func);
   containerMap.forEachRoot(color, func);
 }
 
-inline void Lisp::GarbageCollector::forEachBulkCollectible(Color color, std::function<void(const Cell &)> func) const
+inline void Lisp::Allocator::forEachBulkCollectible(Color color, std::function<void(const Cell &)> func) const
 {
   consMap.forEachBulk(color, func);
   containerMap.forEachBulk(color, func);
 }
 
-inline void Lisp::GarbageCollector::forEachDisposedCollectible(std::function<void(const Cell &)> func) const
+inline void Lisp::Allocator::forEachDisposedCollectible(std::function<void(const Cell &)> func) const
 {
   // todo: implement
 }
@@ -509,7 +509,7 @@ inline void Lisp::GarbageCollector::forEachDisposedCollectible(std::function<voi
 // enable / disable collector
 //
 ////////////////////////////////////////////////////////////////////////////////
-inline void Lisp::GarbageCollector::disableCollector()
+inline void Lisp::Allocator::disableCollector()
 {
   if(garbageSteps != 0)
   {
@@ -518,7 +518,7 @@ inline void Lisp::GarbageCollector::disableCollector()
   }
 }
 
-inline void Lisp::GarbageCollector::disableRecycling()
+inline void Lisp::Allocator::disableRecycling()
 {
   if(recycleSteps != 0)
   {
@@ -527,22 +527,22 @@ inline void Lisp::GarbageCollector::disableRecycling()
   }
 }
 
-inline void Lisp::GarbageCollector::enableCollector()
+inline void Lisp::Allocator::enableCollector()
 {
   garbageSteps = backGarbageSteps;
 }
 
-inline void Lisp::GarbageCollector::enableRecycling()
+inline void Lisp::Allocator::enableRecycling()
 {
   recycleSteps = backRecycleSteps;
 }
 
-inline std::size_t Lisp::GarbageCollector::getCycles() const
+inline std::size_t Lisp::Allocator::getCycles() const
 {
   return cycles;
 }
 
-inline unsigned short Lisp::GarbageCollector::getGarbageSteps() const
+inline unsigned short Lisp::Allocator::getGarbageSteps() const
 {
   if(garbageSteps == 0)
   {
@@ -554,7 +554,7 @@ inline unsigned short Lisp::GarbageCollector::getGarbageSteps() const
   }
 }
 
-inline unsigned short Lisp::GarbageCollector::getRecycleSteps() const
+inline unsigned short Lisp::Allocator::getRecycleSteps() const
 {
   if(recycleSteps == 0)
   {
@@ -566,7 +566,7 @@ inline unsigned short Lisp::GarbageCollector::getRecycleSteps() const
   }
 }
 
-inline void Lisp::GarbageCollector::setGarbageSteps(unsigned short steps)
+inline void Lisp::Allocator::setGarbageSteps(unsigned short steps)
 {
   if(garbageSteps == 0)
   {
@@ -579,7 +579,7 @@ inline void Lisp::GarbageCollector::setGarbageSteps(unsigned short steps)
 
 }
 
-inline void Lisp::GarbageCollector::setRecycleSteps(unsigned short steps)
+inline void Lisp::Allocator::setRecycleSteps(unsigned short steps)
 {
   if(recycleSteps == 0)
   {
@@ -597,7 +597,7 @@ inline void Lisp::GarbageCollector::setRecycleSteps(unsigned short steps)
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-inline void Lisp::GarbageCollector::step()
+inline void Lisp::Allocator::step()
 {
   for(unsigned short i=0; i < garbageSteps; i++)
   {
@@ -618,12 +618,12 @@ inline void Lisp::GarbageCollector::step()
 // test and debug
 //
 ////////////////////////////////////////////////////////////////////////////////
-inline bool Lisp::GarbageCollector::checkSanity() const
+inline bool Lisp::Allocator::checkSanity() const
 {
   return checkRootSanity() && checkBulkSanity();
 }
 
-inline bool Lisp::GarbageCollector::checkRootSanity() const
+inline bool Lisp::Allocator::checkRootSanity() const
 {
   return
     checkRootSanity(Color::White) &&
@@ -631,7 +631,7 @@ inline bool Lisp::GarbageCollector::checkRootSanity() const
     checkRootSanity(Color::Black);
 }
 
-inline bool Lisp::GarbageCollector::checkBulkSanity() const
+inline bool Lisp::Allocator::checkBulkSanity() const
 {
   return
     checkBulkSanity(Color::White) &&
@@ -639,33 +639,33 @@ inline bool Lisp::GarbageCollector::checkBulkSanity() const
     checkBulkSanity(Color::Black);
 }
 
-inline bool Lisp::GarbageCollector::checkSanity(Color color) const
+inline bool Lisp::Allocator::checkSanity(Color color) const
 {
   return checkRootSanity(color) && checkBulkSanity(color);
 }
 
-inline bool Lisp::GarbageCollector::checkRootSanity(Color color) const
+inline bool Lisp::Allocator::checkRootSanity(Color color) const
 {
   return checkSanity(color, true);
 }
 
-inline bool Lisp::GarbageCollector::checkBulkSanity(Color color) const
+inline bool Lisp::Allocator::checkBulkSanity(Color color) const
 {
   return checkSanity(color, false);
 }
 
-inline bool Lisp::GarbageCollector::checkSanity(Color color, bool root) const
+inline bool Lisp::Allocator::checkSanity(Color color, bool root) const
 {
-  typedef void(GarbageCollector::*Function)(Color color,
+  typedef void(Allocator::*Function)(Color color,
                                             std::function<void(const Cell &)> func) const;
   Function f;
   if(root)
   {
-    f = &GarbageCollector::forEachRootCollectible;
+    f = &Allocator::forEachRootCollectible;
   }
   else
   {
-    f = &GarbageCollector::forEachBulkCollectible;
+    f = &Allocator::forEachBulkCollectible;
   }
   (this->*f)(color, [this, color, root](const Cell & cell) {
       if(!cell.isA<Collectible>())

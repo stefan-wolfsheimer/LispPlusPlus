@@ -29,19 +29,19 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include <stdexcept>
-#include <lpp/core/gc/garbage_collector.h>
+#include <lpp/core/memory/allocator.h>
 #include <lpp/core/types/collectible.h>
 #include <lpp/core/types/container.h>
 
-using GarbageCollector = Lisp::GarbageCollector;
+using Allocator = Lisp::Allocator;
 using Cell = Lisp::Cell;
 
-GarbageCollector::~GarbageCollector()
+Allocator::~Allocator()
 {
   cycle();
 }
 
-void GarbageCollector::forEachContainer(const CollectibleContainer<Container> & containers,
+void Allocator::forEachContainer(const CollectibleContainer<Container> & containers,
                                         std::function<void(const Cell &)> func) const
 {
   for(auto itr = containers.cbegin(); itr != containers.cend(); ++itr)
@@ -55,7 +55,7 @@ void GarbageCollector::forEachContainer(const CollectibleContainer<Container> & 
 // forEachCollectible
 //
 ////////////////////////////////////////////////////////////////////////////////
-void GarbageCollector::forEachReachable(std::function<void(const Cell &)> func) const
+void Allocator::forEachReachable(std::function<void(const Cell &)> func) const
 {
   std::unordered_set<Cell> todo;
   std::unordered_set<Cell> root;
@@ -83,7 +83,7 @@ void GarbageCollector::forEachReachable(std::function<void(const Cell &)> func) 
 // process garbage collector
 //
 ////////////////////////////////////////////////////////////////////////////////
-void GarbageCollector::cycle()
+void Allocator::cycle()
 {
   std::unordered_set<BasicCons*> conses;
   std::unordered_set<Container*> containers;
@@ -133,7 +133,7 @@ void GarbageCollector::cycle()
 }
 
 
-void Lisp::GarbageCollector::recycle()
+void Lisp::Allocator::recycle()
 {
   std::size_t i = recycleSteps;
   BasicCons * cons;

@@ -31,9 +31,9 @@ either expressed or implied, of the FreeBSD Project.
 #pragma once
 #include <memory>
 #include <lpp/core/object.h>
-#include <lpp/core/gc/garbage_collector.h>
-#include <lpp/core/gc/symbol_container.h>
-#include <lpp/core/gc/type_container.h>
+#include <lpp/core/memory/allocator.h>
+#include <lpp/core/memory/symbol_container.h>
+#include <lpp/core/memory/type_container.h>
 #include <lpp/core/types/array.h>
 #include <lpp/core/default_env.h>
 
@@ -44,12 +44,12 @@ namespace Lisp
   {
   public:
     static const bool withDebug;
-    Vm(std::shared_ptr<GarbageCollector> _gc = nullptr,
+    Vm(std::shared_ptr<Allocator> _gc = nullptr,
        std::shared_ptr<SymbolContainer> _sc = nullptr,
        std::shared_ptr<TypeContainer> _tc = nullptr,
        std::shared_ptr<Env> _env = nullptr);
     
-    inline std::shared_ptr<GarbageCollector> getGarbageCollector() const;
+    inline std::shared_ptr<Allocator> getAllocator() const;
 
     template<typename T, typename... ARGS>
     inline Object make(const ARGS & ...rest);
@@ -97,7 +97,7 @@ namespace Lisp
     void eval(Function * func);
 
   private:
-    std::shared_ptr<GarbageCollector> gc;
+    std::shared_ptr<Allocator> gc;
     std::shared_ptr<SymbolContainer> sc;
     std::shared_ptr<TypeContainer> tc;
     std::shared_ptr<Env> env;
@@ -108,7 +108,7 @@ namespace Lisp
 /******************************************************************************
  * implementation
  ******************************************************************************/
-std::shared_ptr<Lisp::GarbageCollector> Lisp::Vm::getGarbageCollector() const
+std::shared_ptr<Lisp::Allocator> Lisp::Vm::getAllocator() const
 {
   return gc;
 }

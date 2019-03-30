@@ -29,7 +29,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
-#include <lpp/core/gc/garbage_collector.h>
+#include <lpp/core/memory/allocator.h>
 #include <lpp/simul/collectible_graph.h>
 #include <lpp/simul/collectible_edge.h>
 #include <lpp/simul/collectible_node.h>
@@ -130,7 +130,7 @@ namespace Lisp
     inline const CollectibleGraph & getGraph() const;
     inline Cell createNode(std::size_t ncells);
     inline void setChild(Cell & cell, std::size_t index, const Cell & child);
-    GarbageCollector gc;
+    Allocator gc;
     mutable std::shared_ptr<CollectibleGraph> graph;
     std::vector<std::shared_ptr<Object>> root;
   };

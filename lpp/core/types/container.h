@@ -31,7 +31,7 @@ either expressed or implied, of the FreeBSD Project.
 #pragma once
 #include <functional>
 #include <lpp/core/types/collectible.h>
-#include <lpp/core/gc/collectible_container.h>
+#include <lpp/core/memory/collectible_container.h>
 
 namespace Lisp
 {

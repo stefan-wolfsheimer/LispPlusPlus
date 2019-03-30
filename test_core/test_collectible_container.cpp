@@ -29,8 +29,8 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include <catch.hpp>
-#include <lpp/core/gc/collectible_container.h>
-#include <lpp/core/gc/unmanaged_collectible_container.h>
+#include <lpp/core/memory/collectible_container.h>
+#include <lpp/core/memory/unmanaged_collectible_container.h>
 #include <lpp/core/types/collectible.h>
 
 using Color = Lisp::Color;

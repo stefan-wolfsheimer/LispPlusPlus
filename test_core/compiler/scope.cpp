@@ -30,8 +30,8 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include <catch.hpp>
 #include <memory>
-#include <lpp/core/gc/garbage_collector.h>
-#include <lpp/core/gc/symbol_container.h>
+#include <lpp/core/memory/allocator.h>
+#include <lpp/core/memory/symbol_container.h>
 #include <lpp/core/object.h>
 #include <lpp/core/types/function.h>
 #include <lpp/core/types/reference.h>
@@ -41,7 +41,7 @@ either expressed or implied, of the FreeBSD Project.
 using Object = Lisp::Object;
 using Scope = Lisp::Scope;
 using ScopeGuard = Lisp::ScopeGuard;
-using GarbageCollector = Lisp::GarbageCollector;
+using Allocator = Lisp::Allocator;
 using SymbolContainer = Lisp::SymbolContainer;
 using Function = Lisp::Function;
 using Reference = Lisp::Reference;
@@ -51,7 +51,7 @@ TEST_CASE("scope_life_cycle", "[Scope]")
 {
 
   SymbolContainer sc;
-  auto gc = std::make_shared<GarbageCollector>();
+  auto gc = std::make_shared<Allocator>();
   Object a(sc.make("a"));
   Object b(sc.make("b"));
   Object c(sc.make("c"));
@@ -126,7 +126,7 @@ TEST_CASE("scope_life_cycle", "[Scope]")
 
 TEST_CASE("scope_guard", "[Scope]")
 {
-  auto gc = std::make_shared<GarbageCollector>();
+  auto gc = std::make_shared<Allocator>();
   Object fobj1(gc->makeRoot<Function>());
   Object fobj2(gc->makeRoot<Function>());
   Object fobj3(gc->makeRoot<Function>());

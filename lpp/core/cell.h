@@ -35,7 +35,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <assert.h>
 #include <lpp/core/types/type_id.h>
 #include <lpp/core/types/managed_type.h>
-#include <lpp/core/gc/color.h>
+#include <lpp/core/memory/color.h>
 
 namespace Lisp
 {

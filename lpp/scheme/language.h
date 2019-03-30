@@ -5,7 +5,7 @@
 /////////////////////////////////////////////////////////////////
 namespace Lisp
 {
-  class GarbageCollector;
+  class Allocator;
 
   namespace Scheme
   {

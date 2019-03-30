@@ -35,7 +35,7 @@ either expressed or implied, of the FreeBSD Project.
 
 namespace Lisp
 {
-  class GarbageCollector;
+  class Allocator;
   class SymbolContainer;
   class TypeContainer;
   class Env;
@@ -47,7 +47,7 @@ namespace Lisp
   {
   public:
     Jit(const Jit & rhs);
-    Jit(std::shared_ptr<GarbageCollector> _gc,
+    Jit(std::shared_ptr<Allocator> _gc,
         std::shared_ptr<SymbolContainer> _sc,
         std::shared_ptr<TypeContainer> _tc,
         std::shared_ptr<Env> _env);
@@ -55,7 +55,7 @@ namespace Lisp
     Object compile(const Cell & obj);
     void compile(Function * f, const Cell & obj);
 
-    std::shared_ptr<GarbageCollector> gc;
+    std::shared_ptr<Allocator> gc;
     std::shared_ptr<SymbolContainer> sc;
     std::shared_ptr<TypeContainer> tc;
     std::shared_ptr<Env> env;

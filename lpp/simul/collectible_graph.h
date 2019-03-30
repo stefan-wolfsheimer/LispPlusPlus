@@ -37,7 +37,7 @@ either expressed or implied, of the FreeBSD Project.
 namespace Lisp
 {
   class Collectible;
-  class GarbageCollector;
+  class Allocator;
   class CollectibleNode;
   class CollectibleEdge;
 
@@ -46,7 +46,7 @@ namespace Lisp
   public:
     using SharedNode = std::shared_ptr<CollectibleNode>;
 
-    CollectibleGraph(const GarbageCollector & collector);
+    CollectibleGraph(const Allocator & collector);
     std::shared_ptr<CollectibleNode> findNode(const Cell & cell) const;
     std::shared_ptr<CollectibleNode> getNode(std::size_t index) const;
     std::shared_ptr<CollectibleNode> getBulkNode(std::size_t index) const;

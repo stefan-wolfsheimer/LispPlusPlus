@@ -1,8 +1,8 @@
 #include <memory>
 #include <lpp/core/default_env.h>
 #include <lpp/core/env.h>
-#include <lpp/core/gc/symbol_container.h>
-#include <lpp/core/gc/garbage_collector.h>
+#include <lpp/core/memory/symbol_container.h>
+#include <lpp/core/memory/allocator.h>
 #include <lpp/core/compiler/forms/define.h>
 #include <lpp/core/compiler/forms/lambda.h>
 
@@ -19,7 +19,7 @@ static void defineForm(std::shared_ptr<Env> env,
 }
 
 //@todo move to grammar framework (scheme module)
-std::shared_ptr<Env> Lisp::makeDefaultEnv(std::shared_ptr<GarbageCollector> gc,
+std::shared_ptr<Env> Lisp::makeDefaultEnv(std::shared_ptr<Allocator> gc,
                                           std::shared_ptr<SymbolContainer> sc)
 {
   auto env = std::make_shared<Env>();

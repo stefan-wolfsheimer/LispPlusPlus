@@ -1,13 +1,13 @@
 #include <lpp/scheme/language.h>
 #include <lpp/core/cell.h>
-#include <lpp/core/gc/garbage_collector.h>
+#include <lpp/core/memory/allocator.h>
 #include <lpp/core/types/forms/choice_of.h>
 #include <lpp/core/types/forms/type_of.h>
 #include <lpp/core/types/function.h>
 #include <lpp/core/opcode.h>
 
 // lisp core
-using GarbageCollector = Lisp::GarbageCollector;
+using Allocator = Lisp::Allocator;
 using Cell = Lisp::Cell;
 using Object = Lisp::Object;
 using InstructionType = Lisp::InstructionType;
@@ -17,7 +17,7 @@ using Idempotent = Lisp::Idempotent;
 
 
 // gc
-using Guard = Lisp::GarbageCollector::Guard;
+using Guard = Lisp::Allocator::Guard;
 
 // forms 
 using ChoiceOf = Lisp::ChoiceOf;
@@ -34,12 +34,12 @@ namespace Lisp
     {
       struct Context
       {
-        Context(GarbageCollector * _gc);
+        Context(Allocator * _gc);
         ~Context();
         static void idempotentForm(const Form * form, const Cell & cell);
         static inline std::vector<Context*>& getContextStack();
         inline void finalize();
-        GarbageCollector * gc ;
+        Allocator * gc ;
         Object funcObject;
         Function * f;
       };
@@ -65,7 +65,7 @@ inline std::vector<Context*>& Context::getContextStack()
   return ctxStack;
 }
 
-inline Context::Context(GarbageCollector * _gc)
+inline Context::Context(Allocator * _gc)
   : gc(_gc), funcObject(_gc->makeRoot<Function>())
 {
   f = funcObject.as<Function>();

@@ -30,10 +30,10 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include <catch.hpp>
 #include <lpp/core/types/polymorphic_object.h>
-#include <lpp/core/gc/garbage_collector.h>
+#include <lpp/core/memory/allocator.h>
 
 using PolymorphicObject = Lisp::PolymorphicObject;
-using GarbageCollector = Lisp::GarbageCollector;
+using Allocator = Lisp::Allocator;
 using Object = Lisp::Object;
 using ManagedType = Lisp::ManagedType;
 using PolymorphicObject = Lisp::PolymorphicObject;
@@ -83,7 +83,7 @@ TEST_CASE("polymorphic_object", "[Types]")
   auto deleted2 = std::make_shared<bool>(false);
   auto deleted21 = std::make_shared<bool>(false);
   {
-    auto coll = std::make_shared<GarbageCollector>(8, 1, 1);
+    auto coll = std::make_shared<Allocator>(8, 1, 1);
     /* @todo manage ManagedTypes in garbage collector (to be consistent)*/
     Object obj1(new UserObject1(1, deleted1));
     Object obj2(new UserObject2(2, deleted2));
