@@ -128,6 +128,7 @@ namespace Lisp
       using Type = CLS;
       using StorageTrait = AtomStorageTrait;
       using IsPolymorphic = std::false_type;
+      using IsAtomic = std::true_type;
 
       static inline IntegerType as(const CellDataType & data, TypeId tid)
       {
@@ -148,6 +149,7 @@ namespace Lisp
       using Type = T*;
       using StorageTrait = AtomStorageTrait;
       using IsPolymorphic = std::false_type;
+      using IsAtomic = std::true_type;
 
       static inline void * as(const CellDataType & data, TypeId tid)
       {
@@ -164,6 +166,7 @@ namespace Lisp
       using Type = T*;
       using StorageTrait = ManagedStorageTrait;
       using IsPolymorphic = POLY;
+      using IsAtomic = std::false_type;
 
       static inline Type as(const CellDataType & data, TypeId tid)
       {
@@ -187,6 +190,7 @@ namespace Lisp
       using Type = T*;
       using StorageTrait = ConsStorageTrait;
       using IsPolymorphic = std::false_type;
+      using IsAtomic = std::false_type;
 
       static inline Type as(const CellDataType & data, TypeId tid)
       {
@@ -210,6 +214,7 @@ namespace Lisp
       using Type = T*;
       using StorageTrait = ContainerStorageTrait;
       using IsPolymorphic = POLY;
+      using IsAtomic = std::false_type;
 
       static inline Type as(const CellDataType & data, TypeId tid)
       {
@@ -233,6 +238,7 @@ namespace Lisp
       using Type = T*;
       using StorageTrait = SymbolStorageTrait;
       using IsPolymorphic = std::false_type;
+      using IsAtomic = std::false_type;
 
       static inline Type as(const CellDataType & data, TypeId tid)
       {
@@ -251,6 +257,7 @@ namespace Lisp
     template<typename T, typename IS_MANAGED, typename IS_CONTAINER>
     struct Polymorphic
     {
+      using IsAtomic = std::false_type;
     };
 
   }

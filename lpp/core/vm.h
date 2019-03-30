@@ -92,6 +92,12 @@ namespace Lisp
     void eval(Function * func);
 
   private:
+    template<typename C>
+    inline const C & _makeRoot(std::true_type, const C & c);
+
+    template<typename C, typename... ARGS>
+    inline C * _makeRoot(std::false_type, const ARGS & ... rest);
+
     std::shared_ptr<Allocator> alloc;
     std::shared_ptr<Env> env;
     std::vector<Object> dataStack;
@@ -109,7 +115,7 @@ std::shared_ptr<Lisp::Allocator> Lisp::Vm::getAllocator() const
 template<typename T, typename... ARGS>
 inline Lisp::Object Lisp::Vm::make(const ARGS & ...rest)
 {
-  return Lisp::Object(alloc->makeRoot<T>(rest...));
+  return Lisp::Object(_makeRoot<T>(typename TypeTraits<T>::IsAtomic(),  rest...));
 }
 
 inline Lisp::Object Lisp::Vm::list()
@@ -184,3 +190,16 @@ inline std::size_t Lisp::Vm::stackSize() const
 {
   return dataStack.size();
 }
+
+template<typename C>
+inline const C & Lisp::Vm::_makeRoot(std::true_type, const C & c)
+{
+  return c;
+}
+
+template<typename T, typename... ARGS>
+inline T * Lisp::Vm::_makeRoot(std::false_type, const ARGS & ... rest)
+{
+  return alloc->makeRoot<T>(rest...);
+}
+

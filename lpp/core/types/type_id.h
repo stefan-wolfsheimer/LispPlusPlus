@@ -170,6 +170,7 @@ namespace Lisp
   {
     using StorageTrait = CollectibleStorageTrait;
     using IsPolymorphic = std::false_type;
+    using IsAtomic = std::false_type;
   };
 
   template<>
@@ -177,6 +178,7 @@ namespace Lisp
   {
     using StorageTrait = CollectibleStorageTrait;
     using IsPolymorphic = std::false_type;
+    using IsAtomic = std::false_type;
   };
 
   template<>

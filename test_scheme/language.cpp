@@ -49,7 +49,7 @@ TEST_CASE("scheme_primitive", "[Language]")
   Object formObj = vm.make<Language>();
   Language * form = formObj.as<Language>();
   {
-    Object atom(10); // = vm.make<IntegerType>(10);
+    Object atom = vm.make<IntegerType>(10);
     REQUIRE(form->isInstance(atom));
     Object func = form->compile(atom);
     REQUIRE(func.isA<Function>());

@@ -186,7 +186,7 @@ namespace Lisp
     template<typename C,  typename... ARGS>
     inline C * _makeRoot(ManagedStorageTrait, ARGS... rest);
 
-    template<typename C,  typename... ARGS>
+    template<typename C>
     inline C * _makeRoot(SymbolStorageTrait, const std::string & name);
 
     inline bool checkSanity(Color color, bool root) const;
@@ -396,7 +396,7 @@ inline C * Lisp::Allocator::_makeRoot(ManagedStorageTrait, ARGS... rest)
   return new C(rest...);
 }
 
-template<typename C,  typename... ARGS>
+template<typename C>
 inline C * Lisp::Allocator::_makeRoot(SymbolStorageTrait, const std::string & name)
 {
   auto res = symbols.insert(std::make_pair(name, (Symbol*)nullptr));
