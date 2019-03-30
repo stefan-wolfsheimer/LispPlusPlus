@@ -1,5 +1,4 @@
 add_library( Core
-  types/array.cpp
   types/reference.cpp
   types/symbol.cpp
   types/form.cpp
