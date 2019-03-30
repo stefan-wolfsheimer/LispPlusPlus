@@ -226,17 +226,17 @@ inline void Lisp::BasicCons::gcStep()
 
 inline void Lisp::BasicCons::setCarCdr(Cell & carcdr, BasicCons * cons, TypeId typeId)
 {
-  cons->grey();
+  cons->getContainer()->grey(cons);
   carcdr = Lisp::nil;
   carcdr.init(cons, typeId);
   gcStep();
 }
 
-inline void Lisp::BasicCons::setCarCdr(Cell & carcdr, Container * cons, TypeId typeId)
+inline void Lisp::BasicCons::setCarCdr(Cell & carcdr, Container * container, TypeId typeId)
 {
-  cons->grey();
+  container->getContainer()->grey(container);
   carcdr = Lisp::nil;
-  carcdr.init(cons, typeId);
+  carcdr.init(container, typeId);
   gcStep();
 }
 

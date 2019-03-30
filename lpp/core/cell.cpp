@@ -48,13 +48,13 @@ void Cell::grey() const
   auto cons = as<BasicCons>();
   if(cons)
   {
-    cons->grey();
+    cons->getContainer()->grey(cons);
     return;
   }
   auto container = as<Container>();
   if(container)
   {
-    container->grey();
+    container->getContainer()->grey(container);
     return;
   }
 }

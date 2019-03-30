@@ -65,6 +65,7 @@ namespace Lisp
     
     inline void root(T * obj);
     inline void unroot(T * obj);
+    inline void grey(T * obj);
     inline void collect();
 
     inline Allocator * getAllocator() const;
@@ -101,7 +102,7 @@ template<typename T>
 inline void Lisp::CollectibleContainer<T>::remove(T * obj)
 {
   assert(elements.size() > 0);
-  assert(elements[obj->getIndex()] == obj);
+  assert(elements[obj->index] == obj);
   std::size_t index = obj->index;
   elements[obj->index] = elements.back();
   elements[obj->index]->index = index;
@@ -161,25 +162,44 @@ inline Lisp::Color Lisp::CollectibleContainer<T>::getColor() const
   return color;
 }
 
-#include <iostream>
 template<typename T>
 inline void Lisp::CollectibleContainer<T>::root(T * obj)
 {
-  assert(!obj->isRoot());
-  assert(obj->index < elements.size());
-  assert(obj == elements[obj->index]);
-  remove(obj);
-  obj->refCount = 1;
-  otherElements->add(obj);
+  if(_isRoot)
+  {
+    ++obj->refCount;
+  }
+  else
+  {
+    assert(obj->index < elements.size());
+    assert(obj == elements[obj->index]);
+    remove(obj);
+    obj->refCount = 1;
+    otherElements->add(obj);
+  }
 }
 
 template<typename T>
 inline void Lisp::CollectibleContainer<T>::unroot(T * obj)
 {
   assert(obj->isRoot());
+  assert(obj->getRefCount() > 0u);
   assert(obj == elements[obj->index]);
-  remove(obj);
-  otherElements->add(obj);
+  if(!--obj->refCount)
+  {
+    remove(obj);
+    otherElements->add(obj);
+  }
+}
+
+template<typename T>
+inline void Lisp::CollectibleContainer<T>::grey(T * obj)
+{
+  if(greyElements)
+  {
+    remove(obj);
+    greyElements->add(obj);
+  }
 }
 
 template<typename T>

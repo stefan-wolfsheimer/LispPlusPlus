@@ -268,7 +268,7 @@ inline C * Lisp::Allocator::makeCons()
   step();
   recycle();
   BasicCons * ret = consPages.next();
-  ret->setRefCount(1u);
+  ret->refCount = 1u;
   consMap.add(ret);
   return static_cast<C*>(ret);
 }
@@ -284,7 +284,7 @@ inline C * Lisp::Allocator::makeRootCons()
   step();
   recycle();
   BasicCons * ret = consPages.next();
-  ret->setRefCount(1u);
+  ret->refCount = 1u;
   consMap.addRoot(ret);
   return static_cast<C*>(ret);
 }

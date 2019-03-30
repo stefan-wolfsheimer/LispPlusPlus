@@ -43,11 +43,13 @@ Object::Object(const Object & rhs) : Cell(rhs)
 {
   if(rhs.isA<BasicCons>())
   {
-    data.pCons->root();
+    data.pCons->getContainer()->root(data.pCons);
+    //data.pCons->root();
   }
   else if(rhs.isA<Container>())
   {
-    data.pContainer->root();
+    data.pContainer->getContainer()->root(data.pContainer);
+    //data.pContainer->root();
   }
 }
 
@@ -55,11 +57,11 @@ Object::Object(const Cell & rhs) : Cell(rhs)
 {
   if(rhs.isA<BasicCons>())
   {
-    data.pCons->root();
+    data.pCons->getContainer()->root(data.pCons);
   }
   else if(rhs.isA<Container>())
   {
-    data.pContainer->root();
+    data.pContainer->getContainer()->root(data.pContainer);
   }
 }
 
@@ -79,14 +81,14 @@ Object & Object::operator=(const Cell & rhs)
     assert(!rhs.isRoot() || rhs.getRefCount() > 0u);
     assert(rhs.checkIndex());
     data.pCons = rhs.data.pCons;
-    data.pCons->root();
+    data.pCons->getContainer()->root(data.pCons);
   }
   else if(rhs.isA<Container>())
   {
     assert(!rhs.isRoot() || rhs.getRefCount() > 0u);
     assert(rhs.checkIndex());
     data.pContainer = rhs.data.pContainer;
-    data.pContainer->root();
+    data.pContainer->getContainer()->root(data.pContainer);
   }
   else if(rhs.isA<ManagedType>())
   {
@@ -110,7 +112,7 @@ Object & Object::operator=(const Object & rhs)
     assert(rhs.getRefCount() > 0u);
     assert(rhs.checkIndex());
     data.pCons = rhs.data.pCons;
-    data.pCons->incRefCount();
+    data.pCons->refCount++;
   }
   else if(rhs.isA<Lisp::Container>())
   {
@@ -118,7 +120,7 @@ Object & Object::operator=(const Object & rhs)
     assert(rhs.getRefCount() > 0u);
     assert(rhs.checkIndex());
     data.pContainer = rhs.data.pContainer;
-    data.pContainer->incRefCount();
+    data.pContainer->refCount++;
   }
   else if(rhs.isA<Lisp::ManagedType>())
   {
@@ -156,28 +158,33 @@ void Object::unsetCons()
 {
   if(isA<BasicCons>())
   {
-    assert(isRoot());
-    assert(getRefCount() > 0u);
-    assert(checkIndex());
-    auto coll = data.pCons->getAllocator();
-    data.pCons->unroot();
-    assert(checkIndex());
-    coll->step();
-    assert(data.pCons->getAllocator()->checkSanity());
-    assert(checkIndex());
-    coll->recycle();
-    assert(checkIndex());
+    // Unroot the object if reference count is 0 (after removing this reference)
+    auto container = data.pCons->getContainer();
+    container->unroot(data.pCons);
 
+    // Perform GC step
+    auto allocator = container->getAllocator();
+    assert(checkIndex());
+    allocator->step();
+    assert(allocator->checkSanity());
+    assert(checkIndex());
+    allocator->recycle();
+    assert(checkIndex());
   }
   else if(isA<Container>())
   {
-    assert(isRoot());
-    assert(getRefCount() > 0u);
+    // Unroot the object if reference count is 0 (after removing this reference)
+    auto container = data.pContainer->getContainer();
+    container->unroot(data.pContainer);
+
+    // Perform GC step
+    auto allocator = container->getAllocator();
     assert(checkIndex());
-    auto coll = data.pContainer->getAllocator();
-    data.pContainer->unroot();
-    coll->step();
-    coll->recycle();
+    allocator->step();
+    assert(allocator->checkSanity());
+    assert(checkIndex());
+    allocator->recycle();
+    assert(checkIndex());
   }
 }
 
