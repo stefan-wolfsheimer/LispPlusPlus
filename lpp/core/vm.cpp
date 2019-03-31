@@ -98,16 +98,26 @@ Object Lisp::Vm::find(const std::string & name) const
   return env->find(alloc->makeRoot<Symbol>(name));
 }
 
+//@todo remove
 Object Vm::compile(const Object & obj) const
 {
   Jit jit(alloc, env);
   return jit.compile(obj);
 }
 
+//@todo remove
 Object Vm::compileAndEval(const Object & obj)
 {
   Object func = compile(obj);
   eval(func.as<Function>());
+  Object ret = top();
+  pop();
+  return ret;
+}
+
+Object Vm::evalAndReturn(Function * func)
+{
+  eval(func);
   Object ret = top();
   pop();
   return ret;

@@ -120,6 +120,7 @@ namespace Lisp
     inline void makeReference(std::vector<Object>::iterator stack_itr,
                               std::shared_ptr<Allocator> gc);
 
+    void disassemble(std::ostream & ost) const;
     //////////////////////////////////////////////////
     // implementation of the Container interface
     //////////////////////////////////////////////////

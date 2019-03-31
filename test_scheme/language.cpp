@@ -31,6 +31,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <catch.hpp>
 #include <lpp/core/vm.h>
 #include <lpp/core/types/lisp_string.h>
+#include <lpp/core/types/function.h>
 
 #include <lpp/scheme/language.h>
 
@@ -38,12 +39,14 @@ using Vm = Lisp::Vm;
 
 using Language = Lisp::Scheme::Language;
 using Object = Lisp::Object;
+using IntegerType = Lisp::IntegerType;
 using Form = Lisp::Form;
 using String = Lisp::String;
 using Function = Lisp::Function;
-using IntegerType = Lisp::IntegerType;
+using Symbol = Lisp::Symbol;
 
-TEST_CASE("scheme_primitive", "[Language]")
+
+TEST_CASE("scm_primitive", "[Language]")
 {
   Vm vm;
   Object formObj = vm.make<Language>();
@@ -54,7 +57,7 @@ TEST_CASE("scheme_primitive", "[Language]")
     Object func = form->compile(atom);
     REQUIRE(func.isA<Function>());
     REQUIRE(func.getRefCount() == 1u);
-    Object res = vm.compileAndEval(atom);
+    Object res = vm.evalAndReturn(func.as<Function>());
     REQUIRE(res.isA<IntegerType>());
     REQUIRE(res.as<IntegerType>() == 10);
   }
@@ -64,8 +67,70 @@ TEST_CASE("scheme_primitive", "[Language]")
     Object func = form->compile(atom);
     REQUIRE(func.isA<Function>());
     REQUIRE(func.getRefCount() == 1u);
-    Object res = vm.compileAndEval(atom);
+    Object res = vm.evalAndReturn(func.as<Function>());
     REQUIRE(res.isA<String>());
     REQUIRE(res.as<String>()->getCString() == "hello");
   }
 }
+
+TEST_CASE("scm_symbol_lookup", "[Scheme]")
+{
+  using Undefined = Lisp::Undefined;
+  Vm vm;
+  Object formObj = vm.make<Language>();
+  Language * lang = formObj.as<Language>();
+  std::size_t stackSize = vm.stackSize();
+  Object func = formObj.as<Language>()->compile(vm.make<Symbol>("a"));
+  REQUIRE(func.isA<Function>());
+  REQUIRE(func.getRefCount() == 1u);
+  // @todo exception if unbound
+  Object res = vm.evalAndReturn(func.as<Function>());
+  REQUIRE(res.isA<Undefined>());
+  REQUIRE(stackSize == vm.stackSize());
+}
+
+TEST_CASE("scm_define_primitive", "[Scheme]")
+{
+  using Undefined = Lisp::Undefined;
+  Vm vm;
+  Object formObj = vm.make<Language>();
+  Language * lang = formObj.as<Language>();
+  std::size_t stackSize = vm.stackSize();
+  lang->compileAndEval(vm,
+                       vm.list(vm.make<Symbol>("define"),
+                               vm.make<Symbol>("a"),
+                               vm.make<IntegerType>(10)));
+  Object res = lang->compileAndEval(vm,
+                                    vm.make<Symbol>("a"));
+  REQUIRE(res.isA<IntegerType>());
+  REQUIRE(res.as<IntegerType>() == 10);
+  REQUIRE(stackSize == vm.stackSize());
+}
+
+TEST_CASE("scm_lambda_constant", "[Scheme]")
+{
+  // (lambda (a b) 1) -> #Function
+  Vm vm;
+  std::size_t initStackSize = vm.stackSize();
+  Object formObj = vm.make<Language>();
+  Language * lang = formObj.as<Language>();
+  Object func = lang->compileAndEval(vm,
+                                     vm.list(vm.make<Symbol>("lambda"),
+                                             vm.list(vm.make<Symbol>("a"), vm.make<Symbol>("b")),
+                                             vm.make<IntegerType>(1)));
+  REQUIRE(func.getRefCount() == 1u);
+  REQUIRE(func.isA<Function>());
+  REQUIRE(func.as<Function>()->numArguments() == 2);
+  REQUIRE(vm.stackSize() == initStackSize);
+
+  // (func 2 3)
+  REQUIRE(vm.stackSize() == initStackSize);
+  // @todo move to lang->compileAndEval (requires (<funcobj> ... ) form)
+  Object res = vm.compileAndEval(vm.list(func,
+                                         vm.make<IntegerType>(2),
+                                         vm.make<IntegerType>(3)));
+  REQUIRE(res.isA<IntegerType>());
+  REQUIRE(res.as<IntegerType>() == 1);
+
+}
+

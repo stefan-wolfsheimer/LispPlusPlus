@@ -6,6 +6,7 @@
 namespace Lisp
 {
   class Allocator;
+  class Vm;
 
   namespace Scheme
   {
@@ -16,8 +17,11 @@ namespace Lisp
       void init() override;
       bool isInstance(const Cell & cell) const override;
       Object compile(const Cell & cell) const;
+      Object compileAndEval(Vm & vm, const Cell & cell) const;
     private:
       Form * expression;
+      Form * topLevelForm;
+      Form * lambdaForm;
     };
   }
 }

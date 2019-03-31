@@ -89,6 +89,7 @@ namespace Lisp
     /** Compile and eval expression, pop result from stack
      */
     Object compileAndEval(const Object & obj);
+    Object evalAndReturn(Function * func);
     void eval(Function * func);
 
   private:
