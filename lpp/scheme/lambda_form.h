@@ -15,8 +15,10 @@ namespace Lisp
       LambdaForm(Form * _body);
       void init() override;
       bool isInstance(const Cell & cell) const;
+      bool match(const Cell & cell) const override;
     private:
       inline bool parse(Function * func, Cons *cdr) const;
+      
       Form * lambdaSymbol;
       Form * argList;
       Form * body;

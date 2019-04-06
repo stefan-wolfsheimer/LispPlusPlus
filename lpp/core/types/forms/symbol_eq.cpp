@@ -13,6 +13,11 @@ SymbolEq::SymbolEq(Symbol * _symb, std::function<void()> func) : cb(func)
 
 bool SymbolEq::isInstance(const Cell & cell) const
 {
+  return (cell.as<Symbol>() == symb);
+}
+
+bool SymbolEq::match(const Cell & cell) const
+{
   if(cell.as<Symbol>() == symb)
   {
     if(cb)

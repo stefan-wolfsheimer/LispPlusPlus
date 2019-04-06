@@ -17,9 +17,17 @@ ConsOf::ConsOf(Form * _car, Form * _cdr, std::function<void(Form *, const Cell &
 bool ConsOf::isInstance(const Cell & cell) const
 {
   auto cons = cell.as<Cons>();
+  return (cons &&
+          car->isInstance(cons->getCarCell()) &&
+          cdr->isInstance(cons->getCdrCell()));
+}
+
+bool ConsOf::match(const Cell & cell) const
+{
+  auto cons = cell.as<Cons>();
   if(cons &&
-     car->isInstance(cons->getCarCell()) &&
-     cdr->isInstance(cons->getCdrCell()))
+     car->match(cons->getCarCell()) &&
+     cdr->match(cons->getCdrCell()))
   {
     if(cb)
     {

@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <lpp/core/types/form.h>
+#include <lpp/core/language_interface.h>
 
 /////////////////////////////////////////////////////////////////
 namespace Lisp
@@ -10,14 +11,15 @@ namespace Lisp
 
   namespace Scheme
   {
-    class Language : public ::Lisp::Form
+    class Language : public ::Lisp::Form,
+                     public ::Lisp::LanguageInterface
     {
     public:
       Language();
       void init() override;
       bool isInstance(const Cell & cell) const override;
-      Object compile(const Cell & cell) const;
-      Object compileAndEval(Vm & vm, const Cell & cell) const;
+      Object compile(const Cell & cell) const override;
+      bool match(const Cell & cell) const override;
     private:
       Form * expression;
       Form * topLevelForm;

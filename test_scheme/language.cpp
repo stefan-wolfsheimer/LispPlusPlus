@@ -93,15 +93,12 @@ TEST_CASE("scm_define_primitive", "[Scheme]")
 {
   using Undefined = Lisp::Undefined;
   Vm vm;
-  Object formObj = vm.make<Language>();
-  Language * lang = formObj.as<Language>();
+  Object lang = vm.make<Language>();
   std::size_t stackSize = vm.stackSize();
-  lang->compileAndEval(vm,
-                       vm.list(vm.make<Symbol>("define"),
-                               vm.make<Symbol>("a"),
-                               vm.make<IntegerType>(10)));
-  Object res = lang->compileAndEval(vm,
-                                    vm.make<Symbol>("a"));
+  vm.compileAndEval(lang, vm.list(vm.make<Symbol>("define"),
+                                  vm.make<Symbol>("a"),
+                                  vm.make<IntegerType>(10)));
+  Object res = vm.compileAndEval(lang, vm.make<Symbol>("a"));
   REQUIRE(res.isA<IntegerType>());
   REQUIRE(res.as<IntegerType>() == 10);
   REQUIRE(stackSize == vm.stackSize());
@@ -112,21 +109,26 @@ TEST_CASE("scm_lambda_constant", "[Scheme]")
   // (lambda (a b) 1) -> #Function
   Vm vm;
   std::size_t initStackSize = vm.stackSize();
-  Object formObj = vm.make<Language>();
-  Language * lang = formObj.as<Language>();
-  Object func = lang->compileAndEval(vm,
-                                     vm.list(vm.make<Symbol>("lambda"),
-                                             vm.list(vm.make<Symbol>("a"), vm.make<Symbol>("b")),
-                                             vm.make<IntegerType>(1)));
+  Object lang = vm.make<Language>();
+  Object func = vm.compileAndEval(lang,
+                                  vm.list(vm.make<Symbol>("lambda"),
+                                          vm.list(vm.make<Symbol>("a"), vm.make<Symbol>("b")),
+                                          vm.make<IntegerType>(1)));
+
   REQUIRE(func.getRefCount() == 1u);
   REQUIRE(func.isA<Function>());
   REQUIRE(func.as<Function>()->numArguments() == 2);
+
   REQUIRE(vm.stackSize() == initStackSize);
 
   // (func 2 3)
   REQUIRE(vm.stackSize() == initStackSize);
-  // @todo move to lang->compileAndEval (requires (<funcobj> ... ) form)
-  Object res = vm.compileAndEval(vm.list(func,
+  Object f = vm.compile(lang,
+                               vm.list(func,
+                                       vm.make<IntegerType>(2),
+                                       vm.make<IntegerType>(3)));
+  Object res = vm.compileAndEval(lang,
+                                 vm.list(func,
                                          vm.make<IntegerType>(2),
                                          vm.make<IntegerType>(3)));
   REQUIRE(res.isA<IntegerType>());

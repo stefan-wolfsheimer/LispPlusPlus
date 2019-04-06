@@ -21,6 +21,10 @@ namespace Lisp
       static void symbolForm(const Form * form, const Cell & cell);
       static void defineForm(Form *, const Cell & car, Form *, const Cell & cdr);
       static void argumentListForm(const Cell & car);
+
+      static void functionEvaluationArgumentForm();
+      static void functionEvaluationForm(std::size_t n, const Cell & func);
+
       static inline std::vector<Context*>& getContextStack();
       inline void finalize();
       inline Function * getFunction();

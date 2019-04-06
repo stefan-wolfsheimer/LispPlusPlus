@@ -63,21 +63,26 @@ TEST_CASE("choice_of", "[Form]")
   
   REQUIRE(choiceForm.as<Form>()->isInstance(str));
   REQUIRE(choiceForm.as<Form>()->isInstance(intval));
+  REQUIRE(choiceForm.as<Form>()->match(str));
+  REQUIRE(choiceForm.as<Form>()->match(intval));
 
   {
     matchedForm = nullptr;
     REQUIRE_FALSE(choiceForm.as<Form>()->isInstance(Lisp::nil));
+    REQUIRE_FALSE(choiceForm.as<Form>()->match(Lisp::nil));
     REQUIRE(matchedForm == nullptr);
   }
   {
     matchedForm = nullptr;
     REQUIRE(choiceForm.as<Form>()->isInstance(str));
+    REQUIRE(choiceForm.as<Form>()->match(str));
     REQUIRE(matchedForm == strForm.as<Form>());
   }
 
   {
     matchedForm = nullptr;
     REQUIRE(choiceForm.as<Form>()->isInstance(intval));
+    REQUIRE(choiceForm.as<Form>()->match(intval));
     REQUIRE(matchedForm == intForm.as<Form>());
   }
 }

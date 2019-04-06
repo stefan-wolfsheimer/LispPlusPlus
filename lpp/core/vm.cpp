@@ -35,6 +35,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <lpp/core/compiler/jit.h>
 #include <lpp/core/opcode.h>
 #include <lpp/core/types/function.h>
+#include <lpp/core/types/form.h>
 #include <lpp/core/types/type_id.h>
 #include <lpp/core/types/symbol.h>
 #include <lpp/core/types/reference.h>
@@ -97,6 +98,30 @@ Object Lisp::Vm::find(const std::string & name) const
 {
   return env->find(alloc->makeRoot<Symbol>(name));
 }
+
+Object Vm::compile(const Cell & _lang, const Cell & cell) const
+{
+  LanguageInterface * lang = dynamic_cast<LanguageInterface*>(_lang.as<Form>());
+  assert(lang);
+  return lang->compile(cell);
+}
+
+Object Vm::compileAndEval(const LanguageInterface * lang, const Cell & cell)
+{
+  Object func = compile(lang, cell);
+  eval(func.as<Function>());
+  Object ret = top();
+  pop();
+  return ret;
+}
+
+Object Vm::compileAndEval(const Cell & _lang, const Cell & cell)
+{
+  LanguageInterface * lang = dynamic_cast<LanguageInterface*>(_lang.as<Form>());
+  assert(lang);
+  return compileAndEval(lang, cell);
+}
+
 
 //@todo remove
 Object Vm::compile(const Object & obj) const

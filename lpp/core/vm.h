@@ -31,6 +31,7 @@ either expressed or implied, of the FreeBSD Project.
 #pragma once
 #include <memory>
 #include <lpp/core/object.h>
+#include <lpp/core/language_interface.h>
 #include <lpp/core/memory/allocator.h>
 #include <lpp/core/types/array.h>
 #include <lpp/core/default_env.h>
@@ -83,7 +84,14 @@ namespace Lisp
     inline void pop();
     inline void pop(std::size_t n);
     inline std::size_t stackSize() const;
+
+    inline Object compile(const LanguageInterface * lang, const Cell & cell) const;
+    Object compileAndEval(const LanguageInterface * lang, const Cell & cell);
+    Object compile(const Cell & lang, const Cell & cell) const;
+    Object compileAndEval(const Cell & lang, const Cell & cell); 
     
+    
+    // @todo remove this version
     Object compile(const Object & obj) const;
 
     /** Compile and eval expression, pop result from stack
@@ -202,5 +210,10 @@ template<typename T, typename... ARGS>
 inline T * Lisp::Vm::_makeRoot(std::false_type, const ARGS & ... rest)
 {
   return alloc->makeRoot<T>(rest...);
+}
+
+inline Lisp::Object Lisp::Vm::compile(const Lisp::LanguageInterface * lang, const Lisp::Cell & cell) const
+{
+  return lang->compile(cell);
 }
 

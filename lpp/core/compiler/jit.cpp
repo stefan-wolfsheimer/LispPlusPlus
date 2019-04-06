@@ -104,11 +104,13 @@ void Jit::compile(Function * f, const Cell & obj)
   }
   else if(obj.isA<Symbol>())
   {
+    // this case has been migrated to scheme module
     compileSymbol(f, obj);
   }
   else
   {
     // value
+    // this case has been migrated to scheme module
     f->appendInstruction(RETURNV, f->dataSize());
     f->appendData(obj);
   }

@@ -44,6 +44,7 @@ namespace Lisp
                          Function *,
                          const Cell & obj) const override;
     bool isInstance(const Cell & cell) const override;
+    bool match(const Cell & cell) const override;
     virtual void init() override;
   private:
     Form * pattern;

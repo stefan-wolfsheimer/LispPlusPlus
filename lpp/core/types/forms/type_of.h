@@ -13,6 +13,11 @@ namespace Lisp
 
     bool isInstance(const Cell & cell) const override
     {
+      return cell.isA<T>();
+    }
+
+    bool match(const Cell & cell) const override
+    {
       if(cell.isA<T>())
       {
         if(cb)

@@ -8,6 +8,7 @@ namespace Lisp
   public:
     ListOf(Form * _member, std::function<void(const Cell & car)> func=nullptr);
     bool isInstance(const Cell & cell) const override;
+    bool match(const Cell & cell) const override;
   private:
     Form * member;
     std::function<void(const Cell & car)> cb;

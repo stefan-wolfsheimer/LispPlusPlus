@@ -19,6 +19,28 @@ bool ListOf::isInstance(const Cell & cell) const
   {
     if(c->isA<Nil>())
     {
+      return true;
+    }
+    Cons * cons = c->as<Cons>();
+    if(cons && member->isInstance(cons->getCarCell()))
+    {
+      c = &cons->getCdrCell();
+    }
+    else
+    {
+      return false;
+    }
+  }
+  return false;
+}
+
+bool ListOf::match(const Cell & cell) const
+{
+  const Cell * c = &cell;
+  while(true)
+  {
+    if(c->isA<Nil>())
+    {
       if(cb)
       {
         cb(cell);
@@ -28,7 +50,7 @@ bool ListOf::isInstance(const Cell & cell) const
     Cons * cons = c->as<Cons>();
     if(cons)
     {
-      if(!member->isInstance(cons->getCarCell()))
+      if(!member->match(cons->getCarCell()))
       {
         return false;
       }

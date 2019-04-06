@@ -22,7 +22,16 @@ namespace Lisp
     template<typename T,  typename... ARGS>
     T * makeRoot(ARGS ...rest);
 
+    /**
+     * return true if cell matches the pattern.
+     */
     virtual bool isInstance(const Cell & cell) const = 0;
+
+    /**
+     * Attempts to match the cell against the form and calls the registered
+     * function.
+     */
+    virtual bool match(const Cell & cell) const = 0;
     virtual void forEachChild(std::function<void(const Cell&)> func) const override;
     virtual bool greyChildren() override;
     virtual void resetGcPosition() override;

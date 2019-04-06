@@ -9,6 +9,7 @@ namespace Lisp
   public:
     ChoiceOf(const std::vector<Form*> &  _member, std::function<void(Form *, const Cell & cell)> func=nullptr);
     bool isInstance(const Cell & cell) const override;
+    bool match(const Cell & cell) const override;
   private:
     std::function<void(Form *, const Cell & cell)> cb;
   };

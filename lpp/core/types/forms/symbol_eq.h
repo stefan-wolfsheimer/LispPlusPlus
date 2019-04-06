@@ -10,6 +10,7 @@ namespace Lisp
   public:
     SymbolEq(Symbol *, std::function<void()> func=nullptr);
     bool isInstance(const Cell & cell) const override;
+    bool match(const Cell & cell) const override;
   private:
     std::function<void()> cb;
     const Symbol * symb;

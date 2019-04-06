@@ -1,4 +1,5 @@
 #include <lpp/scheme/context.h>
+#include <lpp/core/util.h>
 #include <assert.h>
 
 using Context = Lisp::Scheme::Context;
@@ -41,13 +42,34 @@ void Context::defineForm(Form *, const Cell & car, Form *, const Cell & cdr)
   }
 }
 
-void Context::argumentListForm(const Cell & car)
+void Context::argumentListForm(const Cell & lst)
 {
   //@todo check duplicate
   //@todo lookup in context stack
   if(!Context::getContextStack().empty())
   {
     Function * f = Context::getContextStack().back()->getFunction();
-    f->addArgument(car);
+    Lisp::forEachCar(lst, [f](const Cell & cell) {
+        f->addArgument(cell);
+     });
+  }
+}
+
+void Context::functionEvaluationArgumentForm()
+{
+  if(!Context::getContextStack().empty())
+  {
+    Function * f = Context::getContextStack().back()->getFunction();
+    f->appendInstruction(INCRET);
+  }
+}
+
+void Context::functionEvaluationForm(std::size_t n, const Cell & func)
+{
+  if(!Context::getContextStack().empty())
+  {
+    Function * f = Context::getContextStack().back()->getFunction();
+    f->appendInstruction(FUNCALL, n, f->dataSize());
+    f->appendData(func);
   }
 }

@@ -43,6 +43,11 @@ bool Lambda::isInstance(const Cell & cell) const
   return pattern->isInstance(cell);
 }
 
+bool Lambda::match(const Cell & cell) const
+{
+  return pattern->isInstance(cell);
+}
+
 void Lambda::compile(Jit & jit, Function * f0, const Cell & obj) const
 {
   // ((a b c) ...)

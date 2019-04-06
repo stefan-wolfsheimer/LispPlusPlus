@@ -47,9 +47,9 @@ inline bool LambdaForm::parse(Function * f0, Cons *cdr) const
 {
   Context ctx(getAllocator());
   //@todo add argument list
-  if(argList->isInstance(cdr->getCarCell()))
+  if(argList->match(cdr->getCarCell()))
   {
-    if(body->isInstance(cdr->getCdrCell()))
+    if(body->match(cdr->getCdrCell()))
     {
       ctx.finalize();
       f0->appendInstruction(RETURNV, f0->dataSize());
@@ -58,6 +58,25 @@ inline bool LambdaForm::parse(Function * f0, Cons *cdr) const
     }
   }
   return false;
+}
+
+bool LambdaForm::match(const Cell & cell) const
+{
+  bool ret = false;
+  Cons * cons = cell.as<Cons>();
+  if(cons)
+  {
+    // ( . )
+    if(lambdaSymbol->match(cons->getCarCell()))
+    {
+      Cons * cdr = cons->getCdrCell().as<Cons>();
+      if(cdr)
+      {
+        ret = parse(Context::getContextStack().back()->getFunction(), cdr);
+      }
+    }
+  }
+  return ret;
 }
 
 bool LambdaForm::isInstance(const Cell & cell) const
@@ -70,12 +89,10 @@ bool LambdaForm::isInstance(const Cell & cell) const
     if(lambdaSymbol->isInstance(cons->getCarCell()))
     {
       Cons * cdr = cons->getCdrCell().as<Cons>();
-      if(cdr)
-      {
-        ret = parse(Context::getContextStack().back()->getFunction(),
-                    cdr);
-      }
+      return (cdr &&
+              argList->isInstance(cdr->getCarCell()) &&
+              body->isInstance(cdr->getCdrCell()));
     }
   }
-  return ret;
+  return false;
 }

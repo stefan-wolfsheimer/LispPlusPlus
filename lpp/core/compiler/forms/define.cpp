@@ -31,6 +31,10 @@ void Define::init()
                                                        make<NilForm>())));
 }
 
+bool Define::match(const Cell & cell) const
+{
+  return pattern->isInstance(cell);
+}
 
 bool Define::isInstance(const Cell & cell) const
 {
