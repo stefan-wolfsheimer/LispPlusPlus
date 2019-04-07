@@ -34,10 +34,10 @@ IF(CMAKE_BUILD_TYPE MATCHES Debug)
       runtests.cpp
       test_core/test_object.cpp
       test_core/test_integer.cpp
-      test_core/test_string.cpp
       test_core/test_cons_pages.cpp
       test_core/test_collectible_container.cpp
       test_core/test_cons.cpp
+      test_core/types/string.cpp
       test_core/types/array.cpp
       test_core/types/polymorphic_object.cpp
       test_core/types/polymorphic_container.cpp

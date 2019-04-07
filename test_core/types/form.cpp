@@ -31,7 +31,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <functional>
 #include <catch.hpp>
 #include <lpp/core/vm.h>
-#include <lpp/core/types/lisp_string.h>
+#include <lpp/core/types/string.h>
 #include <lpp/core/types/forms/choice_of.h>
 #include <lpp/core/types/forms/type_of.h>
 
