@@ -30,7 +30,6 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include <assert.h>
 #include <lpp/core/vm.h>
-#include <lpp/core/default_env.h>
 #include <lpp/core/env.h>
 #include <lpp/core/opcode.h>
 #include <lpp/core/types/function.h>
@@ -78,7 +77,7 @@ using Reference = Lisp::Reference;
 Vm::Vm(std::shared_ptr<Allocator> _alloc,
        std::shared_ptr<Env> _env)
   : alloc(_alloc ? _alloc : std::make_shared<Allocator>()),
-    env(_env ? _env : makeDefaultEnv(alloc))
+    env(_env ? _env : std::make_shared<Env>())
 {
   dataStack.reserve(1024);
 }

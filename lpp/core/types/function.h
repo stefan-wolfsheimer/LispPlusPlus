@@ -65,7 +65,7 @@ namespace Lisp
     friend class Vm;
     using Code = std::vector<InstructionType>;
     using const_iterator = Code::const_iterator;
-    static constexpr std::size_t notFound = std::numeric_limits<std::size_t>::max();
+    static const std::size_t notFound;
 
     Function();
     Function(const Code & instr, const Array & data);

@@ -34,8 +34,6 @@ either expressed or implied, of the FreeBSD Project.
 #include <lpp/core/language_interface.h>
 #include <lpp/core/memory/allocator.h>
 #include <lpp/core/types/array.h>
-#include <lpp/core/default_env.h>
-
 
 namespace Lisp
 {

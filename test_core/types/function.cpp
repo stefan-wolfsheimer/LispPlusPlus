@@ -28,39 +28,40 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#pragma once
-#include <unordered_map>
-#include <memory>
-#include <lpp/core/compiler/scope.h>
+#include <catch.hpp>
+#include <lpp/core/vm.h>
+#include <lpp/core/types/function.h>
+#include <lpp/core/types/reference.h>
+#include <lpp/core/types/symbol.h>
 
-namespace Lisp
-{
-  class ScopeGuard
-  {
-  public:
-    ScopeGuard(std::shared_ptr<Scope> & _parent, const Object & fobj);
-    ~ScopeGuard();
-  private:
-    std::shared_ptr<Scope> & scope;
-  };
-}
+using Vm = Lisp::Vm;
+using Object = Lisp::Object;
+using Function = Lisp::Function;
+using Symbol = Lisp::Symbol;
+using Reference = Lisp::Reference;
+using IntegerType = Lisp::IntegerType;
 
-////////////////////////////////////////////////////////////////////////////////
-//
-// Implementation
-//
-////////////////////////////////////////////////////////////////////////////////
-inline Lisp::ScopeGuard::ScopeGuard(std::shared_ptr<Scope> & _scope,
-                                    const Object & fobj)
-  : scope(_scope)
+TEST_CASE("function", "[Function]")
 {
-  auto newScope = std::make_shared<Scope>(_scope, fobj);
-  scope.swap(newScope);
-}
+  Vm vm;
+  Object f1 = vm.make<Function>();
+  Object f2 = vm.make<Function>();
+  f1.as<Function>()->addArgument(vm.make<Symbol>("a"));
+  f1.as<Function>()->addArgument(vm.make<Symbol>("b"));
+  REQUIRE(f1.as<Function>()->numArguments() == 2);
+  REQUIRE(f1.as<Function>()->getArgumentPos(vm.make<Symbol>("a")) == 0);
+  REQUIRE(f1.as<Function>()->getArgumentPos(vm.make<Symbol>("b")) == 1);
+  REQUIRE(f1.as<Function>()->getArgumentPos(vm.make<Symbol>("c")) == Function::notFound);
+  REQUIRE_FALSE(f1.as<Function>()->getArgumentTraits(0).isReference());
+  REQUIRE_FALSE(f1.as<Function>()->getArgumentTraits(1).isReference());
 
-inline Lisp::ScopeGuard::~ScopeGuard()
-{
-  auto oldScope = scope->getParent();
-  scope.swap(oldScope);
-  oldScope.reset();
+  Object sa = f1.as<Function>()->shareArgument(0);
+  REQUIRE(f1.as<Function>()->getArgumentTraits(0).isReference());
+  REQUIRE_FALSE(f1.as<Function>()->getArgumentTraits(1).isReference());
+  std::size_t refIndex = f1.as<Function>()->getArgumentTraits(0).getReferenceIndex();
+  REQUIRE(f1.as<Function>()->atCell(refIndex).isA<Reference>());
+  REQUIRE(sa.as<Reference>() == f1.as<Function>()->atCell(refIndex).as<Reference>());
+  sa.as<Reference>()->setValue(vm.make<IntegerType>(12));
+  REQUIRE(f1.as<Function>()->getValue(refIndex).isA<IntegerType>());
+  REQUIRE(f1.as<Function>()->getValue(refIndex).as<IntegerType>() == 12);
 }

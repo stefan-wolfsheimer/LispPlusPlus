@@ -1,7 +1,9 @@
+#include <limits>
 #include <lpp/core/types/function.h>
 #include <lpp/core/opcode.h>
-
 using Function = Lisp::Function;
+
+const std::size_t Function::notFound = std::numeric_limits<std::size_t>::max();
 
 void Function::disassemble(std::ostream & ost) const
 {

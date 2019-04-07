@@ -9,12 +9,8 @@ add_library( Core
   types/forms/symbol_eq.cpp
   memory/cons_pages.cpp
   memory/allocator.cpp
-  compiler/jit.cpp
-  compiler/forms/define.cpp
-  compiler/forms/lambda.cpp
   cell.cpp
   object.cpp
   exception.cpp
   util.cpp
-  default_env.cpp
   vm.cpp )
