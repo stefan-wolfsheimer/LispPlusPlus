@@ -13,6 +13,7 @@
 #include <lpp/core/types/forms/symbol_eq.h>
 #include <lpp/core/types/function.h>
 #include <lpp/core/types/symbol.h>
+#include <lpp/core/types/reference.h>
 #include <lpp/core/opcode.h>
 
 // lisp core
@@ -28,6 +29,7 @@ using Form = Lisp::Form;
 using Idempotent = Lisp::Idempotent;
 using Function = Lisp::Function;
 using Symbol = Lisp::Symbol;
+using Reference = Lisp::Reference;
 using Nil = Lisp::Nil;
 
 
@@ -37,6 +39,7 @@ using Guard = Lisp::Allocator::Guard;
 // forms 
 using ChoiceOf = Lisp::ChoiceOf;
 using IdempotentForm = Lisp::TypeOf<Idempotent>;
+using ReferenceForm = Lisp::TypeOf<Reference>;
 using SymbolForm = Lisp::TypeOf<Symbol>;
 using NilForm = Lisp::TypeOf<Nil>;
 using FunctionForm = Lisp::TypeOf<Function>;
@@ -91,6 +94,7 @@ void Language::init()
   //expressions 11.4
   expression = makeRoot<ChoiceOf>();
   expression->add(make<IdempotentForm>(Context::idempotentForm));
+  expression->add(make<ReferenceForm>(Context::referenceForm));
   expression->add(make<SymbolForm>(Context::symbolForm));
   expression->add(make<LambdaForm>(make<ConsOf>(expression,
                                                 make<NilForm>())));

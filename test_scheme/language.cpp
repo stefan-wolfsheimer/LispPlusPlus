@@ -32,6 +32,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <lpp/core/vm.h>
 #include <lpp/core/types/lisp_string.h>
 #include <lpp/core/types/function.h>
+#include <lpp/core/types/reference.h>
 
 #include <lpp/scheme/language.h>
 
@@ -44,9 +45,12 @@ using Form = Lisp::Form;
 using String = Lisp::String;
 using Function = Lisp::Function;
 using Symbol = Lisp::Symbol;
+using Reference = Lisp::Reference;
 
-
-TEST_CASE("scm_primitive", "[Language]")
+/*****************************************
+ * Primitives
+ *****************************************/
+TEST_CASE("scm_primitive", "[Scheme]")
 {
   Vm vm;
   Object formObj = vm.make<Language>();
@@ -73,6 +77,27 @@ TEST_CASE("scm_primitive", "[Language]")
   }
 }
 
+TEST_CASE("scm_reference", "[Scheme]")
+{
+  Vm vm;
+  Object lang = vm.make<Language>();
+  Object a(vm.make<Symbol>("a"));
+  Object refA(vm.make<Reference>(a, vm.make<IntegerType>(1)));
+  REQUIRE(refA.isA<Reference>());
+  std::size_t stackSize = vm.stackSize();
+  Object func = vm.compile(lang, refA);
+  REQUIRE(func.getRefCount() == 1u);
+  REQUIRE(func.isA<Function>());
+  REQUIRE(stackSize == vm.stackSize());
+  Object res = vm.evalAndReturn(func.as<Function>());
+  REQUIRE(stackSize == vm.stackSize());
+  REQUIRE(res.isA<IntegerType>());
+  REQUIRE(res.as<IntegerType>() == 1u);
+}
+
+/*****************************************
+ * Define / symbol lookup
+ *****************************************/
 TEST_CASE("scm_symbol_lookup", "[Scheme]")
 {
   using Undefined = Lisp::Undefined;
@@ -95,10 +120,17 @@ TEST_CASE("scm_define_primitive", "[Scheme]")
   Vm vm;
   Object lang = vm.make<Language>();
   std::size_t stackSize = vm.stackSize();
-  vm.compileAndEval(lang, vm.list(vm.make<Symbol>("define"),
-                                  vm.make<Symbol>("a"),
-                                  vm.make<IntegerType>(10)));
-  Object res = vm.compileAndEval(lang, vm.make<Symbol>("a"));
+  {
+    vm.compileAndEval(lang, vm.list(vm.make<Symbol>("define"),
+                                    vm.make<Symbol>("a"),
+                                    vm.make<IntegerType>(10)));
+    vm.getAllocator()->cycle();
+  }
+  Object res = vm.find("a");
+  REQUIRE(res.isA<IntegerType>());
+  REQUIRE(res.as<IntegerType>() == 10);
+
+  res = vm.compileAndEval(lang, vm.make<Symbol>("a"));
   REQUIRE(res.isA<IntegerType>());
   REQUIRE(res.as<IntegerType>() == 10);
   REQUIRE(stackSize == vm.stackSize());
@@ -129,7 +161,6 @@ TEST_CASE("scm_lambda_constant", "[Scheme]")
                         vm.list(func,
                                 vm.make<IntegerType>(2),
                                 vm.make<IntegerType>(3)));
-  f.as<Function>()->disassemble(std::cout);
   Object res = vm.compileAndEval(lang,
                                  vm.list(func,
                                          vm.make<IntegerType>(2),
@@ -300,39 +331,84 @@ TEST_CASE("scm_nested_scopes_2", "[Scheme]")
 
 TEST_CASE("scm_car_lambda", "[Scheme]")
 {
+  /*
+   * ((lambda (a b) b)
+   *   1 2)
+   * -> 2
+   */
+  Vm vm;
+  Object lang = vm.make<Language>();
+  std::size_t initStackSize = vm.stackSize();
+  Object res = vm.compileAndEval(lang,
+                                 vm.list(vm.list(vm.make<Symbol>("lambda"),
+                                                 vm.list(vm.make<Symbol>("a"),
+                                                         vm.make<Symbol>("b")),
+                                                 vm.make<Symbol>("b")),
+                                         vm.make<IntegerType>(1),
+                                         vm.make<IntegerType>(2)));
+  REQUIRE(res.isA<IntegerType>());
+  REQUIRE(res.as<IntegerType>() == 2);
 }
 
-#if 0
-TEST_CASE("lambda_car_lambda", "[Lambda]")
+TEST_CASE("scm_car_lambda_2", "[Scheme]")
 {
-  //@todo fix this
   /*
-    ((lambda (a b) b)
-      ((lambda (a b) a)
-      Object(1), Object(2)))
-  */
+   * car:
+   * ((lambda (a b)
+   *           (lambda (c d) a)) 1 2)
+   *
+   * (((lambda (a b)
+   *           (lambda (c d) a))) 3 4)
+   * -> 1
+   */
   Vm vm;
+  Object lang = vm.make<Language>();
   std::size_t initStackSize = vm.stackSize();
-  Object select = vm.compile(vm.list(vm.list(vm.make<Symbol>("lambda"),
-                                             vm.list(vm.make<Symbol>("a"), vm.make<Symbol>("b")),
-                                             vm.make<Symbol>("b")),
-                                     Object(3),
-                                     vm.list(vm.list(vm.make<Symbol>("lambda"),
-                                                     vm.list(vm.make<Symbol>("a"), vm.make<Symbol>("b")),
-                                                     vm.make<Symbol>("a")),
-                                             Object(1), Object(2))));
-
-  REQUIRE(select.isA<Function>());
-  REQUIRE(select.as<Function>()->numArguments() == 0);
-
-  vm.eval(select.as<Function>());
-  Object res = vm.top();
-  vm.pop();
-  REQUIRE(vm.stackSize() == initStackSize);
+  Object func = vm.compile(lang,
+                            vm.list(vm.list(vm.list(vm.make<Symbol>("lambda"),
+                                                    vm.list(vm.make<Symbol>("a"),
+                                                            vm.make<Symbol>("b")),
+                                                    vm.list(vm.make<Symbol>("lambda"),
+                                                            vm.list(vm.make<Symbol>("c"),
+                                                                    vm.make<Symbol>("d")),
+                                                            vm.make<Symbol>("a"))),
+                                            vm.make<IntegerType>(1),
+                                            vm.make<IntegerType>(2)),
+                                    vm.make<IntegerType>(3),
+                                    vm.make<IntegerType>(4)));
+  Object res = vm.evalAndReturn(func.as<Function>());
   REQUIRE(res.isA<IntegerType>());
   REQUIRE(res.as<IntegerType>() == 1);
 }
-#endif
 
-
+TEST_CASE("scm_car_lambda_3", "[Scheme]")
+{
+  /*
+   * car:
+   * ((lambda (a b)
+   *           (lambda (c d) d)) 1 2)
+   *
+   * (((lambda (a b)
+   *           (lambda (c d) d))) 3 4)
+   * -> 4
+   */
+  Vm vm;
+  Object lang = vm.make<Language>();
+  std::size_t initStackSize = vm.stackSize();
+  Object func = vm.compile(lang,
+                            vm.list(vm.list(vm.list(vm.make<Symbol>("lambda"),
+                                                    vm.list(vm.make<Symbol>("a"),
+                                                            vm.make<Symbol>("b")),
+                                                    vm.list(vm.make<Symbol>("lambda"),
+                                                            vm.list(vm.make<Symbol>("c"),
+                                                                    vm.make<Symbol>("d")),
+                                                            vm.make<Symbol>("d"))),
+                                            vm.make<IntegerType>(1),
+                                            vm.make<IntegerType>(2)),
+                                    vm.make<IntegerType>(3),
+                                    vm.make<IntegerType>(4)));
+  Object res = vm.evalAndReturn(func.as<Function>());
+  REQUIRE(res.isA<IntegerType>());
+  REQUIRE(res.as<IntegerType>() == 4);
+}
 

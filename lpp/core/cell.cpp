@@ -6,6 +6,7 @@
 #include <lpp/core/types/array.h> //@todo remove reference when functionality is re-implementated polymorphically
 #include <lpp/core/types/symbol.h> //@todo remove reference when functionality is re-implementated polymorphically
 #include <lpp/core/types/reference.h> //@todo remove reference when functionality is re-implementated polymorphically
+#include <lpp/core/types/function.h> //@todo remove reference when functionality is re-implementated polymorphically
 
 using Cell = Lisp::Cell;
 using BasicCons = Lisp::BasicCons;
@@ -177,7 +178,7 @@ std::ostream & operator<<(std::ostream & ost, const Lisp::Cell & cell)
   }
   else if(cell.isA<Lisp::Function>())
   {
-    ost << "[Function]";
+    ost << "[Function " << cell.as<Lisp::Function>() << "]";
   }
   else if(cell.isA<Lisp::Container>())
   {

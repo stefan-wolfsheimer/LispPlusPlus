@@ -19,6 +19,7 @@ namespace Lisp
       static inline std::vector<Context*>& getContextStack();
 
       static void idempotentForm(const Form * form, const Cell & cell);
+      static void referenceForm(const Form * form, const Cell & cell);
       static void symbolForm(const Form * form, const Cell & cell);
       static void defineForm(Form *, const Cell & car, Form *, const Cell & cdr);
       static void argumentListForm(const Cell & car);

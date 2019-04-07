@@ -21,6 +21,16 @@ void Context::idempotentForm(const Form * form, const Cell & cell)
   }
 }
 
+void Context::referenceForm(const Form * form, const Cell & cell)
+{
+  if(!Context::getContextStack().empty())
+  {
+    Function * f = Context::getContextStack().back()->f;
+    f->appendInstruction(RETURNV, f->dataSize());
+    f->appendData(cell);
+  }
+}
+
 void Context::symbolForm(const Form * form, const Cell & cell)
 {
   std::vector<Lisp::Scheme::Context*> & stack(Context::getContextStack());
