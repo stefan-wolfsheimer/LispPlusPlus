@@ -97,7 +97,6 @@ namespace Lisp
   /* value types */
   struct ValueType;
   struct Nil;
-  class BasicType;
   struct Undefined;
 
   /* managed types */
@@ -143,8 +142,7 @@ namespace Lisp
   DEF_TRAITS_LT(ValueType,      0x4000u, Traits::Null);
   DEF_TRAITS(Nil,               0x0000u, Traits::Null);
   DEF_TRAITS(Undefined,         0x0001u, Traits::Null);
-  DEF_TRAITS(BasicType,         0x0002u, Traits::Integer);
-  DEF_TRAITS(IntegerType,       0x0003u, Traits::Integer);
+  DEF_TRAITS(IntegerType,       0x0002u, Traits::Integer);
 
   // conses
   DEF_TRAITS_MATCH(BasicCons,   0x4000u,                          Traits::BasicCons);
