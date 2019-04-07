@@ -141,7 +141,7 @@ TEST_CASE("scm_define_primitive", "[Scheme]")
  *****************************************/
 TEST_CASE("scm_lambda_constant", "[Scheme]")
 {
-  // (lambda (a b) 1) -> #Function
+  // ((lambda (a b) 1) -> #Function
   Vm vm;
   std::size_t initStackSize = vm.stackSize();
   Object lang = vm.make<Language>();
@@ -168,6 +168,31 @@ TEST_CASE("scm_lambda_constant", "[Scheme]")
   REQUIRE(res.isA<IntegerType>());
   REQUIRE(res.as<IntegerType>() == 1);
   REQUIRE(vm.stackSize() == initStackSize);
+}
+
+TEST_CASE("scm_lambda_lookup", "[Scheme]")
+{
+  // (define f (lambda (a b) a))
+  Vm vm;
+  std::size_t initStackSize = vm.stackSize();
+  Object lang = vm.make<Language>();
+  vm.compileAndEval(lang,
+                    vm.list(vm.make<Symbol>("define"),
+                            vm.make<Symbol>("f"),
+                            vm.list(vm.make<Symbol>("lambda"),
+                                    vm.list(vm.make<Symbol>("a"),
+                                            vm.make<Symbol>("b")),
+                                    vm.make<Symbol>("a"))));
+  Object lu = vm.find("f");
+  REQUIRE(lu.isA<Function>());
+
+  // (f 1 2) -> 1
+  Object res = vm.compileAndEval(lang,
+                                 vm.list(vm.make<Symbol>("f"),
+                                         vm.make<IntegerType>(1),
+                                         vm.make<IntegerType>(2)));
+  REQUIRE(res.isA<IntegerType>());
+  REQUIRE(res.as<IntegerType>() == 1);
 }
 
 TEST_CASE("scm_nested_lambdas", "[Scheme]")
