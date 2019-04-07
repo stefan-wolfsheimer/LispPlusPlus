@@ -219,7 +219,7 @@ void Lisp::Vm::eval(Function * __func)
         // return a value from function data
         assert((state.itr + 1) < state.end);
         assert(state.itr[1] < state.func->dataSize());
-        ASM_LOG("\tRETURNV " << state.itr[1] << ": " <<
+        ASM_LOG("\t"  << (state.itr-state.func->cbegin()) << " RETURNV " << state.itr[1] << ": " <<
                 state.func->data.atCell(state.itr[1]) <<
                 " stackSize: " << dataStack.size() <<
                 " returnPos: " << state.returnPos);
@@ -239,7 +239,7 @@ void Lisp::Vm::eval(Function * __func)
         // return a value from stack
         assert((state.itr + 1) < state.end);
         assert(state.itr[1] <= dataStack.size());
-        ASM_LOG("\tRETURNS " << state.itr[1] << ": " <<
+        ASM_LOG("\t"  << (state.itr-state.func->cbegin()) << " RETURNS " << state.itr[1] << ": " <<
                 *(dataStack.end() - state.itr[1]) <<
                 " stackSize: " << dataStack.size() <<
                 " returnPos: " << state.returnPos);
@@ -256,7 +256,7 @@ void Lisp::Vm::eval(Function * __func)
         assert((state.itr + 1) < state.end);
         assert(state.itr[1] < state.func->dataSize());
         assert(state.func->data.atCell(state.itr[1]).isA<Symbol>());
-        ASM_LOG("\tRETURNL " << state.itr[1] << ": " <<
+        ASM_LOG("\t"  << (state.itr-state.func->cbegin()) << " RETURNL " << state.itr[1] << ": " <<
                 state.func->data.atCell(state.itr[1]) <<
                 " stackSize: " << dataStack.size() <<
                 " returnPos: " << state.returnPos);
@@ -275,38 +275,38 @@ void Lisp::Vm::eval(Function * __func)
       case INCRET:
         // increase return position by 1
         state.returnPos++;
-        ASM_LOG("\tINCRET returnPos: " << state.returnPos);
+        ASM_LOG("\t"  << (state.itr-state.func->cbegin()) << " INCRET returnPos: " << state.returnPos);
         state.itr++;
         break;
 
       case FUNCALL:
-        assert((state.itr + 2) < state.end);
-        assert(state.itr[2] < state.func->data.size());
-        assert(state.func->data.atCell(state.itr[2]).isA<Function>());
+        assert((state.itr + 1) < state.end);
+        //assert(state.func->data.atCell(state.itr[2]).isA<Function>());
         // @todo check number of arguments
-        ASM_LOG("\tFUNCALL nargs: " << state.itr[1] <<
-                " func: " << state.itr[2] << ": " <<
-                state.func->data.atCell(state.itr[2]) <<
+        ASM_LOG("\t" << (state.itr-state.func->cbegin()) << " FUNCALL nargs: " << state.itr[1] <<
+                //" func: " << state.itr[2] << ": " <<
+                //state.func->data.atCell(state.itr[2]) <<
                 " stackSize: " << dataStack.size() <<
-                " returnPos: " << (dataStack.size() - state.itr[1]));
-
+                " returnPos: " << (dataStack.size() - state.itr[1]) <<
+                " nextitr: " << state.func << ":" << (state.itr + 2 - state.func->cbegin()));
         // @todo tail recurion optimization, don't emplace if
         //       it is the end of the function
         state.returnPos -= state.itr[1];
-        executionStack.emplace_back(state, state.itr + 3);
+        executionStack.emplace_back(state, state.itr + 2);
         LOG_DATA_STACK(dataStack);
-        state = ExecutionState(state.func->data.atCell(state.itr[2]).as<Function>(),
+
+        state = ExecutionState(dataStack[dataStack.size() - state.itr[1]].as<Function>(),
                                dataStack.size() - state.itr[1]);
-        state.func->makeReference(dataStack.end() - state.func->numArguments(), alloc);
+        state.func->makeReference(dataStack.end() - state.func->numArguments());
         break;
-      
+
       case DEFINES:
         // define a symbol
         assert((state.itr + 1) < state.end);
         assert(state.itr[1] < state.func->dataSize());
         assert(state.func->data.atCell(state.itr[1]).isA<Symbol>());
         assert(dataStack.size() > 0);
-        ASM_LOG("\tDEFINES " << state.itr[1] << ": " <<
+        ASM_LOG("\t"  << (state.itr-state.func->cbegin()) << " DEFINES " << state.itr[1] << ": " <<
                 state.func->data.atCell(state.itr[1]) <<
                 " stackSize: " << dataStack.size() <<
                 " returnPos: " << state.returnPos);
@@ -320,10 +320,7 @@ void Lisp::Vm::eval(Function * __func)
         throw 1;
       }
     } // while itr != end
-    if(state.func->numArguments() > 1)
-    {
-      pop(state.func->numArguments()-1);
-    }
+    pop(state.func->numArguments());
     LOG_DATA_STACK(dataStack);
     if(executionStack.empty())
     {

@@ -16,16 +16,16 @@ namespace Lisp
     public:
       Context(Allocator * _alloc);
       ~Context();
+      static inline std::vector<Context*>& getContextStack();
 
       static void idempotentForm(const Form * form, const Cell & cell);
       static void symbolForm(const Form * form, const Cell & cell);
       static void defineForm(Form *, const Cell & car, Form *, const Cell & cdr);
       static void argumentListForm(const Cell & car);
 
-      static void functionEvaluationArgumentForm();
-      static void functionEvaluationForm(std::size_t n, const Cell & func);
+      static void procedureCallArgumentForm();
+      static void procedureCallForm(std::size_t n);
 
-      static inline std::vector<Context*>& getContextStack();
       inline void finalize();
       inline Function * getFunction();
       inline const Object & getFunctionObject() const;

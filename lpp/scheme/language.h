@@ -8,6 +8,7 @@ namespace Lisp
 {
   class Allocator;
   class Vm;
+  class ChoiceOf;
 
   namespace Scheme
   {
@@ -21,7 +22,7 @@ namespace Lisp
       Object compile(const Cell & cell) const override;
       bool match(const Cell & cell) const override;
     private:
-      Form * expression;
+      ChoiceOf * expression;
       Form * topLevelForm;
       Form * lambdaForm;
     };

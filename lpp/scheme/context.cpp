@@ -23,9 +23,30 @@ void Context::idempotentForm(const Form * form, const Cell & cell)
 
 void Context::symbolForm(const Form * form, const Cell & cell)
 {
-  if(!Context::getContextStack().empty())
+  std::vector<Lisp::Scheme::Context*> & stack(Context::getContextStack());
+  if(!stack.empty())
   {
-    Function * f = Context::getContextStack().back()->f;
+    auto itr = stack.rbegin();
+    Function * f = (*itr)->f;
+    std::size_t pos = f->getArgumentPos(cell);
+    if(pos != Function::notFound)
+    {
+      // this symbol is bound to the last function
+      f->appendInstruction(RETURNS, f->numArguments() - pos);
+      return;
+    }
+    ++itr;
+    for(; itr != stack.rend(); ++itr)
+    {
+      // create shared argument from parent scope
+      std::size_t pos = (*itr)->f->getArgumentPos(cell);
+      if(pos != Function::notFound)
+      {
+        f->appendInstruction(RETURNV, f->dataSize());
+        f->appendData(std::move((*itr)->f->shareArgument(pos)));
+        return;
+      }
+    }
     f->appendInstruction(RETURNL, f->dataSize());
     f->appendData(cell);
   }
@@ -55,7 +76,7 @@ void Context::argumentListForm(const Cell & lst)
   }
 }
 
-void Context::functionEvaluationArgumentForm()
+void Context::procedureCallArgumentForm()
 {
   if(!Context::getContextStack().empty())
   {
@@ -64,12 +85,11 @@ void Context::functionEvaluationArgumentForm()
   }
 }
 
-void Context::functionEvaluationForm(std::size_t n, const Cell & func)
+void Context::procedureCallForm(std::size_t n)
 {
   if(!Context::getContextStack().empty())
   {
     Function * f = Context::getContextStack().back()->getFunction();
-    f->appendInstruction(FUNCALL, n, f->dataSize());
-    f->appendData(func);
+    f->appendInstruction(FUNCALL, n);
   }
 }

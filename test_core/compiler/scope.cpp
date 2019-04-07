@@ -111,7 +111,7 @@ TEST_CASE("scope_life_cycle", "[Scope]")
   REQUIRE(itr.second == 1);
 
   // create reference in parent scope
-  auto sharedArgument = fobj1.as<Function>()->shareArgument(0, alloc);
+  auto sharedArgument = fobj1.as<Function>()->shareArgument(0);
 
   REQUIRE(fobj1.as<Function>()->numArguments() == 2);
   REQUIRE(fobj1.as<Function>()->getArgumentTraits(0).isReference());

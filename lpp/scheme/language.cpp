@@ -1,9 +1,10 @@
 #include <lpp/scheme/language.h>
 #include <lpp/scheme/context.h>
 #include <lpp/scheme/lambda_form.h>
-#include <lpp/scheme/function_eval_form.h>
+#include <lpp/scheme/procedure_call_form.h>
 #include <lpp/core/vm.h>
 #include <lpp/core/cell.h>
+#include <lpp/core/exception.h>
 #include <lpp/core/memory/allocator.h>
 #include <lpp/core/types/forms/choice_of.h>
 #include <lpp/core/types/forms/type_of.h>
@@ -20,7 +21,7 @@ using Allocator = Lisp::Allocator;
 using Cell = Lisp::Cell;
 using Object = Lisp::Object;
 using InstructionType = Lisp::InstructionType;
-
+using IllFormed = Lisp::IllFormed;
 
 using Any = Lisp::Any;
 using Form = Lisp::Form;
@@ -48,7 +49,7 @@ using SymbolEq = Lisp::SymbolEq;
 // scheme specific
 using Language = Lisp::Scheme::Language;
 using Context = Lisp::Scheme::Context;
-using FunctionEvalForm = Lisp::Scheme::FunctionEvalForm;
+using ProcedureCallForm = Lisp::Scheme::ProcedureCallForm;
 
 Language::Language()
 {
@@ -74,7 +75,7 @@ Object Language::compile(const Cell & cell) const
   }
   else
   {
-    //@todo throw execption
+    throw IllFormed(cell);
   }
   return ctx.getFunctionObject();
 }
@@ -88,17 +89,18 @@ void Language::init()
   //       <top level form> = <expression> | <define>
   //       <body form> = <define>* <expression>*
   //expressions 11.4
-  expression = makeRoot<IdempotentForm>(Context::idempotentForm);
+  expression = makeRoot<ChoiceOf>();
+  expression->add(make<IdempotentForm>(Context::idempotentForm));
+  expression->add(make<SymbolForm>(Context::symbolForm));
+  expression->add(make<LambdaForm>(make<ConsOf>(expression,
+                                                make<NilForm>())));
+  expression->add(make<ProcedureCallForm>(expression,
+                                          Context::procedureCallArgumentForm,
+                                          Context::procedureCallForm));
   topLevelForm = makeRoot<ChoiceOf>(std::vector<Form*>{
-      expression,
-      make<SymbolForm>(Context::symbolForm),
-      make<FunctionEvalForm>(make<FunctionForm>(), expression,
-                             Context::functionEvaluationArgumentForm,
-                             Context::functionEvaluationForm),
       make<ConsOf>(make<SymbolEq>(allocator->make<Symbol>("define")),
                    make<ConsOf>(make<SymbolForm>(),
                                 make<ConsOf>(expression,
                                              make<NilForm>()), Context::defineForm)),
-      make<LambdaForm>(make<ConsOf>(expression,
-                                    make<NilForm>()))});
+      expression});
 }

@@ -29,8 +29,7 @@ void Function::disassemble(std::ostream & ost) const
       ost << "INCRET";
       break;
     case FUNCALL:
-      ost << "FUNCALL " << instr[1] << data.atCell(instr[2]);
-      instr++;
+      ost << "FUNCALL " << instr[1];
       instr++;
       break;
     case DEFINES:

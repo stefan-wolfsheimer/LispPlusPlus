@@ -45,7 +45,7 @@ void Jit::compileSymbol(Function * f, const Cell & obj)
     {
       // create shared argument -> return value
       f->appendInstruction(RETURNV, f->dataSize());
-      f->appendData(std::move(arg.first->shareArgument(arg.second, alloc)));
+      f->appendData(std::move(arg.first->shareArgument(arg.second)));
     }
   }
   else

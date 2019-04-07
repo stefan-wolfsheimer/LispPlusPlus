@@ -31,6 +31,7 @@ either expressed or implied, of the FreeBSD Project.
 #pragma once
 #include <cstdint>
 #include <vector>
+#include <limits>
 #include <lpp/core/opcode.h>
 #include <lpp/core/object.h>
 #include <lpp/core/memory/allocator.h>
@@ -64,6 +65,7 @@ namespace Lisp
     friend class Vm;
     using Code = std::vector<InstructionType>;
     using const_iterator = Code::const_iterator;
+    static constexpr std::size_t notFound = std::numeric_limits<std::size_t>::max();
 
     Function();
     Function(const Code & instr, const Array & data);
@@ -77,7 +79,11 @@ namespace Lisp
                                   const InstructionType & i3);
     inline void appendData(const Cell & rhs);
     inline void addArgument(const Cell & cell);
-    inline Object shareArgument(std::size_t i, std::shared_ptr<Allocator> gc);
+
+    /**
+     * Modify the ith argument: make it shareable
+     */
+    inline Object shareArgument(std::size_t i);
 
     inline std::size_t dataSize() const;
     inline std::size_t numArguments() const;
@@ -99,6 +105,13 @@ namespace Lisp
     inline const ArgumentTraits & getArgumentTraits(const std::size_t i) const;
     inline ArgumentTraits & getArgumentTraits(const std::size_t i);
 
+    /**
+     * Return the position of the argument.
+     * @param cell symbol to search
+     * @return position of the argument or Function::notFound
+     */
+    inline std::size_t getArgumentPos(const Cell & cell) const;
+
     inline const_iterator cbegin() const;
     inline const_iterator cend() const;
 
@@ -117,8 +130,7 @@ namespace Lisp
      * Modifies stack values to references for each argument
      * that has reference trait
      */
-    inline void makeReference(std::vector<Object>::iterator stack_itr,
-                              std::shared_ptr<Allocator> gc);
+    inline void makeReference(std::vector<Object>::iterator stack_itr);
 
     void disassemble(std::ostream & ost) const;
     //////////////////////////////////////////////////
@@ -209,7 +221,7 @@ inline void Lisp::Function::addArgument(const Cell & cell)
   appendData(cell);
 }
 
-inline Lisp::Object Lisp::Function::shareArgument(std::size_t i, std::shared_ptr<Allocator> gc)
+inline Lisp::Object Lisp::Function::shareArgument(std::size_t i)
 {
   assert(i < argumentTraits.size());
   if(argumentTraits[i].isReference())
@@ -218,7 +230,14 @@ inline Lisp::Object Lisp::Function::shareArgument(std::size_t i, std::shared_ptr
   }
   else
   {
-    Object obj(gc->makeRoot<Reference>(data.atCell(i), Lisp::nil));
+    auto allocator = getAllocator();
+    //@todo using guard
+    //Guard _lock(allocator);
+    //argumentTraits[i].setReference(data.size());
+    //Cell obj(gc->make<Reference>(data.atCell(i), Lisp::nil))
+    //appendData(obj);
+    //return Object(obj);
+    Object obj(allocator->makeRoot<Reference>(data.atCell(i), Lisp::nil));
     argumentTraits[i].setReference(data.size());
     appendData(obj);
     return obj;
@@ -277,6 +296,19 @@ inline Lisp::ArgumentTraits & Lisp::Function::getArgumentTraits(const std::size_
   return argumentTraits[i];
 }
 
+inline std::size_t Lisp::Function::getArgumentPos(const Cell & cell) const
+{
+  std::size_t n = argumentTraits.size();
+  for(std::size_t i = 0; i < n; i++)
+  {
+    assert(data[i].as<Symbol>());
+    if(data[i].as<Symbol>() == cell.as<Symbol>())
+    {
+      return i;
+    }
+  }
+  return Lisp::Function::notFound;
+}
 
 inline Lisp::Function::const_iterator Lisp::Function::cbegin() const
 {
@@ -306,8 +338,7 @@ inline const Lisp::Cell & Lisp::Function::getValue(std::size_t i) const
   }
 }
 
-inline void Lisp::Function::makeReference(std::vector<Object>::iterator stack_itr,
-                                          std::shared_ptr<Allocator> gc)
+inline void Lisp::Function::makeReference(std::vector<Object>::iterator stack_itr)
 {
   std::size_t i = 0;
   for(const ArgumentTraits & traits : argumentTraits)

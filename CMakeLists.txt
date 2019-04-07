@@ -48,9 +48,6 @@ IF(CMAKE_BUILD_TYPE MATCHES Debug)
       test_core/test_util.cpp
       test_core/test_vm.cpp
       test_core/compiler/scope.cpp
-      test_core/forms/value.cpp
-      test_core/forms/define.cpp
-      test_core/forms/lambda.cpp
       test_core/test_builtin_function.cpp
       test_core/test_compile_eval.cpp
       test_scheme/language.cpp

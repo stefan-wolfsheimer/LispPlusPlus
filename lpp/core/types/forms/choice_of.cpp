@@ -11,6 +11,11 @@ ChoiceOf::ChoiceOf(const std::vector<Form*> & _member, std::function<void(Form *
   }
 }
 
+void ChoiceOf::add(Form * f)
+{
+  cells.push_back(f);
+}
+
 bool ChoiceOf::isInstance(const Cell & cell) const
 {
   for(const Cell & c : cells)
