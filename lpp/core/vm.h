@@ -89,14 +89,7 @@ namespace Lisp
     Object compileAndEval(const LanguageInterface * lang, const Cell & cell);
     Object compile(const Cell & lang, const Cell & cell) const;
     Object compileAndEval(const Cell & lang, const Cell & cell); 
-    
-    
-    // @todo remove this version
-    Object compile(const Object & obj) const;
 
-    /** Compile and eval expression, pop result from stack
-     */
-    Object compileAndEval(const Object & obj);
     Object evalAndReturn(Function * func);
     void eval(Function * func);
 

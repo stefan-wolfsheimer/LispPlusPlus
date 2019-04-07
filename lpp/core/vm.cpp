@@ -32,7 +32,6 @@ either expressed or implied, of the FreeBSD Project.
 #include <lpp/core/vm.h>
 #include <lpp/core/default_env.h>
 #include <lpp/core/env.h>
-#include <lpp/core/compiler/jit.h>
 #include <lpp/core/opcode.h>
 #include <lpp/core/types/function.h>
 #include <lpp/core/types/form.h>
@@ -120,24 +119,6 @@ Object Vm::compileAndEval(const Cell & _lang, const Cell & cell)
   LanguageInterface * lang = dynamic_cast<LanguageInterface*>(_lang.as<Form>());
   assert(lang);
   return compileAndEval(lang, cell);
-}
-
-
-//@todo remove
-Object Vm::compile(const Object & obj) const
-{
-  Jit jit(alloc, env);
-  return jit.compile(obj);
-}
-
-//@todo remove
-Object Vm::compileAndEval(const Object & obj)
-{
-  Object func = compile(obj);
-  eval(func.as<Function>());
-  Object ret = top();
-  pop();
-  return ret;
 }
 
 Object Vm::evalAndReturn(Function * func)
