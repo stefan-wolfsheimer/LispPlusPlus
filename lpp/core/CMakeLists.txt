@@ -2,6 +2,7 @@ add_library( Core
   types/reference.cpp
   types/symbol.cpp
   types/function.cpp
+  types/continuation.cpp
   types/form.cpp
   types/forms/cons_of.cpp
   types/forms/list_of.cpp

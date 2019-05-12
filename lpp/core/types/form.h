@@ -4,8 +4,6 @@
 
 namespace Lisp
 {
-  class Jit;
-
   class Form : public PolymorphicContainer
   {
   public:
@@ -45,13 +43,6 @@ namespace Lisp
 
     template<typename T,  typename... ARGS>
     T * _makeRoot(std::true_type, ARGS ...rest);
-  };
-
-  //@todo move to grammar
-  class Compilable : public Form
-  {
-  public:
-    virtual void compile(Jit & jit, Function *, const Cell & obj) const=0;
   };
 }
 

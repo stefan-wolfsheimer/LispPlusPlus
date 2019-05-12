@@ -114,6 +114,7 @@ namespace Lisp
   class Container;
   class Array;
   class Function;
+  class Continuation;
   class PolymorphicContainer;
 
   template<typename CLS>
@@ -159,6 +160,7 @@ namespace Lisp
   DEF_TRAITS_MATCH(Container,      0xc000u,                       Traits::Container);
   DEF_TRAITS(Array,                0xc001u,                       Traits::Container);
   DEF_TRAITS(Function,             0xc002u,                       Traits::Container);
+  DEF_TRAITS(Continuation,         0xc003u,                       Traits::Container);
   DEF_TRAITS(PolymorphicContainer, POLYMORPHIC_CONTAINER_TYPE_ID, Traits::Container);
 
   /* Collectible TypeTraits

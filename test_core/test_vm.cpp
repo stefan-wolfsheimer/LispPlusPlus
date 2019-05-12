@@ -98,10 +98,3 @@ TEST_CASE("vm_list_does_not_create_temporary_objects", "[Vm]")
             ->getCar().isA<Nil>());
   }
 }
-
-TEST_CASE("push_does_not_create_temporary_objects", "[Vm]")
-{
-  Vm vm;
-  vm.push(Lisp::nil);
-  vm.push(vm.make<Cons>(Lisp::nil, Lisp::nil));
-}

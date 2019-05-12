@@ -62,7 +62,8 @@ namespace Lisp
   class Function : public Container
   {
   public:
-    friend class Vm;
+    friend class Vm; //@todo remove this friendship
+    friend class Continuation;
     using Code = std::vector<InstructionType>;
     using const_iterator = Code::const_iterator;
     static const std::size_t notFound;
@@ -71,6 +72,16 @@ namespace Lisp
     Function(const Code & instr, const Array & data);
     Function(Code && instr, Array && data);
 
+    /**
+     * Add instructions 
+     */
+    inline void addRETURNV(const Cell & rhs);
+    inline void addRETURNS(InstructionType offset);
+    inline void addRETURNL(const Cell & rhs);
+    inline void addINCRET();
+    inline void addFUNCALL(const InstructionType & n);
+    inline void addDEFINES(const Cell & symbol);
+    //@todo replace appendInstruction by addXXXX
     inline void appendInstruction(const InstructionType & i1);
     inline void appendInstruction(const InstructionType & i1,
                                   const InstructionType & i2);
@@ -79,7 +90,7 @@ namespace Lisp
                                   const InstructionType & i3);
     inline void appendData(const Cell & rhs);
     inline void addArgument(const Cell & cell);
-
+    
     /**
      * Modify the ith argument: make it shareable
      */
@@ -243,6 +254,47 @@ inline Lisp::Object Lisp::Function::shareArgument(std::size_t i)
     return obj;
   }
 }
+
+inline void Lisp::Function::addRETURNV(const Cell & rhs)
+{
+  instructions.push_back(RETURNV);
+  instructions.push_back(data.size());
+  data.append(rhs);
+}
+
+inline void Lisp::Function::addRETURNS(InstructionType offset)
+{
+  instructions.push_back(RETURNS);
+  instructions.push_back(offset);
+}
+
+inline void Lisp::Function::addRETURNL(const Cell & rhs)
+{
+  assert(rhs.isA<Symbol>());
+  instructions.push_back(RETURNL);
+  instructions.push_back(data.size());
+  data.append(rhs);
+}
+
+inline void Lisp::Function::addINCRET()
+{
+  instructions.push_back(INCRET);
+}
+
+inline void Lisp::Function::addFUNCALL(const InstructionType & n)
+{
+  instructions.push_back(FUNCALL);
+  instructions.push_back(n);
+}
+
+inline void Lisp::Function::addDEFINES(const Cell & symbol)
+{
+  assert(symbol.isA<Symbol>());
+  instructions.push_back(DEFINES);
+  instructions.push_back(data.size());
+  data.append(symbol);
+}
+
 
 inline void Lisp::Function::appendInstruction(const InstructionType  & i1)
 {

@@ -54,19 +54,17 @@ namespace Lisp
    * increment return position by one
    */
   static const InstructionType INCRET = 0x04;
+  static const InstructionType PUSHV = 0x14;
+  /**
+   * define the value of a symbol in the env
+   */
+  static const InstructionType DEFINES = 0x05;
 
   /*
    * call a functions with arguments on the stack
    * decrement returnPos by the number of arguments
    * push the current state on call stack
    */
-  static const InstructionType FUNCALL = 0x05;
-
-  /**
-   * define the value of a symbol in the env
-   */
-  static const InstructionType DEFINES = 0x06;
-
-  //static const InstructionType DECRET = 0x0a;
+  static const InstructionType FUNCALL = 0x06;
 }
 

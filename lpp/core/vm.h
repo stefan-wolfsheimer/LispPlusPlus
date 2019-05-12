@@ -75,21 +75,21 @@ namespace Lisp
     void define(const std::string & name, const Object & rhs);
     Object find(const std::string & name) const;
 
-    inline void push(const Object & rhs);
-    inline void push(Object && rhs);
+    /* @todo remove */
+    //inline void push(const Object & rhs);
+    //inline void push(Object && rhs);
 
-    inline Object top() const;
-    inline void pop();
-    inline void pop(std::size_t n);
-    inline std::size_t stackSize() const;
+    //inline Object top() const;
+    //inline void pop();
+    //inline void pop(std::size_t n);
 
-    inline Object compile(const LanguageInterface * lang, const Cell & cell) const;
-    Object compileAndEval(const LanguageInterface * lang, const Cell & cell);
-    Object compile(const Cell & lang, const Cell & cell) const;
-    Object compileAndEval(const Cell & lang, const Cell & cell); 
 
-    Object evalAndReturn(Function * func);
-    void eval(Function * func);
+    //inline Object compile(const LanguageInterface * lang, const Cell & cell) const;
+    //Object compileAndEval(const LanguageInterface * lang, const Cell & cell);
+    //Object compile(const Cell & lang, const Cell & cell) const;
+    //Object compileAndEval(const Cell & lang, const Cell & cell); 
+    /* @todo end remove */
+    Object eval(const Cell & func);
 
   private:
     template<typename C>
@@ -97,6 +97,12 @@ namespace Lisp
 
     template<typename C, typename... ARGS>
     inline C * _makeRoot(std::false_type, const ARGS & ... rest);
+
+    template<typename C, typename... ARGS>
+    inline C * _allocRoot(std::false_type, const ARGS & ... rest);
+
+    template<typename T>
+    inline Continuation * _allocRoot(std::true_type, const Cell & f);
 
     std::shared_ptr<Allocator> alloc;
     std::shared_ptr<Env> env;
@@ -158,39 +164,6 @@ inline Lisp::Object Lisp::Vm::array(const ARGS & ... rest)
   return ret;
 }
 
-inline void Lisp::Vm::push(const Object & rhs)
-{
-  dataStack.emplace_back(rhs);
-}
-
-inline void Lisp::Vm::push(Object && rhs)
-{
-  dataStack.emplace_back(std::move(rhs));
-}
-
-inline Lisp::Object Lisp::Vm::top() const
-{
-  return dataStack.back();
-}
-
-inline void Lisp::Vm::pop()
-{
-  dataStack.pop_back();
-}
-
-inline void Lisp::Vm::pop(std::size_t n)
-{
-  for(std::size_t i = 0; i < n; i++)
-  {
-    pop();
-  }
-}
-
-inline std::size_t Lisp::Vm::stackSize() const
-{
-  return dataStack.size();
-}
-
 template<typename C>
 inline const C & Lisp::Vm::_makeRoot(std::true_type, const C & c)
 {
@@ -200,11 +173,17 @@ inline const C & Lisp::Vm::_makeRoot(std::true_type, const C & c)
 template<typename T, typename... ARGS>
 inline T * Lisp::Vm::_makeRoot(std::false_type, const ARGS & ... rest)
 {
+  return _allocRoot<T>(typename std::is_same<T, Continuation>::type(), rest...);
+}
+
+template<typename T, typename... ARGS>
+inline T * Lisp::Vm::_allocRoot(std::false_type, const ARGS & ... rest)
+{
   return alloc->makeRoot<T>(rest...);
 }
 
-inline Lisp::Object Lisp::Vm::compile(const Lisp::LanguageInterface * lang, const Lisp::Cell & cell) const
+template<typename T>
+inline Lisp::Continuation * Lisp::Vm::_allocRoot(std::true_type, const Cell & f)
 {
-  return lang->compile(cell);
+  return alloc->makeRoot<Continuation>(f, env);
 }
-

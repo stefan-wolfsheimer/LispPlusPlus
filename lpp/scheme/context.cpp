@@ -100,6 +100,6 @@ void Context::procedureCallForm(std::size_t n)
   if(!Context::getContextStack().empty())
   {
     Function * f = Context::getContextStack().back()->getFunction();
-    f->appendInstruction(FUNCALL, n);
+    f->addFUNCALL(n-1);
   }
 }
