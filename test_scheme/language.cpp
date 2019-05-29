@@ -130,7 +130,6 @@ TEST_CASE("scm_define_primitive", "[Scheme]")
   REQUIRE(res.as<IntegerType>() == 10);
 }
 
-#if 0
 /*****************************************
  * Lambda
  *****************************************/
@@ -144,18 +143,30 @@ TEST_CASE("scm_lambda_constant", "[Scheme]")
                                               vm.list(vm.make<Symbol>("a"),
                                                       vm.make<Symbol>("b")),
                                               vm.make<IntegerType>(1))));
+  std::cout << "XXXXXXXXXXXX" << std::endl;
+  func.as<Function>()->disassemble(std::cout);
+  std::cout << "YYYYYYYYYYYY" << std::endl;
+
   REQUIRE(func.getRefCount() == 1u);
   REQUIRE(func.isA<Function>());
   REQUIRE(func.as<Function>()->numArguments() == 2);
 
+  auto expr = lang->compile(vm.list(func,
+                                   vm.make<IntegerType>(2),
+                                   vm.make<IntegerType>(3)));
+  expr.as<Function>()->disassemble(std::cout);
+#if 0  
   // (func 2 3)
   Object res = vm.eval(lang->compile(vm.list(func,
                                              vm.make<IntegerType>(2),
                                              vm.make<IntegerType>(3))));
+
   REQUIRE(res.isA<IntegerType>());
   REQUIRE(res.as<IntegerType>() == 1);
+#endif
 }
 
+#if 0
 TEST_CASE("scm_lambda_lookup", "[Scheme]")
 {
   // (define f (lambda (a b) a))

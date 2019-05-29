@@ -41,13 +41,12 @@ using Cell = Lisp::Cell;
 using String = Lisp::String;
 using Form = Lisp::Form;
 using IntegerType = Lisp::IntegerType;
-using StringForm = Lisp::TypeOf<String>;
-using IntegerForm = Lisp::TypeOf<IntegerType>;
-using ChoiceOf = Lisp::ChoiceOf;
-
+using StringForm = Lisp::TypeOf<String, void>;
+using IntegerForm = Lisp::TypeOf<IntegerType, void>;
 
 TEST_CASE("choice_of", "[Form]")
 {
+  using ChoiceOf = Lisp::ChoiceOf<void>;
   Vm vm;
   const Form * matchedForm = nullptr;
   Object strForm = vm.make<StringForm>([&matchedForm](const Form * form, const Cell & cell){
@@ -85,4 +84,53 @@ TEST_CASE("choice_of", "[Form]")
     REQUIRE(choiceForm.as<Form>()->match(intval));
     REQUIRE(matchedForm == intForm.as<Form>());
   }
+}
+
+struct Builder
+{
+  Object obj;
+  Object stringObj;
+  Object intObj;
+  
+  void match(const Cell & cell)
+  {
+    obj = cell;
+  }
+
+  void matchString(const Cell & cell)
+  {
+    stringObj = cell;
+  }
+
+  void matchInteger(const Cell & cell)
+  {
+    intObj = cell;
+  }
+};
+
+TEST_CASE("choice_of2", "[Form]")
+{
+  using ChoiceOf = Lisp::ChoiceOf<Builder>;
+  using FormBuilder = Lisp::FormBuilder<Builder>;
+  using StringForm = Lisp::TypeOf<String, Builder>;
+  using IntegerForm = Lisp::TypeOf<IntegerType, Builder>;
+
+  Vm vm;
+  //@todo check if StringForm is captured
+  Object strForm = vm.make<StringForm>(&Builder::matchString);
+  Object intForm = vm.make<IntegerForm>(&Builder::matchInteger);
+  Object choiceForm = vm.make<ChoiceOf>(std::vector<Form*>{ strForm.as<Form>(), intForm.as<Form>()},
+                                        &Builder::match);
+
+  Object str = vm.make<String>("hello");
+  Object intval(1);
+  Builder builder;
+  REQUIRE(choiceForm.as<Form>()->isInstance(str));
+  REQUIRE(choiceForm.as<Form>()->isInstance(intval));
+  REQUIRE(choiceForm.as<FormBuilder>()->match(str, builder));
+  REQUIRE(builder.obj.isA<String>());
+  REQUIRE(choiceForm.as<FormBuilder>()->match(intval, builder));
+  REQUIRE(builder.obj.isA<IntegerType>());
+  REQUIRE(builder.stringObj.isA<String>());
+  REQUIRE(builder.intObj.isA<IntegerType>());
 }

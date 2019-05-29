@@ -1,3 +1,4 @@
+#include <lpp/scheme/builder.h>
 #include <lpp/scheme/language.h>
 #include <lpp/scheme/context.h>
 #include <lpp/scheme/lambda_form.h>
@@ -36,23 +37,48 @@ using Nil = Lisp::Nil;
 // gc
 using Guard = Lisp::Allocator::Guard;
 
-// forms 
-using ChoiceOf = Lisp::ChoiceOf;
-using IdempotentForm = Lisp::TypeOf<Idempotent>;
-using ReferenceForm = Lisp::TypeOf<Reference>;
-using SymbolForm = Lisp::TypeOf<Symbol>;
-using NilForm = Lisp::TypeOf<Nil>;
-using FunctionForm = Lisp::TypeOf<Function>;
-using AnyForm = Lisp::TypeOf<Any>;
-using ConsOf = Lisp::ConsOf;
-using ListOf = Lisp::ListOf;
-using SymbolEq = Lisp::SymbolEq;
-
-  
 // scheme specific
-using Language = Lisp::Scheme::Language;
 using Context = Lisp::Scheme::Context;
+using Language = Lisp::Scheme::Language;
 using ProcedureCallForm = Lisp::Scheme::ProcedureCallForm;
+using Builder = Lisp::Scheme::Builder;
+
+// forms 
+using ChoiceOfForm = Lisp::ChoiceOf<Builder>;
+using IdempotentForm = Lisp::TypeOf<Idempotent, Builder>;
+using ReferenceForm = Lisp::TypeOf<Reference, Builder>;
+using SymbolForm = Lisp::TypeOf<Symbol, Builder>;
+using NilForm = Lisp::TypeOf<Nil, void>;
+using FunctionForm = Lisp::TypeOf<Function, void>;
+using AnyForm = Lisp::TypeOf<Any, void>;
+using ConsOfForm = Lisp::ConsOf<Builder>;
+using ListOf = Lisp::ListOf;
+using SymbolEqForm = Lisp::SymbolEq<Builder>;
+
+
+// @todo move to separate module
+
+
+void Builder::idempotent(const Cell & cell)
+{
+  Context::idempotentForm(nullptr, cell);
+}
+
+void Builder::reference(const Cell & cell)
+{
+  Context::referenceForm(nullptr, cell);
+}
+
+void Builder::symbol(const Cell & cell)
+{
+  Context::symbolForm(nullptr, cell);
+}
+
+void Builder::define(const Cell & car, const Cell & cdr)
+{
+  Context::defineForm(nullptr, car, nullptr, cdr);
+}
+//////////////////////////////////////////////
 
 Language::Language()
 {
@@ -61,7 +87,8 @@ Language::Language()
 
 bool Language::match(const Cell & cell) const
 {
-  return topLevelForm->match(cell);
+  Builder builder;
+  return topLevelForm->match(cell, builder);
 }
 
 bool Language::isInstance(const Cell & cell) const
@@ -72,8 +99,9 @@ bool Language::isInstance(const Cell & cell) const
 Object Language::compile(const Cell & cell) const
 {
   Context ctx(getAllocator());
-  //MainMatcher matcher;
-  if(match(cell))
+  Builder builder;
+  // @todo define toplevel as FormBuilder<Builder>
+  if(topLevelForm->match(cell, builder))
   {
   }
   else
@@ -92,19 +120,21 @@ void Language::init()
   //       <top level form> = <expression> | <define>
   //       <body form> = <define>* <expression>*
   //expressions 11.4
-  expression = makeRoot<ChoiceOf>();
-  expression->add(make<IdempotentForm>(Context::idempotentForm));
-  expression->add(make<ReferenceForm>(Context::referenceForm));
-  expression->add(make<SymbolForm>(Context::symbolForm));
-  expression->add(make<LambdaForm>(make<ConsOf>(expression,
-                                                make<NilForm>())));
+  expression = makeRoot<ChoiceOfForm>();
+  expression->add(make<IdempotentForm>(&Builder::idempotent));
+  expression->add(make<ReferenceForm>(&Builder::reference));
+  expression->add(make<SymbolForm>(&Builder::symbol));
+  expression->add(make<LambdaForm>(make<ConsOfForm>(expression,
+                                                    make<NilForm>())));
   expression->add(make<ProcedureCallForm>(expression,
                                           Context::procedureCallArgumentForm,
                                           Context::procedureCallForm));
-  topLevelForm = makeRoot<ChoiceOf>(std::vector<Form*>{
-      make<ConsOf>(make<SymbolEq>(allocator->make<Symbol>("define")),
-                   make<ConsOf>(make<SymbolForm>(),
-                                make<ConsOf>(expression,
-                                             make<NilForm>()), Context::defineForm)),
-      expression});
+  topLevelForm = makeRoot<ChoiceOfForm>(
+                                        std::vector<Form*>{
+                                          make<ConsOfForm>(make<SymbolEqForm>(allocator->make<Symbol>("define")),
+                                                           make<ConsOfForm>(make<SymbolForm>(),
+                                                                            make<ConsOfForm>(expression,
+                                                                                             make<NilForm>()),
+                                                                            &Builder::define)),
+                                            expression});
 }

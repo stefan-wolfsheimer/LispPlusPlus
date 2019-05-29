@@ -58,23 +58,6 @@ using Cons = Lisp::Cons;
 using Symbol = Lisp::Symbol;
 using Reference = Lisp::Reference;
 
-
-// logging data stack
-#ifdef DO_ASM_LOG
-#define LOG_DATA_STACK(STACK)  {                        \
-    ASM_LOG("STACK_SIZE: " << STACK.size());            \
-    for(std::size_t i = 0; i < STACK.size(); i++)       \
-    {                                                   \
-      ASM_LOG("STACK [" << i << "] " << STACK[i]);      \
-    }                                                   \
-  }
-#else
-#define LOG_DATA_STACK(STACK)
-#endif
-
-
-
-
 Vm::Vm(std::shared_ptr<Allocator> _alloc,
        std::shared_ptr<Env> _env)
   : alloc(_alloc ? _alloc : std::make_shared<Allocator>()),

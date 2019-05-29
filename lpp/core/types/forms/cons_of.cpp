@@ -2,10 +2,10 @@
 #include <lpp/core/types/cons.h>
 
 using Cons = Lisp::Cons;
-using ConsOf = Lisp::ConsOf;
+using ConsOfForm = Lisp::ConsOf<void>;
 using Form = Lisp::Form;
 
-ConsOf::ConsOf(Form * _car, Form * _cdr, std::function<void(Form *, const Cell & car, Form *, const Cell & cdr)> func)
+ConsOfForm::ConsOf(Form * _car, Form * _cdr, std::function<void(Form *, const Cell & car, Form *, const Cell & cdr)> func)
   : cb(func)
 {
   cells.push_back(Cell(_car));
@@ -14,7 +14,7 @@ ConsOf::ConsOf(Form * _car, Form * _cdr, std::function<void(Form *, const Cell &
   cdr = _cdr;
 }
 
-bool ConsOf::isInstance(const Cell & cell) const
+bool ConsOfForm::isInstance(const Cell & cell) const
 {
   auto cons = cell.as<Cons>();
   return (cons &&
@@ -22,7 +22,7 @@ bool ConsOf::isInstance(const Cell & cell) const
           cdr->isInstance(cons->getCdrCell()));
 }
 
-bool ConsOf::match(const Cell & cell) const
+bool ConsOfForm::match(const Cell & cell) const
 {
   auto cons = cell.as<Cons>();
   if(cons &&

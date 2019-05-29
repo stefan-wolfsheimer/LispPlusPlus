@@ -19,12 +19,11 @@ using Idempotent = Lisp::Idempotent;
 using Nil = Lisp::Nil;
 
 // forms
-using SymbolEq = Lisp::SymbolEq;
+using SymbolEq = Lisp::SymbolEq<void>;
 using ListOf = Lisp::ListOf;
-using ConsOf = Lisp::ConsOf;
-using SymbolForm = Lisp::TypeOf<Symbol>;
-using IdempotentForm = Lisp::TypeOf<Idempotent>;
-using NilForm = Lisp::TypeOf<Nil>;
+using SymbolForm = Lisp::TypeOf<Symbol, void>;
+using IdempotentForm = Lisp::TypeOf<Idempotent, void>;
+using NilForm = Lisp::TypeOf<Nil, void>;
 
 // scheme specific
 using LambdaForm = Lisp::Scheme::LambdaForm;
@@ -39,7 +38,7 @@ void LambdaForm::init()
 {
   auto allocator = getAllocator();
   Guard _lock(allocator);
-  lambdaSymbol = makeRoot<SymbolEq>(allocator->make<Symbol>("lambda"));
+  lambdaSymbol = makeRoot<SymbolEq<void>>(allocator->make<Symbol>("lambda"));
   argList = makeRoot<ListOf>(make<SymbolForm>(), Context::argumentListForm);
 }
 

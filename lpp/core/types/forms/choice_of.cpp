@@ -1,6 +1,6 @@
 #include <lpp/core/types/forms/choice_of.h>
 
-using ChoiceOf = Lisp::ChoiceOf;
+using ChoiceOf = Lisp::ChoiceOf<void>;
 
 ChoiceOf::ChoiceOf(const std::vector<Form*> & _member, std::function<void(Form *, const Cell & cell)> func)
   : cb(func)

@@ -2,8 +2,9 @@
 #include <lpp/core/types/symbol.h>
 #include <lpp/core/cell.h>
 
-using SymbolEq = Lisp::SymbolEq;
+using SymbolEq = Lisp::SymbolEq<void>;
 using Symbol = Lisp::Symbol;
+
 
 SymbolEq::SymbolEq(Symbol * _symb, std::function<void()> func) : cb(func)
 {
