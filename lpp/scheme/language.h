@@ -24,10 +24,11 @@ namespace Lisp
       void init() override;
       bool isInstance(const Cell & cell) const override;
       Object compile(const Cell & cell) const override;
-      bool match(const Cell & cell) const override;
+
     private:
-      ChoiceOf<void> * expression;
-      FormBuilder<Builder> * topLevelForm;
+      Form * symbolEq(const std::string & name);
+      ChoiceOf<Builder> * expression;
+      ChoiceOf<Builder> * topLevelForm;
       Form * lambdaForm;
     };
   }

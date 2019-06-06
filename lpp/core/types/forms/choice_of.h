@@ -11,12 +11,9 @@ namespace Lisp
   class ChoiceOf<void> : public virtual Form
   {
   public:
-    ChoiceOf(const std::vector<Form*> & forms=std::vector<Form*>(),
-             std::function<void(Form *, const Cell & cell)> func=nullptr);
+    ChoiceOf(const std::vector<Form*> & forms=std::vector<Form*>());
     void add(Form * f);
     bool isInstance(const Cell & cell) const override;
-    // @todo remove
-    bool match(const Cell & cell) const override;
   private:
     std::function<void(Form *, const Cell & cell)> cb;
   };
@@ -35,6 +32,11 @@ namespace Lisp
       {
         Form::cells.push_back(f);
       }
+    }
+
+    ChoiceOf(void(BUILDER::*_func)(const Cell & cell))
+      : func(_func)
+    {
     }
 
     bool match(const Cell & cell, BUILDER & builder) const override

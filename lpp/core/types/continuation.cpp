@@ -52,8 +52,8 @@ Continuation::Continuation(const Cell & func,
 
 Continuation::~Continuation()
 {
-  stack.clear();
-  callStack.clear();
+  //stack.clear();
+  //callStack.clear();
 }
 
 TypeId Continuation::getTypeId() const
@@ -103,19 +103,15 @@ void Continuation::resetGcPosition()
 
 bool Continuation::recycleNextChild()
 {
-  bool ret = true;
   if(dsPosition < stack.size())
   {
     if(!stack[dsPosition].isA<Collectible>())
     {
       stack[dsPosition] = Lisp::nil;
     }
-    if(++dsPosition < stack.size())
-    {
-      ret = false;
-    }
+    return ++dsPosition == stack.size();
   }
-  return ret;
+  return true;
 }
 
 Cell & Continuation::eval()

@@ -2,8 +2,7 @@
 
 using ChoiceOf = Lisp::ChoiceOf<void>;
 
-ChoiceOf::ChoiceOf(const std::vector<Form*> & _member, std::function<void(Form *, const Cell & cell)> func)
-  : cb(func)
+ChoiceOf::ChoiceOf(const std::vector<Form*> & _member)
 {
   for(auto f : _member)
   {
@@ -23,23 +22,6 @@ bool ChoiceOf::isInstance(const Cell & cell) const
     assert(c.isA<Form>());
     if(c.as<Form>()->isInstance(cell))
     {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool ChoiceOf::match(const Cell & cell) const
-{
-  for(const Cell & c : cells)
-  {
-    assert(c.isA<Form>());
-    if(c.as<Form>()->match(cell))
-    {
-      if(cb)
-      {
-        cb(c.as<Form>(), cell);
-      }
       return true;
     }
   }

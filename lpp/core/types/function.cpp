@@ -36,6 +36,7 @@ void Function::disassemble(std::ostream & ost) const
       break;
     case DEFINES:
       ost << "DEFINES " << data.atCell(instr[1]);
+      instr++;
       break;
     default:
       ost << "instr " << *instr;

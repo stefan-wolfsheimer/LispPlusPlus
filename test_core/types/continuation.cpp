@@ -234,9 +234,6 @@ TEST_CASE("continuation_funcall", "[Continuation]")
   lambda.as<Function>()->addArgument(vm.make<Symbol>("a"));
   lambda.as<Function>()->addArgument(vm.make<Symbol>("b"));
   lambda.as<Function>()->addArgument(vm.make<Symbol>("c"));
-  std::cout << "XXXXXXXXXXXX" << std::endl;
-  lambda.as<Function>()->disassemble(std::cout);
-  std::cout << "YYYYYYYYYYYY" << std::endl;
 
   Object func = vm.make<Function>();
   func.as<Function>()->addINCRET();
@@ -248,8 +245,6 @@ TEST_CASE("continuation_funcall", "[Continuation]")
   func.as<Function>()->addINCRET();
   func.as<Function>()->addRETURNV(vm.make<IntegerType>(30));
   func.as<Function>()->addFUNCALL(3);
-  func.as<Function>()->disassemble(std::cout);
-  std::cout << "YYYYYYYYYYYY" << std::endl;
 
   Object cont = vm.make<Continuation>(func.as<Function>());
   Object res(cont.as<Continuation>()->eval());

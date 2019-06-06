@@ -117,21 +117,26 @@ namespace Lisp
   class Continuation;
   class PolymorphicContainer;
 
-  template<typename CLS>
-  struct Traits::Polymorphic<CLS,
-                             std::true_type, std::false_type> : Traits::ManagedType<CLS,
-                                                                                    Id<POLYMORPHIC_OBJECT_TYPE_ID>,
-                                                                                    std::true_type>
+  namespace Traits
   {
-  };
+    template<typename CLS>
+    struct Polymorphic<CLS,
+                       std::true_type,
+                       std::false_type> : Traits::ManagedType<CLS,
+                                                              Id<POLYMORPHIC_OBJECT_TYPE_ID>,
+                                                              std::true_type>
+    {
+    };
 
-  template<typename CLS>
-  struct Traits::Polymorphic<CLS,
-                             std::false_type, std::true_type> : Traits::Container<CLS,
-                                                                                  Id<POLYMORPHIC_CONTAINER_TYPE_ID>,
-                                                                                  std::true_type>
-  {
-  };
+    template<typename CLS>
+    struct Polymorphic<CLS,
+                       std::false_type,
+                       std::true_type> : Traits::Container<CLS,
+                                                           Id<POLYMORPHIC_CONTAINER_TYPE_ID>,
+                                                           std::true_type>
+    {
+    };
+  }
 
   template<typename CLS>
   struct TypeTraits : Traits::Polymorphic<CLS,

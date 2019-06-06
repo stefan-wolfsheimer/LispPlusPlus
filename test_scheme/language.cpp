@@ -117,9 +117,11 @@ TEST_CASE("scm_define_primitive", "[Scheme]")
   Object formObj = vm.make<Language>();
   Language * lang = formObj.as<Language>();
   {
+
     vm.eval(lang->compile(vm.list(vm.make<Symbol>("define"),
                                   vm.make<Symbol>("a"),
                                   vm.make<IntegerType>(10))));
+    
     vm.getAllocator()->cycle();
   }
   Object res = vm.find("a");
@@ -143,10 +145,6 @@ TEST_CASE("scm_lambda_constant", "[Scheme]")
                                               vm.list(vm.make<Symbol>("a"),
                                                       vm.make<Symbol>("b")),
                                               vm.make<IntegerType>(1))));
-  std::cout << "XXXXXXXXXXXX" << std::endl;
-  func.as<Function>()->disassemble(std::cout);
-  std::cout << "YYYYYYYYYYYY" << std::endl;
-
   REQUIRE(func.getRefCount() == 1u);
   REQUIRE(func.isA<Function>());
   REQUIRE(func.as<Function>()->numArguments() == 2);
@@ -154,8 +152,7 @@ TEST_CASE("scm_lambda_constant", "[Scheme]")
   auto expr = lang->compile(vm.list(func,
                                    vm.make<IntegerType>(2),
                                    vm.make<IntegerType>(3)));
-  expr.as<Function>()->disassemble(std::cout);
-#if 0  
+
   // (func 2 3)
   Object res = vm.eval(lang->compile(vm.list(func,
                                              vm.make<IntegerType>(2),
@@ -163,28 +160,31 @@ TEST_CASE("scm_lambda_constant", "[Scheme]")
 
   REQUIRE(res.isA<IntegerType>());
   REQUIRE(res.as<IntegerType>() == 1);
-#endif
 }
 
 #if 0
+//@todo fix segfault
 TEST_CASE("scm_lambda_lookup", "[Scheme]")
 {
   // (define f (lambda (a b) a))
   Vm vm;
+
   Object formObj = vm.make<Language>();
   Language * lang = formObj.as<Language>();
-  lang->compile(vm.list(vm.make<Symbol>("define"),
+  auto x = lang->compile(vm.list(vm.make<Symbol>("define"),
+                                 vm.make<Symbol>("f"),
+                                 vm.list(vm.make<Symbol>("lambda"),
+                                         vm.list(vm.make<Symbol>("a"),
+                                                 vm.make<Symbol>("b")),
+                                         vm.make<Symbol>("a"))));
+  x.as<Function>()->disassemble(std::cout);
+  x.as<Function>()->atCell(0).as<Function>()->disassemble(std::cout);
+  vm.eval(lang->compile(vm.list(vm.make<Symbol>("define"),
                                 vm.make<Symbol>("f"),
                                 vm.list(vm.make<Symbol>("lambda"),
                                         vm.list(vm.make<Symbol>("a"),
                                                 vm.make<Symbol>("b")),
-                                        vm.make<Symbol>("a"))));
-  //vm.eval(lang->compile(vm.list(vm.make<Symbol>("define"),
-  //vm.make<Symbol>("f"),
-  //vm.list(vm.make<Symbol>("lambda"),
-  //vm.list(vm.make<Symbol>("a"),
-  //vm.make<Symbol>("b")),
-  //vm.make<Symbol>("a")))));
+                                        vm.make<Symbol>("a")))));
   //Object lu = vm.find("f");
   //REQUIRE(lu.isA<Function>());
 
@@ -196,8 +196,9 @@ TEST_CASE("scm_lambda_lookup", "[Scheme]")
   REQUIRE(res.isA<IntegerType>());
   REQUIRE(res.as<IntegerType>() == 1); */
 }
+#endif
 
-
+#if 0
 TEST_CASE("scm_nested_lambdas", "[Scheme]")
 {
   // (lambda (a b) a) -> #Function

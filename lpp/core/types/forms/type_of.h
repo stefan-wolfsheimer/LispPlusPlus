@@ -11,32 +11,13 @@ namespace Lisp
   class TypeOf<T, void> : public virtual Form
   {
   public:
-    TypeOf(std::function<void(const Form * f, const Cell & car)> func=nullptr)
-      : cb(func)
+    TypeOf()
     {}
 
     bool isInstance(const Cell & cell) const override
     {
       return cell.isA<T>();
     }
-
-    bool match(const Cell & cell) const override
-    {
-      if(cell.isA<T>())
-      {
-        if(cb)
-        {
-          cb(this, cell);
-        }
-        return true;
-      }
-      else
-      {
-        return false;
-      }
-    }
-  private:
-    std::function<void(const Form * f, const Cell & car)> cb;
   };
 
   template<typename T, typename BUILDER>

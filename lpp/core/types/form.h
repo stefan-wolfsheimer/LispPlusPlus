@@ -25,13 +25,6 @@ namespace Lisp
      */
     virtual bool isInstance(const Cell & cell) const = 0;
 
-    /**
-     * Attempts to match the cell against the form and calls the registered
-     * function.
-     * @todo remove use builder instead
-     */
-    virtual bool match(const Cell & cell) const = 0;
-
     virtual void forEachChild(std::function<void(const Cell&)> func) const override;
     virtual bool greyChildren() override;
     virtual void resetGcPosition() override;

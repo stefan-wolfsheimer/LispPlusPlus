@@ -1,27 +1,23 @@
 #pragma once
-#include <lpp/core/types/form.h>
+#include <lpp/core/types/form_builder.h>
+#include <lpp/scheme/builder.h>
 
 namespace Lisp
 {
-  class Form;
-  class Cons;
-  class Function;
+  class Cell;
 
   namespace Scheme
   {
-    class LambdaForm : public Lisp::Form
+    class LambdaForm : public Lisp::FormBuilder<Builder>
     {
     public:
-      LambdaForm(Form * _body);
-      void init() override;
-      bool isInstance(const Cell & cell) const;
-      bool match(const Cell & cell) const override;
+      LambdaForm(Lisp::FormBuilder<Builder> * _argList,
+                 Lisp::FormBuilder<Builder> * _body);
+      bool isInstance(const Cell & cell) const override;
+      bool match(const Cell & cell, Builder & builder) const override;
     private:
-      inline bool parse(Function * func, Cons *cdr) const;
-      
-      Form * lambdaSymbol;
-      Form * argList;
-      Form * body;
+      Lisp::FormBuilder<Builder> * argList;
+      Lisp::FormBuilder<Builder> * body;
     };
   }
 }

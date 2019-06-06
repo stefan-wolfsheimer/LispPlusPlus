@@ -48,11 +48,8 @@ TEST_CASE("choice_of", "[Form]")
 {
   using ChoiceOf = Lisp::ChoiceOf<void>;
   Vm vm;
-  const Form * matchedForm = nullptr;
-  Object strForm = vm.make<StringForm>([&matchedForm](const Form * form, const Cell & cell){
-      matchedForm = form; });
-  Object intForm = vm.make<IntegerForm>([&matchedForm](const Form * form, const Cell & cell){
-      matchedForm = form; });
+  Object strForm = vm.make<StringForm>();
+  Object intForm = vm.make<IntegerForm>();
   Object choiceForm = vm.make<ChoiceOf>(std::vector<Form*>{
       strForm.as<Form>(),
       intForm.as<Form>()
@@ -62,28 +59,9 @@ TEST_CASE("choice_of", "[Form]")
   
   REQUIRE(choiceForm.as<Form>()->isInstance(str));
   REQUIRE(choiceForm.as<Form>()->isInstance(intval));
-  REQUIRE(choiceForm.as<Form>()->match(str));
-  REQUIRE(choiceForm.as<Form>()->match(intval));
-
-  {
-    matchedForm = nullptr;
-    REQUIRE_FALSE(choiceForm.as<Form>()->isInstance(Lisp::nil));
-    REQUIRE_FALSE(choiceForm.as<Form>()->match(Lisp::nil));
-    REQUIRE(matchedForm == nullptr);
-  }
-  {
-    matchedForm = nullptr;
-    REQUIRE(choiceForm.as<Form>()->isInstance(str));
-    REQUIRE(choiceForm.as<Form>()->match(str));
-    REQUIRE(matchedForm == strForm.as<Form>());
-  }
-
-  {
-    matchedForm = nullptr;
-    REQUIRE(choiceForm.as<Form>()->isInstance(intval));
-    REQUIRE(choiceForm.as<Form>()->match(intval));
-    REQUIRE(matchedForm == intForm.as<Form>());
-  }
+  REQUIRE_FALSE(choiceForm.as<Form>()->isInstance(Lisp::nil));
+  REQUIRE(choiceForm.as<Form>()->isInstance(str));
+  REQUIRE(choiceForm.as<Form>()->isInstance(intval));
 }
 
 struct Builder

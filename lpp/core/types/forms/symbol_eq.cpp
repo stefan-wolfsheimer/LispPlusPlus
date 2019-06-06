@@ -6,7 +6,7 @@ using SymbolEq = Lisp::SymbolEq<void>;
 using Symbol = Lisp::Symbol;
 
 
-SymbolEq::SymbolEq(Symbol * _symb, std::function<void()> func) : cb(func)
+SymbolEq::SymbolEq(Symbol * _symb)
 {
   cells.emplace_back(_symb);
   symb = _symb;
@@ -15,20 +15,4 @@ SymbolEq::SymbolEq(Symbol * _symb, std::function<void()> func) : cb(func)
 bool SymbolEq::isInstance(const Cell & cell) const
 {
   return (cell.as<Symbol>() == symb);
-}
-
-bool SymbolEq::match(const Cell & cell) const
-{
-  if(cell.as<Symbol>() == symb)
-  {
-    if(cb)
-    {
-      cb();
-    }
-    return true;
-  }
-  else
-  {
-    return false;
-  }
 }

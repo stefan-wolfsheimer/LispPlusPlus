@@ -13,12 +13,9 @@ namespace Lisp
   class SymbolEq<void> : public virtual Form
   {
   public:
-    SymbolEq(Symbol *, std::function<void()> func=nullptr);
+    SymbolEq(Symbol *);
     bool isInstance(const Cell & cell) const override;
-    //@todo remove this
-    bool match(const Cell & cell) const override;
   private:
-    std::function<void()> cb;
     const Symbol * symb;
   };
 
