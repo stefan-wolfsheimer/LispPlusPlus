@@ -40,12 +40,14 @@ using Function = Lisp::Function;
 using Symbol = Lisp::Symbol;
 using Reference = Lisp::Reference;
 using IntegerType = Lisp::IntegerType;
+using Collectible = Lisp::Collectible;
 
 TEST_CASE("function", "[Function]")
 {
   Vm vm;
   Object f1 = vm.make<Function>();
   Object f2 = vm.make<Function>();
+  REQUIRE(f1.isA<Collectible>());
   f1.as<Function>()->addArgument(vm.make<Symbol>("a"));
   f1.as<Function>()->addArgument(vm.make<Symbol>("b"));
   REQUIRE(f1.as<Function>()->numArguments() == 2);

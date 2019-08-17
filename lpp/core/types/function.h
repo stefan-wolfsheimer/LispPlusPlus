@@ -71,7 +71,6 @@ namespace Lisp
     Function();
     Function(const Code & instr, const Array & data);
     Function(Code && instr, Array && data);
-
     /**
      * Add instructions 
      */
@@ -81,13 +80,7 @@ namespace Lisp
     inline void addINCRET();
     inline void addFUNCALL(const InstructionType & n);
     inline void addDEFINES(const Cell & symbol);
-    //@todo replace appendInstruction by addXXXX
-    inline void appendInstruction(const InstructionType & i1);
-    inline void appendInstruction(const InstructionType & i1,
-                                  const InstructionType & i2);
-    inline void appendInstruction(const InstructionType & i1,
-                                  const InstructionType & i2,
-                                  const InstructionType & i3);
+
     inline void appendData(const Cell & rhs);
     inline void addArgument(const Cell & cell);
     
@@ -293,27 +286,6 @@ inline void Lisp::Function::addDEFINES(const Cell & symbol)
   instructions.push_back(DEFINES);
   instructions.push_back(data.size());
   data.append(symbol);
-}
-
-
-inline void Lisp::Function::appendInstruction(const InstructionType  & i1)
-{
-  instructions.push_back(i1);
-}
-
-inline void Lisp::Function::appendInstruction(const InstructionType  & i1, const InstructionType  & i2)
-{
-  instructions.push_back(i1);
-  instructions.push_back(i2);
-}
-
-inline void Lisp::Function::appendInstruction(const InstructionType  & i1,
-                                              const InstructionType  & i2,
-                                              const InstructionType  & i3)
-{
-  instructions.push_back(i1);
-  instructions.push_back(i2);
-  instructions.push_back(i3);
 }
 
 inline std::size_t Lisp::Function::dataSize() const

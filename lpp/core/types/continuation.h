@@ -27,8 +27,6 @@ namespace Lisp
   {
   public:
     Continuation(const Cell & func, const std::shared_ptr<Env> & _env);
-    //Continuation(Function * f, const std::shared_ptr<Env> & _env);
-    ~Continuation();
     inline std::size_t stackSize() const;
     inline void push(const Cell & rhs);
     Cell & eval();
@@ -39,9 +37,9 @@ namespace Lisp
     virtual bool greyChildren() override;
     virtual void resetGcPosition() override;
     virtual bool recycleNextChild() override;
+
   private:
     std::size_t dsPosition;
-    std::size_t csPosition;
     std::vector<Lisp::Cell> stack;
     std::vector<Lisp::ContinuationState> callStack;
     std::shared_ptr<Env> env;

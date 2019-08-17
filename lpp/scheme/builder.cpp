@@ -21,51 +21,27 @@ void Builder::finalize()
 
 void Builder::idempotent(const Cell & cell)
 {
-  func->appendInstruction(RETURNV, func->dataSize());
-  func->appendData(cell);
+  func->addRETURNV(cell);
 }
 
 void Builder::reference(const Cell & cell)
 {
-  func->appendInstruction(RETURNV, func->dataSize());
-  func->appendData(cell);
+  func->addRETURNV(cell);
 }
 
 void Builder::symbol(const Cell & cell)
 {
-  func->appendInstruction(RETURNL, func->dataSize());
-  func->appendData(cell);
-
-#if 0
-  std::vector<Lisp::Scheme::Context*> & stack(Context::getContextStack());
-  if(!stack.empty())
+  // @todo look in higher functions' arguments
+  std::size_t argPos = func->getArgumentPos(cell);
+  if(argPos == Function::notFound)
   {
-    auto itr = stack.rbegin();
-    Function * f = (*itr)->f;
-    std::size_t pos = f->getArgumentPos(cell);
-    if(pos != Function::notFound)
-    {
-      // this symbol is bound to the last function
-      f->appendInstruction(RETURNS, f->numArguments() - pos);
-      return;
-    }
-    ++itr;
-    for(; itr != stack.rend(); ++itr)
-    {
-      // create shared argument from parent scope
-      std::size_t pos = (*itr)->f->getArgumentPos(cell);
-      if(pos != Function::notFound)
-      {
-        f->appendInstruction(RETURNV, f->dataSize());
-        f->appendData(std::move((*itr)->f->shareArgument(pos)));
-        return;
-      }
-    }
-    f->appendInstruction(RETURNL, f->dataSize());
-    f->appendData(cell);
+    func->addRETURNL(cell);
   }
-#endif
-  //Context::symbolForm(nullptr, cell);
+  else
+  {
+    assert(func->numArguments() > argPos);
+    func->addRETURNS(func->numArguments() - argPos);
+  }
 }
 
 void Builder::define(const Cell & car, const Cell & cdr)

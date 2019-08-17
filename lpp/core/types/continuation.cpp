@@ -30,30 +30,13 @@ inline ContinuationState::ContinuationState(Function * _f,
   end = f->cend();
 }
 
-/*
-Continuation::Continuation(Function * f, const std::shared_ptr<Env> & _env)
-  : callStack({ContinuationState(f, 0)}),
-    csPosition(0),
-    dsPosition(0),
-    env(_env)
-{
-  f->getContainer()->grey(f);
-  } */
-
 Continuation::Continuation(const Cell & func,
                            const std::shared_ptr<Env> & _env)
   : callStack({ContinuationState(func.as<Function>(), 0)}),
     env(_env)
 {
   stack.push_back(func);
-  csPosition = 0;
   dsPosition = 0;
-}
-
-Continuation::~Continuation()
-{
-  //stack.clear();
-  //callStack.clear();
 }
 
 TypeId Continuation::getTypeId() const
@@ -63,11 +46,6 @@ TypeId Continuation::getTypeId() const
 
 void Continuation::forEachChild(std::function<void(const Cell&)> func) const
 {
-  //for(const auto & c : callStack)
-  //{
-  //  func(Cell(c.getFunction(),
-  //            TypeTraits<Function>::getTypeId()));
-  //}
   for(const Cell & c : stack)
   {
     func(c);
@@ -97,7 +75,6 @@ bool Continuation::greyChildren()
 
 void Continuation::resetGcPosition()
 {
-  csPosition = 0;
   dsPosition = 0;
 }
 

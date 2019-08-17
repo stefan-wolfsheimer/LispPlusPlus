@@ -122,21 +122,22 @@ void Allocator::cycle()
   }
   if(toBeRecycled)
   {
-    while(!toBeRecycled->recycleNextChild())
-    {}
-    delete toBeRecycled;
+    auto container = toBeRecycled;
     toBeRecycled = nullptr;
+    while(!container->recycleNextChild())
+    {}
+    delete container;
   }
   while((toBeRecycled = containerMap.popDisposed()))
   {
-    toBeRecycled->resetGcPosition();
-    while(!toBeRecycled->recycleNextChild())
-    {}
-    delete toBeRecycled;
+    auto container = toBeRecycled;
     toBeRecycled = nullptr;
+    container->resetGcPosition();
+    while(!container->recycleNextChild())
+    {}
+    delete container;
   }
 }
-
 
 void Lisp::Allocator::recycle()
 {
@@ -152,26 +153,28 @@ void Lisp::Allocator::recycle()
   {
     if(!toBeRecycled)
     {
-      toBeRecycled = containerMap.popDisposed();
-      if(toBeRecycled)
+      auto container = containerMap.popDisposed();
+      if(container)
       {
-        toBeRecycled->resetGcPosition();
-        if(toBeRecycled->recycleNextChild())
+        container->resetGcPosition();
+        if(container->recycleNextChild())
         {
-          delete toBeRecycled;
-          toBeRecycled = nullptr;
+          delete container;
+          container = nullptr;
         }
       }
       else
       {
         break;
       }
+      toBeRecycled = container;
     }
     else
     {
-      if(toBeRecycled->recycleNextChild())
+      auto container = toBeRecycled;
+      if(container->recycleNextChild())
       {
-        delete toBeRecycled;
+        delete container;
         toBeRecycled = nullptr;
       }
     }
