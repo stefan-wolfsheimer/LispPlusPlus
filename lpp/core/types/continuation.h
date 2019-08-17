@@ -10,12 +10,11 @@ namespace Lisp
   {
   public:
     inline Function * getFunction() const { return f; }
+    ContinuationState(Function * _f, std::size_t _returnPos);
   private:
     friend class Continuation;
     using Code = std::vector<InstructionType>;
     using const_iterator = Code::const_iterator;
-
-    ContinuationState(Function * _f, std::size_t _returnPos);
     Function * f;
     const_iterator itr;
     const_iterator end;

@@ -5,8 +5,6 @@
 
 using Builder = Lisp::Scheme::Builder;
 
-
-// @todo move to separate module
 Builder::Builder(Allocator * _allocator)
   : allocator(_allocator),
     funcObject(_allocator->makeRoot<Function>())

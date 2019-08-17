@@ -99,73 +99,76 @@ Cell & Continuation::eval()
   ASM_LOG("returnPos " << s.returnPos);
   ASM_LOG("----------------------------------");
   LOG_DATA_STACK(stack);
-  while(s.itr != s.end)
+  while(!callStack.empty())
   {
-    switch(*s.itr)
+    s = callStack.back();
+    while(s.itr != s.end)
     {
-    case RETURNV:
-      // return a value from function data
-      assert((s.itr + 1) < s.end);
-      assert(s.itr[1] < s.f->dataSize());
-      ASM_LOG("\t"  << (s.itr - s.f->cbegin()) << " RETURNV " << s.itr[1] << ": " <<
-              s.f->data.atCell(s.itr[1]) <<
-              " stackSize: " << stack.size() <<
-              " returnPos: " << s.returnPos);
-      assert(s.returnPos < stack.size());
-      stack[s.returnPos] = s.f->getValue(s.itr[1]);
-      if(s.returnPos < stack.size())
+      switch(*s.itr)
       {
+      case RETURNV:
+        // return a value from function data
+        assert((s.itr + 1) < s.end);
+        assert(s.itr[1] < s.f->dataSize());
+        ASM_LOG("\t"  << (s.itr - s.f->cbegin()) << " RETURNV " << s.itr[1] << ": " <<
+                s.f->data.atCell(s.itr[1]) <<
+                " stackSize: " << stack.size() <<
+                " returnPos: " << s.returnPos);
+        assert(s.returnPos < stack.size());
         stack[s.returnPos] = s.f->getValue(s.itr[1]);
-      }
-      else
-      {
-        assert(s.returnPos == stack.size());
-        stack.push_back(s.f->getValue(s.itr[1]));
-      }
-      s.itr += 2;
-      break;
+        if(s.returnPos < stack.size())
+        {
+          stack[s.returnPos] = s.f->getValue(s.itr[1]);
+        }
+        else
+        {
+          assert(s.returnPos == stack.size());
+          stack.push_back(s.f->getValue(s.itr[1]));
+        }
+        s.itr += 2;
+        break;
 
-    case RETURNS:
-      // return a value from stack
-      assert((s.itr + 1) < s.end);
-      assert(s.itr[1] <= stack.size());
-      ASM_LOG("\t"  << (s.itr - s.f->cbegin()) << " RETURNS " << s.itr[1] << ": " <<
-              *(stack.end() - s.itr[1]) <<
-              " stackSize: " << stack.size() <<
-              " returnPos: " << s.returnPos);
-      assert(s.returnPos < stack.size());
-      if(stack.size() - s.itr[1] != s.returnPos)
-      {
-        stack[s.returnPos] = stack[stack.size() - s.itr[1]];
-      }
-      s.itr += 2;
-      break;
+      case RETURNS:
+        // return a value from stack
+        assert((s.itr + 1) < s.end);
+        assert(s.itr[1] <= stack.size());
+        ASM_LOG("\t"  << (s.itr - s.f->cbegin()) << " RETURNS " << s.itr[1] << ": " <<
+                *(stack.end() - s.itr[1]) <<
+                " stackSize: " << stack.size() <<
+                " returnPos: " << s.returnPos);
+        assert(s.returnPos < stack.size());
+        if(stack.size() - s.itr[1] != s.returnPos)
+        {
+          stack[s.returnPos] = stack[stack.size() - s.itr[1]];
+        }
+        s.itr += 2;
+        break;
 
-    case RETURNL:
-      // return a value from function data
-      // @todo exception if unbound
-      assert((s.itr + 1) < s.end);
-      assert(s.itr[1] < s.f->dataSize());
-      assert(s.f->data.atCell(s.itr[1]).isA<Symbol>());
-      ASM_LOG("\t"  << (s.itr - s.f->cbegin()) << " RETURNL " << s.itr[1]
-              << ": " << s.f->data.atCell(s.itr[1]) <<
-              " stackSize: " << stack.size() <<
-              " returnPos: " << s.returnPos);
-      assert(s.returnPos < stack.size());
-      stack[s.returnPos] = env->find(s.f->data.atCell(s.itr[1]));
-      s.itr += 2;
-      break;
+      case RETURNL:
+        // return a value from function data
+        // @todo exception if unbound
+        assert((s.itr + 1) < s.end);
+        assert(s.itr[1] < s.f->dataSize());
+        assert(s.f->data.atCell(s.itr[1]).isA<Symbol>());
+        ASM_LOG("\t"  << (s.itr - s.f->cbegin()) << " RETURNL " << s.itr[1]
+                << ": " << s.f->data.atCell(s.itr[1]) <<
+                " stackSize: " << stack.size() <<
+                " returnPos: " << s.returnPos);
+        assert(s.returnPos < stack.size());
+        stack[s.returnPos] = env->find(s.f->data.atCell(s.itr[1]));
+        s.itr += 2;
+        break;
 
-    case INCRET:
-      // increase return position by 1
-      assert(s.returnPos < stack.size());
-      stack.push_back(Lisp::nil);
-      s.returnPos++;
-      ASM_LOG("\t"  << (s.itr - s.f->cbegin()) << " INCRET returnPos: " << s.returnPos);
-      s.itr++;
-      break;
+      case INCRET:
+        // increase return position by 1
+        assert(s.returnPos < stack.size());
+        stack.push_back(Lisp::nil);
+        s.returnPos++;
+        ASM_LOG("\t"  << (s.itr - s.f->cbegin()) << " INCRET returnPos: " << s.returnPos);
+        s.itr++;
+        break;
 
-    case DEFINES:
+      case DEFINES:
         // define a symbol
         assert((s.itr + 1) < s.end);
         assert(s.itr[1] < s.f->dataSize());
@@ -180,50 +183,52 @@ Cell & Continuation::eval()
         s.itr += 2;
         break;
 
-    case FUNCALL:
-      LOG_DATA_STACK(stack);
-      assert((s.itr + 1) < s.end);
-      assert(stack.size() >= (s.itr[1] + 1));
-      assert(stack[stack.size() - s.itr[1] - 1].isA<Function>());
-      // @todo check number of arguments
-      ASM_LOG("\t" << (s.itr - s.f->cbegin()) <<
-              " FUNCALL nargs: " << s.itr[1] <<
-              " func: " << stack[stack.size() - s.itr[1] - 1].isA<Function>() <<
-              " returnPos: " << (stack.size() - s.itr[1] - 1) <<
-              " nextitr: " << s.f << ":" <<
-              ((s.itr + 2) - s.f->cbegin()) << "/" <<
-              (s.end - s.f->cbegin()));
-      if(s.itr + 2 == s.end)
-      {
-        // tail recursion
-        // @todo check num args
-        s.returnPos = stack.size() - s.itr[1] - 1;
-        s.f = stack[s.returnPos].as<Function>();
-        s.itr = s.f->cbegin();
-        s.end = s.f->cend();
-      }
-      else
-      {
-        // @todo continue
-        throw 1;
-      }
-      // @todo tail recurion optimization, don't emplace if
-      //       it is the end of the function
-#if 0
-      s.returnPos -= s.itr[1];
-      executionStack.emplace_back(state, state.itr + 2);
-        state = ExecutionState(dataStack[dataStack.size() - state.itr[1]].as<Function>(),
-                               dataStack.size() - state.itr[1]);
-        state.func->makeReference(dataStack.end() - state.func->numArguments());
-#endif
+      case FUNCALL:
+        LOG_DATA_STACK(stack);
+        assert((s.itr + 1) < s.end);
+        assert(stack.size() >= (s.itr[1] + 1));
+        assert(stack[stack.size() - s.itr[1] - 1].isA<Function>());
+        // @todo check number of arguments
+        ASM_LOG("\t" << (s.itr - s.f->cbegin()) <<
+                " FUNCALL nargs: " << s.itr[1] <<
+                " func: " << stack[stack.size() - s.itr[1] - 1].isA<Function>() <<
+                " returnPos: " << (stack.size() - s.itr[1] - 1) <<
+                " nextitr: " << s.f << ":" <<
+                ((s.itr + 2) - s.f->cbegin()) << "/" <<
+                (s.end - s.f->cbegin()));
+        if(s.itr + 2 == s.end)
+        {
+          // tail recursion
+          // @todo check num args
+          s.returnPos = stack.size() - s.itr[1] - 1;
+          s.f = stack[s.returnPos].as<Function>();
+          s.itr = s.f->cbegin();
+          s.end = s.f->cend();
+        }
+        else
+        {
+          std::size_t p = stack.size() - s.itr[-1] - 1;
+          s.itr++;
+          s.itr++;
+          callStack.back() = s;
+          callStack.emplace_back(stack[p].as<Function>(), p);
+          s = callStack.back();
+          ASM_LOG("\t" << (s.itr - s.f->cbegin()) <<
+                  " FUNCALL nargs: " << s.f->numArguments() <<
+                  " Function " << s.f);
+        }
         break;
 
-    default:
-      // @todo proper exception
-      ASM_LOG("unkown instruction " << *s.itr);
-      throw 1;
-    }
+      default:
+        // @todo proper exception
+        ASM_LOG("unkown instruction " << *s.itr);
+        throw 1;
+      }
+    } // while s.itr != s.end
+    LOG_DATA_STACK(stack);
+    callStack.pop_back();
   }
+
   while(s.returnPos + 1 > stack.size())
   {
     stack.push_back(Lisp::nil);

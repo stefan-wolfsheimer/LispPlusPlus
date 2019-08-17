@@ -12,6 +12,7 @@ void Function::disassemble(std::ostream & ost) const
   ost << "[Function " << this << "]" << std::endl;
   for(auto instr = cbegin(); instr != cend(); ++instr)
   {
+    ost << (instr - cbegin()) << ":\t";
     switch(*instr)
     {
     case RETURNV:
@@ -41,6 +42,7 @@ void Function::disassemble(std::ostream & ost) const
       ost << "instr " << *instr;
     }
     i++;
+    ost << std::endl;
   }
   ost << "[End " << this << "]" << std::endl;
 }
