@@ -10,7 +10,7 @@ namespace Lisp
   {
   public:
     inline Function * getFunction() const { return f; }
-    ContinuationState(Function * _f, std::size_t _returnPos);
+    ContinuationState(Function * _f, std::size_t _returnPos, std::size_t _stackPos);
   private:
     friend class Continuation;
     using Code = std::vector<InstructionType>;
@@ -18,8 +18,8 @@ namespace Lisp
     Function * f;
     const_iterator itr;
     const_iterator end;
-    std::size_t returnPos;
-
+    std::size_t stackPos;  /* @todo remove stackPos */
+    std::size_t returnPos; /* function will write result to this position on the stack */
   };
 
   class Continuation : public Container

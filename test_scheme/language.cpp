@@ -199,51 +199,50 @@ TEST_CASE("scm_nested_lambdas", "[Scheme]")
   REQUIRE(first.as<Function>()->numArguments() == 2);
   REQUIRE(second.isA<Function>());
   REQUIRE(second.as<Function>()->numArguments() == 2);
-
-  // (first 1 2)
-  Object res = vm.eval(lang->compile(vm.list(first,
-                                             vm.make<IntegerType>(1),
-                                             vm.make<IntegerType>(2))));
-  REQUIRE(res.isA<IntegerType>());
-  REQUIRE(res.as<IntegerType>() == 1);
-
-  // (first 3 (second 1 2))
-  Object select = lang->compile(vm.list(first,
-                                        vm.make<IntegerType>(3),
-                                        vm.list(second,
-                                                vm.make<IntegerType>(1),
-                                                vm.make<IntegerType>(2))));
-  REQUIRE(select.isA<Function>());
-  REQUIRE(select.as<Function>()->numArguments() == 0);
+  {
+    // (first 1 2)
+    Object select = lang->compile(vm.list(first,
+                                          vm.make<IntegerType>(1),
+                                          vm.make<IntegerType>(2)));
+    REQUIRE(select.isA<Function>());
+    REQUIRE(select.as<Function>()->numArguments() == 0);
+    Object res = vm.eval(select);
+    REQUIRE(res.isA<IntegerType>());
+    REQUIRE(res.as<IntegerType>() == 1);
+  }
+  {
+    // (first 3 (second 1 2))
+    Object select = lang->compile(vm.list(first,
+                                          vm.make<IntegerType>(3),
+                                          vm.list(second,
+                                                  vm.make<IntegerType>(1),
+                                                  vm.make<IntegerType>(2))));
+    REQUIRE(select.isA<Function>());
+    REQUIRE(select.as<Function>()->numArguments() == 0);
+    Object res = vm.eval(select);
+    REQUIRE(res.isA<IntegerType>());
+    REQUIRE(res.as<IntegerType>() == 3);
+  }
 #if 0
-  select.as<Function>()->disassemble(std::cout);
+  {
 
-
-  res = vm.eval(select);
-
-  REQUIRE(res.isA<IntegerType>());
-  REQUIRE(res.as<IntegerType>() == 3);
-
-  // (second (second 1 2) (first 3 4))
-  select = vm.compile(lang,
-                      vm.list(second,
-                              vm.list(second,
-                                      vm.make<IntegerType>(1),
-                                      vm.make<IntegerType>(2)),
-                              vm.list(first,
-                                      vm.make<IntegerType>(3),
-                                      vm.make<IntegerType>(4))));
-
-  REQUIRE(select.isA<Function>());
-  REQUIRE(select.as<Function>()->numArguments() == 0);
-
-  res = vm.evalAndReturn(select);
-  REQUIRE(vm.stackSize() == initStackSize);
-  REQUIRE(res.isA<IntegerType>());
-  REQUIRE(res.as<IntegerType>() == 3);
+    // (second (second 1 2) (first 3 4))
+    Object select = lang->compile(vm.list(second,
+                                          vm.list(second,
+                                                  vm.make<IntegerType>(1),
+                                                  vm.make<IntegerType>(2)),
+                                          vm.list(first,
+                                                  vm.make<IntegerType>(3),
+                                                  vm.make<IntegerType>(4))));
+    REQUIRE(select.isA<Function>());
+    REQUIRE(select.as<Function>()->numArguments() == 0);
+    select.as<Function>()->disassemble(std::cout);
+    Object res = vm.eval(select);
+    REQUIRE(res.isA<IntegerType>());
+    REQUIRE(res.as<IntegerType>() == 3);
+ }
 #endif
 }
-
 
 #if 0
 TEST_CASE("scm_nested_scopes_1", "[Scheme]")

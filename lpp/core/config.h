@@ -1,6 +1,6 @@
 #include <iostream>
 
-//#define DO_ASM_LOG
+#define DO_ASM_LOG
 
 #ifdef NDEBUG
 #define DEBUG(EXPR)

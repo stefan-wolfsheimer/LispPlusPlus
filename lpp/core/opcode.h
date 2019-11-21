@@ -52,6 +52,7 @@ namespace Lisp
 
   /*
    * increment return position by one
+   * @todo remove INCRET
    */
   static const InstructionType INCRET = 0x04;
   static const InstructionType PUSHV = 0x14;
