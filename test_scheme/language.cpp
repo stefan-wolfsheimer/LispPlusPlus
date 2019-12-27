@@ -148,7 +148,6 @@ TEST_CASE("scm_lambda_constant", "[Scheme]")
   REQUIRE(func.getRefCount() == 1u);
   REQUIRE(func.isA<Function>());
   REQUIRE(func.as<Function>()->numArguments() == 2);
-
   // (func 2 3)
   Object res = vm.eval(lang->compile(vm.list(func,
                                              vm.make<IntegerType>(2),
@@ -224,6 +223,19 @@ TEST_CASE("scm_nested_lambdas", "[Scheme]")
     REQUIRE(res.as<IntegerType>() == 3);
   }
 #if 0
+  {
+    // (second (second 1 2) 3)
+    Object select = lang->compile(vm.list(second,
+                                          vm.list(second,
+                                                  vm.make<IntegerType>(1),
+                                                  vm.make<IntegerType>(2)),
+                                          vm.make<IntegerType>(3)));
+    REQUIRE(select.isA<Function>());
+    REQUIRE(select.as<Function>()->numArguments() == 0);
+    Object res = vm.eval(select);
+    REQUIRE(res.isA<IntegerType>());
+    REQUIRE(res.as<IntegerType>() == 3);
+  }
   {
 
     // (second (second 1 2) (first 3 4))

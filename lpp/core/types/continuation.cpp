@@ -10,12 +10,12 @@ using TypeId = Lisp::TypeId;
 
 // logging data stack
 #ifdef DO_ASM_LOG
-#define LOG_DATA_STACK(STACK)  {                        \
-    ASM_LOG("STACK_SIZE: " << STACK.size());            \
-    for(std::size_t i = 0; i < STACK.size(); i++)       \
-    {                                                   \
-      ASM_LOG("STACK [" << i << "] " << STACK[i]);      \
-    }                                                   \
+#define LOG_DATA_STACK(STACK)  {                            \
+    ASM_LOG("STACK_SIZE: " << STACK.size());                \
+    for(std::size_t i = 0; i < STACK.size(); i++)           \
+    {                                                       \
+      ASM_LOG("STACK #" << i << "=<" << STACK[i] << ">");   \
+    }                                                       \
   }
 #else
 #define LOG_DATA_STACK(STACK)
@@ -23,9 +23,8 @@ using TypeId = Lisp::TypeId;
 
 
 inline ContinuationState::ContinuationState(Function * _f,
-                                            std::size_t _returnPos,
-                                            std::size_t _stackPos)
-  : f(_f), stackPos(_stackPos), returnPos(_returnPos)
+                                            std::size_t _returnPos)
+  : f(_f), returnPos(_returnPos)
 {
   itr = f->cbegin();
   end = f->cend();
@@ -33,7 +32,7 @@ inline ContinuationState::ContinuationState(Function * _f,
 
 Continuation::Continuation(const Cell & func,
                            const std::shared_ptr<Env> & _env)
-  : callStack({ContinuationState(func.as<Function>(), 0, 0)}),
+  : callStack({ContinuationState(func.as<Function>(), 0)}),
     env(_env)
 {
   stack.push_back(func);
@@ -98,11 +97,11 @@ Cell & Continuation::eval()
   while(!callStack.empty())
   {
     s = callStack.back();
+    std::size_t returnPos = s.returnPos;
     ASM_LOG("----------------------------------");
     ASM_LOG("eval      " << s.f);
-    ASM_LOG("returnPos " << s.returnPos);
-    ASM_LOG("stackPos  " << s.stackPos);
-    ASM_LOG("pos       " << (s.itr - s.f->cbegin()));
+    ASM_LOG("returnPos " << returnPos);
+    ASM_LOG("pos       " << (s.itr - s.f->cbegin()) << "/"  << (s.end - s.f->cbegin()));
     ASM_LOG("----------------------------------");
     LOG_DATA_STACK(stack);
     while(s.itr != s.end)
@@ -113,37 +112,34 @@ Cell & Continuation::eval()
         // return a value from function data
         assert((s.itr + 1) < s.end);
         assert(s.itr[1] < s.f->dataSize());
-        ASM_LOG("\t"  << (s.itr - s.f->cbegin()) << " RETURNV " << s.itr[1] << ": " <<
-                s.f->data.atCell(s.itr[1]) <<
-                " stackSize: " << stack.size() <<
-                " stackPos: " << s.stackPos);
-        assert(s.stackPos < stack.size());
-        stack[s.stackPos] = s.f->getValue(s.itr[1]);
-        if(s.stackPos < stack.size())
+        ASM_LOG("\t"  << (s.itr - s.f->cbegin()) <<
+                " RETURNV @" << s.itr[1] << "=<" <<
+                s.f->data.atCell(s.itr[1]) << ">" <<
+                " --> #" << returnPos <<
+                " stackSize: " << stack.size());
+        if(returnPos < stack.size())
         {
-          stack[s.stackPos] = s.f->getValue(s.itr[1]);
+          stack[returnPos] = s.f->getValue(s.itr[1]);
         }
         else
         {
-          assert(s.stackPos == stack.size());
+          assert(returnPos == stack.size());
           stack.push_back(s.f->getValue(s.itr[1]));
         }
         s.itr += 2;
         break;
 
       case RETURNS:
-        // return a value from stack
         assert((s.itr + 1) < s.end);
         assert(s.itr[1] <= stack.size());
-        ASM_LOG("\t"  << (s.itr - s.f->cbegin()) << " RETURNS " << s.itr[1] << ": " <<
-                *(stack.end() - s.itr[1]) <<
-                " stackSize: " << stack.size() <<
-                " stackPos: " << s.stackPos);
-        assert(s.stackPos < stack.size());
-        if(stack.size() - s.itr[1] != s.stackPos)
-        {
-          stack[s.stackPos] = stack[stack.size() - s.itr[1]];
-        }
+        ASM_LOG("\t"  << (s.itr - s.f->cbegin()) << " RETURNS " << s.itr[1] << " func: " <<
+                s.f << " #" << ((stack.size() - s.itr[1])) << "=<" <<
+                *(stack.end() - s.itr[1]) << ">" <<
+                " returnPos: " << returnPos << 
+                " stackSize: " << stack.size());
+        assert(returnPos < stack.size());
+        stack[returnPos] = *(stack.end() - s.itr[1]);
+        stack.erase(stack.begin() + returnPos + 1, stack.end());
         s.itr += 2;
         break;
 
@@ -153,21 +149,22 @@ Cell & Continuation::eval()
         assert((s.itr + 1) < s.end);
         assert(s.itr[1] < s.f->dataSize());
         assert(s.f->data.atCell(s.itr[1]).isA<Symbol>());
-        ASM_LOG("\t"  << (s.itr - s.f->cbegin()) << " RETURNL " << s.itr[1]
-                << ": " << s.f->data.atCell(s.itr[1]) <<
-                " stackSize: " << stack.size() <<
-                " stackPos: " << s.stackPos);
-        assert(s.stackPos < stack.size());
-        stack[s.stackPos] = env->find(s.f->data.atCell(s.itr[1]));
+        ASM_LOG("\t"  << (s.itr - s.f->cbegin()) << " RETURNL @" << s.itr[1] <<
+                "=<" << s.f->data.atCell(s.itr[1]) << ">" <<
+                " --> #" << returnPos <<
+                " stackSize: " << stack.size());
+        assert(returnPos < stack.size());
+        stack[returnPos] = env->find(s.f->data.atCell(s.itr[1]));
+        //stack[s.stackPos] = env->find(s.f->data.atCell(s.itr[1]));
         s.itr += 2;
         break;
 
       case INCRET:
         // increase return position by 1
-        assert(s.stackPos < stack.size());
+        assert((returnPos + 1) == stack.size());
         stack.push_back(Lisp::nil);
-        s.stackPos++;
-        ASM_LOG("\t"  << (s.itr - s.f->cbegin()) << " INCRET stackPos: " << s.stackPos);
+        returnPos++;
+        ASM_LOG("\t"  << (s.itr - s.f->cbegin()) << " INCRET returnPos: " << returnPos);
         s.itr++;
         break;
 
@@ -178,10 +175,10 @@ Cell & Continuation::eval()
         assert(s.f->data.atCell(s.itr[1]).isA<Symbol>());
         assert(stack.size() > 0);
         ASM_LOG("\t"  << (s.itr - s.f->cbegin()) <<
-                " DEFINES " << s.itr[1] << ": " <<
-                s.f->data.atCell(s.itr[1]) <<
-                " stackSize: " << stack.size() <<
-                " stackPos: " << s.stackPos);
+                " DEFINES @" << s.itr[1] << "=<" <<
+                s.f->data.atCell(s.itr[1]) << "> <-- " <<
+                " #" << (stack.size() - 1) << "=<" <<
+                stack.back() << ">");
         env->set(s.f->data.atCell(s.itr[1]), Object(stack.back()));
         s.itr += 2;
         break;
@@ -200,6 +197,7 @@ Cell & Continuation::eval()
                 " FUNCALL nargs: " << s.itr[1] <<
                 " func: " << stack[stack.size() - s.itr[1] - 1].as<Function>() <<
                 " stackPos: " << (stack.size() - s.itr[1] - 1) <<
+                " returnPos: " << returnPos <<
                 " nextitr: " << s.f << ":" <<
                 ((s.itr + 2) - s.f->cbegin()) << "/" <<
                 (s.end - s.f->cbegin()));
@@ -207,8 +205,9 @@ Cell & Continuation::eval()
         {
           // tail recursion
           // @todo check num args
-          s.stackPos = stack.size() - s.itr[1] - 1;
-          s.f = stack[s.stackPos].as<Function>();
+          returnPos = s.returnPos;
+          ASM_LOG("\t" << (s.itr - s.f->cbegin()) << " TAIL RECURSION returnPos " << returnPos);
+          s.f = stack[stack.size() - s.itr[1] - 1].as<Function>();
           s.itr = s.f->cbegin();
           s.end = s.f->cend();
         }
@@ -218,12 +217,15 @@ Cell & Continuation::eval()
           s.itr++;
           s.itr++;
           callStack.back() = s;
-          ASM_LOG("stackPos:" << s.stackPos);
-          callStack.emplace_back(stack[p].as<Function>(), p, p);
+          callStack.emplace_back(stack[p].as<Function>(), p);
           s = callStack.back();
+          assert(s.itr[1] + 2 <= stack.size());
+          returnPos = (stack.size() - s.itr[1] - 2);
           ASM_LOG("\t" << (s.itr - s.f->cbegin()) <<
                   " BEGINFUNC nargs: " << s.f->numArguments() <<
-                  " Function " << s.f);
+                  " func: " << s.f <<
+                  " returnPos: " << returnPos <<
+                  " " << s.returnPos);
         }
         break;
 
@@ -234,22 +236,16 @@ Cell & Continuation::eval()
       }
     } // while s.itr != s.end
     LOG_DATA_STACK(stack);
-    stack.erase(stack.begin() + s.stackPos + 1,
-                stack.end());
+    returnPos = s.returnPos;
+    ASM_LOG("----------------------------------");
+    ASM_LOG("return from " << s.f);
+    ASM_LOG("returnPos   " << returnPos);
+    ASM_LOG("stackSize   " << stack.size());
+    ASM_LOG("pos         " << (s.itr - s.f->cbegin()) << "/"  << (s.end - s.f->cbegin()));
+    ASM_LOG("----------------------------------");
+    stack.erase(stack.begin() + returnPos + 1, stack.end());
     LOG_DATA_STACK(stack);
     callStack.pop_back();
   }
-
-  //while(s.stackPos + 1 > stack.size())
-  //{
-  //throw 1;
-  //stack.push_back(Lisp::nil);
-  //}
-  //for(auto itr = stack.begin() + s.stackPos + 1; itr < stack.end(); ++itr)
-  //{
-  //*itr = Lisp::nil;
-  //}
-  stack.erase(stack.begin() + s.stackPos + 1,
-              stack.end());
   return stack.back();
 }
