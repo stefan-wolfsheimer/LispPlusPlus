@@ -220,7 +220,7 @@ Cell & Continuation::eval()
           callStack.emplace_back(stack[p].as<Function>(), p);
           s = callStack.back();
           assert(s.itr[1] + 2 <= stack.size());
-          returnPos = (stack.size() - s.itr[1] - 2);
+          returnPos = (stack.size() - s.itr[1] - 1);
           ASM_LOG("\t" << (s.itr - s.f->cbegin()) <<
                   " BEGINFUNC nargs: " << s.f->numArguments() <<
                   " func: " << s.f <<
@@ -246,6 +246,10 @@ Cell & Continuation::eval()
     stack.erase(stack.begin() + returnPos + 1, stack.end());
     LOG_DATA_STACK(stack);
     callStack.pop_back();
+    if(!callStack.empty())
+    {
+      callStack.back().returnPos = returnPos;
+    }
   }
   return stack.back();
 }
