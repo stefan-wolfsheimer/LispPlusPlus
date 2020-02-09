@@ -113,10 +113,12 @@ Cell & Continuation::eval()
     std::size_t returnPos = s.returnPos;
     ASM_LOG("----------------------------------");
     ASM_LOG("eval      " << s.f);
+    ASM_LOG("nargs     " << s.f->numArguments());
     ASM_LOG("returnPos " << returnPos);
     ASM_LOG("pos       " << (s.itr - s.f->cbegin()) << "/"  << (s.end - s.f->cbegin()));
-    ASM_LOG("----------------------------------");
     LOG_DATA_STACK(stack);
+    ASM_LOG("----------------------------------");
+    s.f->makeReference(stack.end());
     while(s.itr != s.end)
     {
       switch(*s.itr)
@@ -223,6 +225,7 @@ Cell & Continuation::eval()
           s.f = stack[stack.size() - s.itr[1] - 1].as<Function>();
           s.itr = s.f->cbegin();
           s.end = s.f->cend();
+          s.f->makeReference(stack.end());
         }
         else
         {
@@ -239,6 +242,7 @@ Cell & Continuation::eval()
                   " func: " << s.f <<
                   " returnPos: " << returnPos <<
                   " " << s.returnPos);
+          s.f->makeReference(stack.end());
         }
         break;
 

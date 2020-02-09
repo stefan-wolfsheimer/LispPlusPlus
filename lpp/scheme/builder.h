@@ -12,18 +12,21 @@ namespace Lisp
     class Builder
     {
     public:
-      Builder(Allocator * _alloc);
+      Builder(Allocator * _alloc, Builder * _parent=0);
       void idempotent(const Cell & cell);
       void reference(const Cell & cell);
       void symbol(const Cell & cell);
       void define(const Cell & car, const Cell & cdr);
       void lambdaArgument(const Cell & arg);
       void funcall(const Cell & arg);
+      void lambda(const Cell & functionCell);
+
 
       void finalize();
       inline const Object & getFunctionObject() const;
       Function * getFunction() const;
     private:
+      Builder * parent;
       Function * func;
       Allocator * allocator;
       Object funcObject;

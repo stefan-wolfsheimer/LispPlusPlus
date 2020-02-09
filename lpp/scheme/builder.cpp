@@ -5,9 +5,10 @@
 
 using Builder = Lisp::Scheme::Builder;
 
-Builder::Builder(Allocator * _allocator)
+Builder::Builder(Allocator * _allocator, Builder * _parent)
   : allocator(_allocator),
-    funcObject(_allocator->makeRoot<Function>())
+    funcObject(_allocator->makeRoot<Function>()),
+    parent(_parent)
 {
   func = funcObject.as<Function>();
 }
@@ -29,10 +30,23 @@ void Builder::reference(const Cell & cell)
 
 void Builder::symbol(const Cell & cell)
 {
-  // @todo look in higher functions' arguments
   std::size_t argPos = func->getArgumentPos(cell);
   if(argPos == Function::notFound)
   {
+    Builder * p = parent;
+    while(p)
+    {
+      argPos = p->func->getArgumentPos(cell);
+      if(argPos == Function::notFound)
+      {
+        p = p->parent;
+      }
+      else
+      {
+        func->addRETURNV(p->func->shareArgument(argPos));
+        return;
+      }
+    }
     func->addRETURNL(cell);
   }
   else
@@ -65,4 +79,9 @@ void Builder::funcall(const Cell & lst)
   }
 }
 
+void Builder::lambda(const Cell & functionCell)
+{
+  assert(functionCell.isA<Function>());
+  func->addRETURNV(functionCell);
+}
 

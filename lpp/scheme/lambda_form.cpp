@@ -35,7 +35,7 @@ bool LambdaForm::isInstance(const Cell & cell) const
 bool LambdaForm::match(const Cell & cell, Builder & parentBuilder) const
 {
   assert(cell.isA<Cons>());
-  Builder builder(getAllocator());
+  Builder builder(getAllocator(), &parentBuilder);
   if(argList->match(cell.as<Cons>()->getCarCell(), builder))
   {
     // current implementation: only one expression in the lambda body

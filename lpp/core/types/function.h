@@ -71,6 +71,7 @@ namespace Lisp
     Function();
     Function(const Code & instr, const Array & data);
     Function(Code && instr, Array && data);
+
     /**
      * Add instructions 
      */
@@ -89,6 +90,9 @@ namespace Lisp
      */
     inline Object shareArgument(std::size_t i);
 
+    /**
+     * Number of static data elements.
+     */
     inline std::size_t dataSize() const;
     inline std::size_t numArguments() const;
 
@@ -120,13 +124,16 @@ namespace Lisp
     inline const_iterator cend() const;
 
     /**
-     * return a const reference of the ith data element
+     * Return a const reference of the ith data element.
+     *
+     * @param i position of the data element [0, dataSize())
      */
     inline const Cell & atCell(std::size_t i) const;
 
     /**
      * Return a const reference to the ith data element.
-     * If the cell is a a reference, resolve the value.
+     * If the cell is a a reference, the reference is resolved
+     * and the value is returned.
      */
     inline const Cell & getValue(std::size_t i) const;
 
@@ -134,7 +141,7 @@ namespace Lisp
      * Modifies stack values to references for each argument
      * that has reference trait
      */
-    inline void makeReference(std::vector<Object>::iterator stack_itr);
+    inline void makeReference(std::vector<Cell>::iterator stack_itr);
 
     void disassemble(std::ostream & ost) const;
     //////////////////////////////////////////////////
@@ -362,9 +369,11 @@ inline const Lisp::Cell & Lisp::Function::getValue(std::size_t i) const
   }
 }
 
-inline void Lisp::Function::makeReference(std::vector<Object>::iterator stack_itr)
+inline void Lisp::Function::makeReference(std::vector<Cell>::iterator stack_itr)
 {
+  //@todo only execute, if function has at least one reference
   std::size_t i = 0;
+  stack_itr-= numArguments();
   for(const ArgumentTraits & traits : argumentTraits)
   {
     if(traits.isReference())

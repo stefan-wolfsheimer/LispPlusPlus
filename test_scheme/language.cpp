@@ -267,42 +267,39 @@ TEST_CASE("scm_nested_lambdas", "[Scheme]")
  }
 }
 
-#if 0
 TEST_CASE("scm_nested_scopes_1", "[Scheme]")
 {
-  Vm vm;
-  Object lang = vm.make<Language>();
-  std::size_t initStackSize = vm.stackSize();
   /**
      func=(lambda (a b)
-                  (lambda (c d))
-                  a)
+                  (lambda (c d)
+                   a))
   */
-  Object func = vm.compileAndEval(lang,
-                                  vm.list(vm.make<Symbol>("lambda"),
-                                          vm.list(vm.make<Symbol>("a"),
-                                                  vm.make<Symbol>("b")),
-                                          vm.list(vm.make<Symbol>("lambda"),
-                                                  vm.list(vm.make<Symbol>("c"),
-                                                          vm.make<Symbol>("d")),
-                                                  vm.make<Symbol>("a"))));
+  Vm vm;
+  Object langObj = vm.make<Language>();
+  Language * lang = langObj.as<Language>();
+  auto expr = lang->compile(vm.list(vm.make<Symbol>("lambda"),
+                                    vm.list(vm.make<Symbol>("a"),
+                                            vm.make<Symbol>("b")),
+                                    vm.list(vm.make<Symbol>("lambda"),
+                                            vm.list(vm.make<Symbol>("c"),
+                                                    vm.make<Symbol>("d")),
+                                            vm.make<Symbol>("a"))));
+  REQUIRE(expr.isA<Function>());
+  REQUIRE(expr.as<Function>()->numArguments() == 0);
+
+  auto func = vm.eval(expr);
   REQUIRE(func.isA<Function>());
   REQUIRE(func.as<Function>()->numArguments() == 2);
   REQUIRE(func.as<Function>()->getArgumentTraits(0).isReference());
   REQUIRE_FALSE(func.as<Function>()->getArgumentTraits(1).isReference());
-  /* (func 1 2) -> (lambda (c d) 1)
-   */
-  auto func1 = vm.compileAndEval(lang,
-                                 vm.list(func,
-                                         vm.make<IntegerType>(1),
-                                         vm.make<IntegerType>(2)));
-  REQUIRE(vm.stackSize() == initStackSize);
-  REQUIRE(func1.isA<Function>());
-  auto res = vm.compileAndEval(lang,
-                               vm.list(func1,
-                                       vm.make<IntegerType>(3),
-                                       vm.make<IntegerType>(4)));
-  REQUIRE(vm.stackSize() == initStackSize);
+
+  auto func2 = vm.eval(func, vm.make<IntegerType>(1), vm.make<IntegerType>(2));
+  REQUIRE(func2.isA<Function>());
+  REQUIRE(func2.as<Function>()->numArguments() == 2);
+  REQUIRE_FALSE(func2.as<Function>()->getArgumentTraits(0).isReference());
+  REQUIRE_FALSE(func2.as<Function>()->getArgumentTraits(1).isReference());
+
+  auto res = vm.eval(func2, vm.make<IntegerType>(3), vm.make<IntegerType>(4));
   REQUIRE(res.isA<IntegerType>());
   REQUIRE(res.as<IntegerType>() == 1);
 }
@@ -315,50 +312,55 @@ TEST_CASE("scm_nested_scopes_2", "[Scheme]")
        (lambda (c d) a)))
   */
   Vm vm;
-  Object lang = vm.make<Language>();
-  std::size_t initStackSize = vm.stackSize();
-  Object func = vm.compileAndEval(lang,
-                                  vm.list(vm.make<Symbol>("lambda"),
-                                          vm.list(vm.make<Symbol>("a"),
-                                                  vm.make<Symbol>("b")),
-                                          vm.list(vm.make<Symbol>("lambda"),
-                                                  vm.list(vm.make<Symbol>("c"),
-                                                          vm.make<Symbol>("d")),
-                                                  vm.list(vm.make<Symbol>("lambda"),
-                                                          vm.list(vm.make<Symbol>("c"),
-                                                                  vm.make<Symbol>("d")),
-                                                          vm.make<Symbol>("a")))));
+  Object langObj = vm.make<Language>();
+  Language * lang = langObj.as<Language>();
+
+  auto expr = lang->compile(vm.list(vm.make<Symbol>("lambda"),
+                                    vm.list(vm.make<Symbol>("a"),
+                                            vm.make<Symbol>("b")),
+                                    vm.list(vm.make<Symbol>("lambda"),
+                                            vm.list(vm.make<Symbol>("c"),
+                                                    vm.make<Symbol>("d")),
+                                            vm.list(vm.make<Symbol>("lambda"),
+                                                    vm.list(vm.make<Symbol>("c"),
+                                                            vm.make<Symbol>("d")),
+                                                    vm.make<Symbol>("a")))));
+  REQUIRE(expr.isA<Function>());
+  REQUIRE(expr.as<Function>()->numArguments() == 0);
+
+  auto func = vm.eval(expr);
   REQUIRE(func.isA<Function>());
   REQUIRE(func.as<Function>()->numArguments() == 2);
   REQUIRE(func.as<Function>()->getArgumentTraits(0).isReference());
   REQUIRE_FALSE(func.as<Function>()->getArgumentTraits(1).isReference());
-  auto func1 = vm.compileAndEval(lang,
-                                 vm.list(func,
-                                         vm.make<IntegerType>(1),
-                                         vm.make<IntegerType>(2)));
+
+
   /*
     (lambda (c d)
       (lambda (c d) a)) */
+  auto func1 = vm.eval(func,
+                       vm.make<IntegerType>(1),
+                       vm.make<IntegerType>(2));
   REQUIRE(func1.isA<Function>());
   REQUIRE(func1.as<Function>()->numArguments() == 2);
   REQUIRE_FALSE(func1.as<Function>()->getArgumentTraits(0).isReference());
   REQUIRE_FALSE(func1.as<Function>()->getArgumentTraits(1).isReference());
-  auto func2 = vm.compileAndEval(lang,
-                                 vm.list(func1,
-                                         vm.make<IntegerType>(5),
-                                         vm.make<IntegerType>(6)));
+
   /* (lambda (c d) a)) */
+  auto func2 = vm.eval(func1,
+                       vm.make<IntegerType>(5),
+                       vm.make<IntegerType>(6));
   REQUIRE(func2.as<Function>()->numArguments() == 2);
   REQUIRE_FALSE(func2.as<Function>()->getArgumentTraits(0).isReference());
   REQUIRE_FALSE(func2.as<Function>()->getArgumentTraits(1).isReference());
 
-  auto res = vm.compileAndEval(lang,
-                               vm.list(func2,
-                                       vm.make<IntegerType>(3),
-                                       vm.make<IntegerType>(4)));
+  auto res = vm.eval(func2,
+                     vm.make<IntegerType>(3),
+                     vm.make<IntegerType>(4));
   REQUIRE(res.isA<IntegerType>());
   REQUIRE(res.as<IntegerType>() == 1);
 }
+
 
 TEST_CASE("scm_car_lambda", "[Scheme]")
 {
@@ -368,15 +370,16 @@ TEST_CASE("scm_car_lambda", "[Scheme]")
    * -> 2
    */
   Vm vm;
-  Object lang = vm.make<Language>();
-  std::size_t initStackSize = vm.stackSize();
-  Object res = vm.compileAndEval(lang,
-                                 vm.list(vm.list(vm.make<Symbol>("lambda"),
-                                                 vm.list(vm.make<Symbol>("a"),
-                                                         vm.make<Symbol>("b")),
-                                                 vm.make<Symbol>("b")),
-                                         vm.make<IntegerType>(1),
-                                         vm.make<IntegerType>(2)));
+  Object langObj = vm.make<Language>();
+  Language * lang = langObj.as<Language>();
+  
+  auto expr = lang->compile(vm.list(vm.list(vm.make<Symbol>("lambda"),
+                                            vm.list(vm.make<Symbol>("a"),
+                                                    vm.make<Symbol>("b")),
+                                            vm.make<Symbol>("b")),
+                                    vm.make<IntegerType>(1),
+                                    vm.make<IntegerType>(2)));
+  auto res = vm.eval(expr);
   REQUIRE(res.isA<IntegerType>());
   REQUIRE(res.as<IntegerType>() == 2);
 }
@@ -384,19 +387,21 @@ TEST_CASE("scm_car_lambda", "[Scheme]")
 TEST_CASE("scm_car_lambda_2", "[Scheme]")
 {
   /*
-   * car:
-   * ((lambda (a b)
-   *           (lambda (c d) a)) 1 2)
-   *
-   * (((lambda (a b)
-   *           (lambda (c d) a))) 3 4)
-   * -> 1
-   */
+    (((lambda (a b)
+              (lambda (c d) a))
+     1 2)
+    3 4)
+
+  car:
+   (((lambda (a b)
+              (lambda (c d) a))
+    1 2)
+  */
   Vm vm;
-  Object lang = vm.make<Language>();
-  std::size_t initStackSize = vm.stackSize();
-  Object func = vm.compile(lang,
-                            vm.list(vm.list(vm.list(vm.make<Symbol>("lambda"),
+  Object langObj = vm.make<Language>();
+  Language * lang = langObj.as<Language>();
+    
+  auto func = lang->compile(vm.list(vm.list(vm.list(vm.make<Symbol>("lambda"),
                                                     vm.list(vm.make<Symbol>("a"),
                                                             vm.make<Symbol>("b")),
                                                     vm.list(vm.make<Symbol>("lambda"),
@@ -407,9 +412,14 @@ TEST_CASE("scm_car_lambda_2", "[Scheme]")
                                             vm.make<IntegerType>(2)),
                                     vm.make<IntegerType>(3),
                                     vm.make<IntegerType>(4)));
-  Object res = vm.evalAndReturn(func);
+  REQUIRE(func.isA<Function>());
+  REQUIRE(func.as<Function>()->numArguments() == 0);
+
+#if 0
+  auto res = vm.eval(func);
   REQUIRE(res.isA<IntegerType>());
   REQUIRE(res.as<IntegerType>() == 1);
+#endif
 }
 
 TEST_CASE("scm_car_lambda_3", "[Scheme]")
@@ -424,8 +434,9 @@ TEST_CASE("scm_car_lambda_3", "[Scheme]")
    * -> 4
    */
   Vm vm;
-  Object lang = vm.make<Language>();
-  std::size_t initStackSize = vm.stackSize();
+  Object langObj = vm.make<Language>();
+  Language * lang = langObj.as<Language>();
+#if 0
   Object func = vm.compile(lang,
                             vm.list(vm.list(vm.list(vm.make<Symbol>("lambda"),
                                                     vm.list(vm.make<Symbol>("a"),
@@ -441,6 +452,7 @@ TEST_CASE("scm_car_lambda_3", "[Scheme]")
   Object res = vm.evalAndReturn(func);
   REQUIRE(res.isA<IntegerType>());
   REQUIRE(res.as<IntegerType>() == 4);
+#endif
 }
 
-#endif
+
