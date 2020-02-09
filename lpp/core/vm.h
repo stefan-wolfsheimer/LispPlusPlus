@@ -208,13 +208,14 @@ template<typename... ARGS>
 inline void Lisp::Vm::vectorAppender(std::vector<Cell> & v, const Cell & c, ARGS && ...rest)
 {
   v.push_back(c);
-  vectorAppender(v, std::forward(rest)...);
+  vectorAppender(v, rest...);
 }
 
 template<typename... ARGS>
 inline Lisp::Object Lisp::Vm::eval(const Cell & func, ARGS && ...rest)
 {
   std::vector<Cell> args{func};
+  vectorAppender(args, rest...);
   return eval(std::move(args));
 }
 

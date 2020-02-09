@@ -46,7 +46,7 @@ Continuation::Continuation(std::vector<Lisp::Cell> && _stack, const std::shared_
 {
   assert(!stack.empty());
   assert(stack.front().isA<Function>());
-  assert((stack.front().as<Function>()->numArguments() + 1) == _stack.size());
+  assert((stack.front().as<Function>()->numArguments() + 1) == stack.size());
   callStack.emplace_back(stack.front().as<Function>(), 0);
   dsPosition = 0;
 }
