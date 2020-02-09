@@ -48,13 +48,13 @@ namespace Lisp
     inline std::shared_ptr<Allocator> getAllocator() const;
 
     template<typename T, typename... ARGS>
-    inline Object make(const ARGS & ...rest);
+    inline Object make(ARGS && ...rest);
 
-    //inline Object cons(const Object & car, const Object & cdr);
     inline Object list();
     inline Object list(const Object & a);
     inline Object list(Object && a);
 
+    //@todo using std::forward to avoid different versions
     template<typename... ARGS>
     Object list(const Object & a, const ARGS & ... rest);
 
@@ -75,34 +75,33 @@ namespace Lisp
     void define(const std::string & name, const Object & rhs);
     Object find(const std::string & name) const;
 
-    /* @todo remove */
-    //inline void push(const Object & rhs);
-    //inline void push(Object && rhs);
-
-    //inline Object top() const;
-    //inline void pop();
-    //inline void pop(std::size_t n);
-
-
-    //inline Object compile(const LanguageInterface * lang, const Cell & cell) const;
-    //Object compileAndEval(const LanguageInterface * lang, const Cell & cell);
-    //Object compile(const Cell & lang, const Cell & cell) const;
-    //Object compileAndEval(const Cell & lang, const Cell & cell); 
-    /* @todo end remove */
     Object eval(const Cell & func);
+
+    template<typename... ARGS>
+    inline Object eval(const Cell & func, ARGS && ...arg);
 
   private:
     template<typename C>
     inline const C & _makeRoot(std::true_type, const C & c);
 
     template<typename C, typename... ARGS>
-    inline C * _makeRoot(std::false_type, const ARGS & ... rest);
+    inline C * _makeRoot(std::false_type, ARGS && ... rest);
 
     template<typename C, typename... ARGS>
-    inline C * _allocRoot(std::false_type, const ARGS & ... rest);
+    inline C * _allocRoot(std::false_type, ARGS && ... rest);
 
-    template<typename T>
-    inline Continuation * _allocRoot(std::true_type, const Cell & f);
+    // continuation requires special treatments
+
+    template<typename T, typename ARG>
+    inline Continuation * _allocRoot(std::true_type, ARG&& args);
+
+    inline void vectorAppender(std::vector<Cell> & v);
+    inline void vectorAppender(std::vector<Cell> & v, const Cell & c);
+
+    template<typename... ARGS>
+    inline void vectorAppender(std::vector<Cell> & v, const Cell & c, ARGS && ...rest);
+
+    Object eval(std::vector<Cell> && args);
 
     std::shared_ptr<Allocator> alloc;
     std::shared_ptr<Env> env;
@@ -118,11 +117,18 @@ std::shared_ptr<Lisp::Allocator> Lisp::Vm::getAllocator() const
   return alloc;
 }
 
+//template<typename T, typename... ARGS>
+//inline Lisp::Object Lisp::Vm::make(const ARGS & ...rest)
+//{
+//  return Lisp::Object(_makeRoot<T>(typename TypeTraits<T>::IsAtomic(),  rest...));
+//}
+
 template<typename T, typename... ARGS>
-inline Lisp::Object Lisp::Vm::make(const ARGS & ...rest)
+inline Lisp::Object Lisp::Vm::make(ARGS && ...rest)
 {
-  return Lisp::Object(_makeRoot<T>(typename TypeTraits<T>::IsAtomic(),  rest...));
+  return Lisp::Object(_makeRoot<T>(typename TypeTraits<T>::IsAtomic(),  std::forward<ARGS>(rest)...));
 }
+
 
 inline Lisp::Object Lisp::Vm::list()
 {
@@ -171,19 +177,44 @@ inline const C & Lisp::Vm::_makeRoot(std::true_type, const C & c)
 }
 
 template<typename T, typename... ARGS>
-inline T * Lisp::Vm::_makeRoot(std::false_type, const ARGS & ... rest)
+inline T * Lisp::Vm::_makeRoot(std::false_type, ARGS&& ... rest)
 {
-  return _allocRoot<T>(typename std::is_same<T, Continuation>::type(), rest...);
+  return _allocRoot<T>(typename std::is_same<T, Continuation>::type(), std::forward<ARGS>(rest)...);
 }
 
 template<typename T, typename... ARGS>
-inline T * Lisp::Vm::_allocRoot(std::false_type, const ARGS & ... rest)
+inline T * Lisp::Vm::_allocRoot(std::false_type, ARGS&& ... rest)
 {
-  return alloc->makeRoot<T>(rest...);
+  return alloc->makeRoot<T>(std::forward<ARGS>(rest)...);
 }
 
-template<typename T>
-inline Lisp::Continuation * Lisp::Vm::_allocRoot(std::true_type, const Cell & f)
+// special cases for Lisp::Continuation
+template<typename T, typename ARG>
+inline Lisp::Continuation * Lisp::Vm::_allocRoot(std::true_type, ARG&& args)
 {
-  return alloc->makeRoot<Continuation>(f, env);
+  return alloc->makeRoot<Continuation>(std::forward<ARG>(args), env);
 }
+
+inline void Lisp::Vm::vectorAppender(std::vector<Cell> & v)
+{
+}
+
+inline void Lisp::Vm::vectorAppender(std::vector<Cell> & v, const Cell & c)
+{
+  v.push_back(c);
+}
+
+template<typename... ARGS>
+inline void Lisp::Vm::vectorAppender(std::vector<Cell> & v, const Cell & c, ARGS && ...rest)
+{
+  v.push_back(c);
+  vectorAppender(v, std::forward(rest)...);
+}
+
+template<typename... ARGS>
+inline Lisp::Object Lisp::Vm::eval(const Cell & func, ARGS && ...rest)
+{
+  std::vector<Cell> args{func};
+  return eval(std::move(args));
+}
+

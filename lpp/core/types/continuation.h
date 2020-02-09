@@ -25,6 +25,7 @@ namespace Lisp
   {
   public:
     Continuation(const Cell & func, const std::shared_ptr<Env> & _env);
+    Continuation(std::vector<Lisp::Cell> && _stack, const std::shared_ptr<Env> & _env);
     inline std::size_t stackSize() const;
     inline void push(const Cell & rhs);
     Cell & eval();

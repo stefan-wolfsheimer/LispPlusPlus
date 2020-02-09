@@ -84,9 +84,12 @@ Object Lisp::Vm::find(const std::string & name) const
 Object Lisp::Vm::eval(const Cell & func)
 {
   assert(func.isA<Function>());
-  Object cont = make<Continuation>(func.as<Function>());
+  Object cont = make<Continuation>(func);
   return Object(cont.as<Continuation>()->eval());
 }
 
-
-
+Object Lisp::Vm::eval(std::vector<Cell> && args)
+{
+  Object cont = make<Continuation>(std::move(args));
+  return Object(cont.as<Continuation>()->eval());
+}

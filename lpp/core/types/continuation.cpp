@@ -35,9 +35,22 @@ Continuation::Continuation(const Cell & func,
   : callStack({ContinuationState(func.as<Function>(), 0)}),
     env(_env)
 {
+  assert(func.isA<Function>());
+  assert(stack.size() == func.as<Function>()->numArguments());
   stack.push_back(func);
   dsPosition = 0;
 }
+
+Continuation::Continuation(std::vector<Lisp::Cell> && _stack, const std::shared_ptr<Env> & _env)
+  : stack(std::move(_stack)), env(_env)
+{
+  assert(!stack.empty());
+  assert(stack.front().isA<Function>());
+  assert((stack.front().as<Function>()->numArguments() + 1) == _stack.size());
+  callStack.emplace_back(stack.front().as<Function>(), 0);
+  dsPosition = 0;
+}
+
 
 TypeId Continuation::getTypeId() const
 {

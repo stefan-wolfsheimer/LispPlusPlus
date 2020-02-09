@@ -70,14 +70,14 @@ namespace Lisp
 
 
     template<typename C,  typename... ARGS>
-    inline C * make(const ARGS & ... rest);
+    inline C * make(ARGS && ... rest);
 
     /**
      * Allocate and initialize a new Cons / Collectible object in the root set.
      * Reference count is 0.
      */
     template<typename C,  typename... ARGS>
-    inline C * makeRoot(const ARGS & ... rest);
+    inline C * makeRoot(ARGS && ... rest);
 
     /**
      * Remove a symbol
@@ -178,13 +178,13 @@ namespace Lisp
     inline C * _makeRoot(ConsStorageTrait, Cell && car, Cell && cdr);
 
     template<typename C,  typename... ARGS>
-    inline C * _make(ContainerStorageTrait, ARGS... rest);
+    inline C * _make(ContainerStorageTrait, ARGS&& ...rest);
 
     template<typename C,  typename... ARGS>
-    inline C * _makeRoot(ContainerStorageTrait, ARGS... rest);
+    inline C * _makeRoot(ContainerStorageTrait, ARGS&& ...rest);
 
     template<typename C,  typename... ARGS>
-    inline C * _makeRoot(ManagedStorageTrait, ARGS... rest);
+    inline C * _makeRoot(ManagedStorageTrait, ARGS&& ...rest);
 
     template<typename C>
     inline C * _make(SymbolStorageTrait, const std::string & name);
@@ -243,16 +243,15 @@ inline Lisp::Allocator::Allocator(std::size_t consPageSize,
 }
 
 template<typename C, typename... ARGS>
-inline C * Lisp::Allocator::make(const ARGS & ... rest)
+inline C * Lisp::Allocator::make(ARGS && ... rest)
 {
-
-  return _make<C>(typename TypeTraits<C>::StorageTrait(), rest...);
+  return _make<C>(typename TypeTraits<C>::StorageTrait(), std::forward<ARGS>(rest)...);
 }
 
 template<typename C,  typename... ARGS>
-inline C * Lisp::Allocator::makeRoot(const ARGS & ... rest)
+inline C * Lisp::Allocator::makeRoot(ARGS && ... rest)
 {
-  return _makeRoot<C>(typename TypeTraits<C>::StorageTrait(), rest...);
+  return _makeRoot<C>(typename TypeTraits<C>::StorageTrait(), std::forward<ARGS>(rest)...);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -370,11 +369,11 @@ inline C * Lisp::Allocator::_makeRoot(ConsStorageTrait, Cell && car, Cell && cdr
 //
 ////////////////////////////////////////////////////////////////////////////////
 template<typename C,  typename... ARGS>
-inline C * Lisp::Allocator::_make(ContainerStorageTrait, ARGS... rest)
+inline C * Lisp::Allocator::_make(ContainerStorageTrait, ARGS&& ...rest)
 {
   step();
   recycle();
-  C * ret = new C(rest...);
+  C * ret = new C(std::forward<ARGS>(rest)...);
   ret->refCount = 1u;
   containerMap.add(ret);
   ret->init();
@@ -382,11 +381,11 @@ inline C * Lisp::Allocator::_make(ContainerStorageTrait, ARGS... rest)
 }
 
 template<typename C,  typename... ARGS>
-inline C * Lisp::Allocator::_makeRoot(ContainerStorageTrait, ARGS... rest)
+inline C * Lisp::Allocator::_makeRoot(ContainerStorageTrait, ARGS&& ...rest)
 {
   step();
   recycle();
-  C * ret = new C(rest...);
+  C * ret = new C(std::forward<ARGS>(rest)...);
   ret->refCount = 1u;
   containerMap.addRoot(ret);
   ret->init();
@@ -394,9 +393,9 @@ inline C * Lisp::Allocator::_makeRoot(ContainerStorageTrait, ARGS... rest)
 }
 
 template<typename C,  typename... ARGS>
-inline C * Lisp::Allocator::_makeRoot(ManagedStorageTrait, ARGS... rest)
+inline C * Lisp::Allocator::_makeRoot(ManagedStorageTrait, ARGS&& ...rest)
 {
-  return new C(rest...);
+  return new C(std::forward<ARGS>(rest)...);
 }
 
 template<typename C>
