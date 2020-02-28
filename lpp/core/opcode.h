@@ -36,11 +36,6 @@ namespace Lisp
   using InstructionType = std::size_t;
 
   /**
-   * return a value from function data.
-   */
-  static const InstructionType RETURNV = 0x01;
-
-  /**
    * return / push a value from stack 
    */
   static const InstructionType RETURNS = 0x02;
@@ -49,13 +44,10 @@ namespace Lisp
    * return the result from symbol lookup 
    */
   static const InstructionType RETURNL = 0x03;
+  static const InstructionType PUSHL = 0x13;
 
-  /*
-   * increment return position by one
-   * @todo remove INCRET
-   */
-  static const InstructionType INCRET = 0x04;
   static const InstructionType PUSHV = 0x14;
+
   /**
    * define the value of a symbol in the env
    */

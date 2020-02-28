@@ -75,10 +75,10 @@ namespace Lisp
     /**
      * Add instructions 
      */
-    inline void addRETURNV(const Cell & rhs);
+    inline void addPUSHV(const Cell & rhs);
     inline void addRETURNS(InstructionType offset);
     inline void addRETURNL(const Cell & rhs);
-    inline void addINCRET();
+    inline void addPUSHL(const Cell & rhs);
     inline void addFUNCALL(const InstructionType & n);
     inline void addDEFINES(const Cell & symbol);
 
@@ -255,9 +255,9 @@ inline Lisp::Object Lisp::Function::shareArgument(std::size_t i)
   }
 }
 
-inline void Lisp::Function::addRETURNV(const Cell & rhs)
+inline void Lisp::Function::addPUSHV(const Cell & rhs)
 {
-  instructions.push_back(RETURNV);
+  instructions.push_back(PUSHV);
   instructions.push_back(data.size());
   data.append(rhs);
 }
@@ -276,9 +276,12 @@ inline void Lisp::Function::addRETURNL(const Cell & rhs)
   data.append(rhs);
 }
 
-inline void Lisp::Function::addINCRET()
+inline void Lisp::Function::addPUSHL(const Cell & rhs)
 {
-  instructions.push_back(INCRET);
+  assert(rhs.isA<Symbol>());
+  instructions.push_back(PUSHL);
+  instructions.push_back(data.size());
+  data.append(rhs);
 }
 
 inline void Lisp::Function::addFUNCALL(const InstructionType & n)

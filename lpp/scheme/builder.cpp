@@ -20,12 +20,14 @@ void Builder::finalize()
 
 void Builder::idempotent(const Cell & cell)
 {
-  func->addRETURNV(cell);
+  //@todo tail recursion optimization
+  func->addPUSHV(cell);
 }
 
 void Builder::reference(const Cell & cell)
 {
-  func->addRETURNV(cell);
+  //@todo tail recursion optimization
+  func->addPUSHV(cell);
 }
 
 void Builder::symbol(const Cell & cell)
@@ -43,11 +45,11 @@ void Builder::symbol(const Cell & cell)
       }
       else
       {
-        func->addRETURNV(p->func->shareArgument(argPos));
+        func->addPUSHV(p->func->shareArgument(argPos));
         return;
       }
     }
-    func->addRETURNL(cell);
+    func->addPUSHL(cell);
   }
   else
   {
@@ -71,7 +73,7 @@ void Builder::funcall(const Cell & lst)
   std::size_t l = listLength(lst);
   if(l == 0)
   {
-    func->addRETURNV(Lisp::nil);
+    func->addPUSHV(Lisp::nil);
   }
   else
   {
@@ -82,6 +84,6 @@ void Builder::funcall(const Cell & lst)
 void Builder::lambda(const Cell & functionCell)
 {
   assert(functionCell.isA<Function>());
-  func->addRETURNV(functionCell);
+  func->addPUSHV(functionCell);
 }
 

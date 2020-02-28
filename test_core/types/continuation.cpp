@@ -153,11 +153,11 @@ TEST_CASE("continuation_eval", "[Continuation]")
   REQUIRE(cont.as<Continuation>()->eval().as<Function>() == func.as<Function>());
 }
 
-TEST_CASE("continuation_returnv", "[Continuation]")
+TEST_CASE("continuation_pushv", "[Continuation]")
 {
   Vm vm;
   Object func = vm.make<Function>();
-  func.as<Function>()->addRETURNV(vm.make<IntegerType>(1));
+  func.as<Function>()->addPUSHV(vm.make<IntegerType>(1));
   Object cont = vm.make<Continuation>(func.as<Function>());
   Object res(cont.as<Continuation>()->eval());
   REQUIRE(cont.as<Continuation>()->stackSize() == 1u);
@@ -179,46 +179,24 @@ TEST_CASE("continuation_returns", "[Continuation]")
   REQUIRE(res.as<IntegerType>() == 2);
 }
 
-TEST_CASE("continuation_returnl", "[Continuation]")
+TEST_CASE("continuation_pushl", "[Continuation]")
 {
   Vm vm;
   Object func = vm.make<Function>();
   vm.define("a", vm.make<IntegerType>(3));
-  func.as<Function>()->addRETURNL(vm.make<Symbol>("a"));
+  func.as<Function>()->addPUSHL(vm.make<Symbol>("a"));
   Object cont = vm.make<Continuation>(func.as<Function>());
   Object res(cont.as<Continuation>()->eval());
   REQUIRE(cont.as<Continuation>()->stackSize() == 1u);
   REQUIRE(res.isA<IntegerType>());
   REQUIRE(res.as<IntegerType>() == 3);
-}
-
-TEST_CASE("continuation_incret", "[Continuation]")
-{
-  Vm vm;
-  Object func = vm.make<Function>();
-  func.as<Function>()->addINCRET();
-  func.as<Function>()->addRETURNV(vm.make<IntegerType>(1));
-
-  func.as<Function>()->addINCRET();
-  func.as<Function>()->addRETURNV(vm.make<IntegerType>(2));
-
-  func.as<Function>()->addINCRET();
-  func.as<Function>()->addRETURNV(vm.make<IntegerType>(3));
-
-  Object cont = vm.make<Continuation>(func.as<Function>());
-  Object res(cont.as<Continuation>()->eval());
-  REQUIRE(cont.as<Continuation>()->stackSize() == 1u);
-#if 0
-  REQUIRE(res.isA<IntegerType>());
-  REQUIRE(res.as<IntegerType>() == 3);
-#endif
 }
 
 TEST_CASE("continuation_defines", "[Continuation]")
 {
   Vm vm;
   Object func = vm.make<Function>();
-  func.as<Function>()->addRETURNV(vm.make<IntegerType>(10));
+  func.as<Function>()->addPUSHV(vm.make<IntegerType>(10));
   func.as<Function>()->addDEFINES(vm.make<Symbol>("a"));
   Object cont = vm.make<Continuation>(func.as<Function>());
   Object res(cont.as<Continuation>()->eval());
@@ -232,20 +210,16 @@ TEST_CASE("continuation_funcall", "[Continuation]")
 {
   Vm vm;
   Object lambda = vm.make<Function>();
-  lambda.as<Function>()->addRETURNV(vm.make<IntegerType>(10));
+  lambda.as<Function>()->addPUSHV(vm.make<IntegerType>(10));
   lambda.as<Function>()->addArgument(vm.make<Symbol>("a"));
   lambda.as<Function>()->addArgument(vm.make<Symbol>("b"));
   lambda.as<Function>()->addArgument(vm.make<Symbol>("c"));
 
   Object func = vm.make<Function>();
-  func.as<Function>()->addINCRET();
-  func.as<Function>()->addRETURNV(lambda);
-  func.as<Function>()->addINCRET();
-  func.as<Function>()->addRETURNV(vm.make<IntegerType>(10));
-  func.as<Function>()->addINCRET();
-  func.as<Function>()->addRETURNV(vm.make<IntegerType>(20));
-  func.as<Function>()->addINCRET();
-  func.as<Function>()->addRETURNV(vm.make<IntegerType>(30));
+  func.as<Function>()->addPUSHV(lambda);
+  func.as<Function>()->addPUSHV(vm.make<IntegerType>(10));
+  func.as<Function>()->addPUSHV(vm.make<IntegerType>(20));
+  func.as<Function>()->addPUSHV(vm.make<IntegerType>(30));
   func.as<Function>()->addFUNCALL(3);
 
   Object cont = vm.make<Continuation>(func.as<Function>());

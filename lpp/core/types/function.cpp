@@ -15,29 +15,36 @@ void Function::disassemble(std::ostream & ost) const
     ost << (instr - cbegin()) << ":\t";
     switch(*instr)
     {
-    case RETURNV:
-      ost << "RETURNV " << data.atCell(instr[1]);
+    case PUSHV:
+      ost << "PUSHV " << data.atCell(instr[1]);
       instr++;
       break;
+
     case RETURNS:
       ost << "RETURNS " << *instr;
       instr++;
       break;
+
     case RETURNL:
       ost << "RETURNL " << data.atCell(instr[1]);
       instr++;
       break;
-    case INCRET:
-      ost << "INCRET";
+
+    case PUSHL:
+      ost << "PUSHL " << data.atCell(instr[1]);
+      instr++;
       break;
+
     case FUNCALL:
       ost << "FUNCALL " << instr[1];
       instr++;
       break;
+
     case DEFINES:
       ost << "DEFINES " << data.atCell(instr[1]);
       instr++;
       break;
+
     default:
       ost << "instr " << *instr;
     }

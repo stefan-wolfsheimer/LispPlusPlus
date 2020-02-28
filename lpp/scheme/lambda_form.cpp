@@ -42,7 +42,7 @@ bool LambdaForm::match(const Cell & cell, Builder & parentBuilder) const
     if(body->match(cell.as<Cons>()->getCdrCell(), builder))
     {
       builder.finalize();
-      parentBuilder.getFunction()->addRETURNV(builder.getFunctionObject());
+      parentBuilder.getFunction()->addPUSHV(builder.getFunctionObject());
       return true;
     }
   }

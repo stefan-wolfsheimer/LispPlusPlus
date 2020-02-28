@@ -98,10 +98,6 @@ bool ProcedureCallArgDecorator::isInstance(const Cell & cell) const
 
 bool ProcedureCallArgDecorator::match(const Cell & cell, Builder & builder) const
 {
-  if(!cell.isA<Cons>())
-  {
-    builder.getFunction()->addINCRET();
-  }
   return expression->match(cell, builder);
 }
 //////////////////////////////////////////

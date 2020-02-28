@@ -61,6 +61,7 @@ TEST_CASE("scm_primitive", "[Scheme]")
     Object func = form->compile(atom);
     REQUIRE(func.isA<Function>());
     REQUIRE(func.getRefCount() == 1u);
+    //func.as<Function>()->disassemble(std::cout);
     Object res = vm.eval(func);
     REQUIRE(res.isA<IntegerType>());
     REQUIRE(res.as<IntegerType>() == 10);
@@ -260,7 +261,7 @@ TEST_CASE("scm_nested_lambdas", "[Scheme]")
                                                   vm.make<IntegerType>(4))));
     REQUIRE(select.isA<Function>());
     REQUIRE(select.as<Function>()->numArguments() == 0);
-    select.as<Function>()->disassemble(std::cout);
+    //select.as<Function>()->disassemble(std::cout);
     Object res = vm.eval(select);
     REQUIRE(res.isA<IntegerType>());
     REQUIRE(res.as<IntegerType>() == 3);
@@ -414,12 +415,10 @@ TEST_CASE("scm_car_lambda_2", "[Scheme]")
                                     vm.make<IntegerType>(4)));
   REQUIRE(func.isA<Function>());
   REQUIRE(func.as<Function>()->numArguments() == 0);
-
-#if 0
+  //func.as<Function>()->disassemble(std::cout);
   auto res = vm.eval(func);
   REQUIRE(res.isA<IntegerType>());
   REQUIRE(res.as<IntegerType>() == 1);
-#endif
 }
 
 TEST_CASE("scm_car_lambda_3", "[Scheme]")
@@ -436,9 +435,7 @@ TEST_CASE("scm_car_lambda_3", "[Scheme]")
   Vm vm;
   Object langObj = vm.make<Language>();
   Language * lang = langObj.as<Language>();
-#if 0
-  Object func = vm.compile(lang,
-                            vm.list(vm.list(vm.list(vm.make<Symbol>("lambda"),
+  auto func = lang->compile(vm.list(vm.list(vm.list(vm.make<Symbol>("lambda"),
                                                     vm.list(vm.make<Symbol>("a"),
                                                             vm.make<Symbol>("b")),
                                                     vm.list(vm.make<Symbol>("lambda"),
@@ -449,10 +446,10 @@ TEST_CASE("scm_car_lambda_3", "[Scheme]")
                                             vm.make<IntegerType>(2)),
                                     vm.make<IntegerType>(3),
                                     vm.make<IntegerType>(4)));
-  Object res = vm.evalAndReturn(func);
+  REQUIRE(func.as<Function>()->numArguments() == 0);
+  auto res = vm.eval(func);
   REQUIRE(res.isA<IntegerType>());
   REQUIRE(res.as<IntegerType>() == 4);
-#endif
 }
 
 
