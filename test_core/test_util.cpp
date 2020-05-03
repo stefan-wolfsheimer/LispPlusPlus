@@ -36,7 +36,7 @@ using Vm = Lisp::Vm;
 using Object = Lisp::Object;
 using Cell = Lisp::Cell;
 using Cons = Lisp::Cons;
-using IntegerType = Lisp::IntegerType;
+using UIntegerType = Lisp::UIntegerType;
 
 
 TEST_CASE("is_a_list", "[Util]")
@@ -69,27 +69,27 @@ TEST_CASE("for_each_car", "[Util]")
 {
   Vm vm;
   {
-    IntegerType n = 0;
+    UIntegerType n = 0;
     Lisp::forEachCar(Lisp::nil,
-                     [&n](const Cell & cell) { n += cell.as<IntegerType>(); });
+                     [&n](const Cell & cell) { n += cell.as<UIntegerType>(); });
     REQUIRE(n == 0);
   }
   {
-    IntegerType n = 0;
+    UIntegerType n = 0;
     Lisp::forEachCar(vm.list(Object(1),
                              Object(2),
                              Object(3)),
-                     [&n](const Cell & cell) { n += cell.as<IntegerType>(); });
+                     [&n](const Cell & cell) { n += cell.as<UIntegerType>(); });
     REQUIRE(n == 6);
   }
   {
-    IntegerType n = 0;
+    UIntegerType n = 0;
     REQUIRE_THROWS(Lisp::forEachCar(Object(1),
-                                    [&n](const Cell & cell) { n += cell.as<IntegerType>(); }));
+                                    [&n](const Cell & cell) { n += cell.as<UIntegerType>(); }));
                  
     REQUIRE_THROWS(Lisp::forEachCar(vm.make<Cons>(Object(1),
                                                   vm.make<Cons>(Object(2),
                                                                 Object(3))),
-                                    [&n](const Cell & cell) { n += cell.as<IntegerType>(); }));
+                                    [&n](const Cell & cell) { n += cell.as<UIntegerType>(); }));
   }
 }

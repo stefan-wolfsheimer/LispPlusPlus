@@ -148,7 +148,8 @@ namespace Lisp
   DEF_TRAITS_LT(ValueType,      0x4000u, Traits::Null);
   DEF_TRAITS(Nil,               0x0000u, Traits::Null);
   DEF_TRAITS(Undefined,         0x0001u, Traits::Null);
-  DEF_TRAITS(IntegerType,       0x0002u, Traits::Integer);
+  DEF_TRAITS(UIntegerType,      0x0002u, Traits::Integer);
+  DEF_TRAITS(BooleanType,       0x0003u, Traits::Boolean);
 
   // conses
   DEF_TRAITS_MATCH(BasicCons,   0x4000u,                          Traits::BasicCons);

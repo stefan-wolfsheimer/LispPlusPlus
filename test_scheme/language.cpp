@@ -40,7 +40,7 @@ using Vm = Lisp::Vm;
 
 using Language = Lisp::Scheme::Language;
 using Object = Lisp::Object;
-using IntegerType = Lisp::IntegerType;
+using UIntegerType = Lisp::UIntegerType;
 using Form = Lisp::Form;
 using String = Lisp::String;
 using Function = Lisp::Function;
@@ -56,15 +56,15 @@ TEST_CASE("scm_primitive", "[Scheme]")
   Object formObj = vm.make<Language>();
   Language * form = formObj.as<Language>();
   {
-    Object atom = vm.make<IntegerType>(10);
+    Object atom = vm.make<UIntegerType>(10);
     REQUIRE(form->isInstance(atom));
     Object func = form->compile(atom);
     REQUIRE(func.isA<Function>());
     REQUIRE(func.getRefCount() == 1u);
     //func.as<Function>()->disassemble(std::cout);
     Object res = vm.eval(func);
-    REQUIRE(res.isA<IntegerType>());
-    REQUIRE(res.as<IntegerType>() == 10);
+    REQUIRE(res.isA<UIntegerType>());
+    REQUIRE(res.as<UIntegerType>() == 10);
   }
   {
     Object atom = vm.make<String>("hello");
@@ -84,14 +84,14 @@ TEST_CASE("scm_reference", "[Scheme]")
   Object formObj = vm.make<Language>();
   Language * lang = formObj.as<Language>();
   Object a(vm.make<Symbol>("a"));
-  Object refA(vm.make<Reference>(a, vm.make<IntegerType>(1)));
+  Object refA(vm.make<Reference>(a, vm.make<UIntegerType>(1)));
   REQUIRE(refA.isA<Reference>());
   Object func = lang->compile(refA);
   REQUIRE(func.getRefCount() == 1u);
   REQUIRE(func.isA<Function>());
   Object res = vm.eval(func);
-  REQUIRE(res.isA<IntegerType>());
-  REQUIRE(res.as<IntegerType>() == 1u);
+  REQUIRE(res.isA<UIntegerType>());
+  REQUIRE(res.as<UIntegerType>() == 1u);
 }
 
 /*****************************************
@@ -121,16 +121,16 @@ TEST_CASE("scm_define_primitive", "[Scheme]")
 
     vm.eval(lang->compile(vm.list(vm.make<Symbol>("define"),
                                   vm.make<Symbol>("a"),
-                                  vm.make<IntegerType>(10))));
+                                  vm.make<UIntegerType>(10))));
     
     vm.getAllocator()->cycle();
   }
   Object res = vm.find("a");
-  REQUIRE(res.isA<IntegerType>());
-  REQUIRE(res.as<IntegerType>() == 10);
+  REQUIRE(res.isA<UIntegerType>());
+  REQUIRE(res.as<UIntegerType>() == 10);
   res = vm.eval(lang->compile(vm.make<Symbol>("a")));
-  REQUIRE(res.isA<IntegerType>());
-  REQUIRE(res.as<IntegerType>() == 10);
+  REQUIRE(res.isA<UIntegerType>());
+  REQUIRE(res.as<UIntegerType>() == 10);
 }
 
 /*****************************************
@@ -145,17 +145,17 @@ TEST_CASE("scm_lambda_constant", "[Scheme]")
   Object func = vm.eval(lang->compile(vm.list(vm.make<Symbol>("lambda"),
                                               vm.list(vm.make<Symbol>("a"),
                                                       vm.make<Symbol>("b")),
-                                              vm.make<IntegerType>(1))));
+                                              vm.make<UIntegerType>(1))));
   REQUIRE(func.getRefCount() == 1u);
   REQUIRE(func.isA<Function>());
   REQUIRE(func.as<Function>()->numArguments() == 2);
   // (func 2 3)
   Object res = vm.eval(lang->compile(vm.list(func,
-                                             vm.make<IntegerType>(2),
-                                             vm.make<IntegerType>(3))));
+                                             vm.make<UIntegerType>(2),
+                                             vm.make<UIntegerType>(3))));
 
-  REQUIRE(res.isA<IntegerType>());
-  REQUIRE(res.as<IntegerType>() == 1);
+  REQUIRE(res.isA<UIntegerType>());
+  REQUIRE(res.as<UIntegerType>() == 1);
 }
 
 TEST_CASE("scm_lambda_lookup", "[Scheme]")
@@ -173,11 +173,11 @@ TEST_CASE("scm_lambda_lookup", "[Scheme]")
   Object lu = vm.find("f");
   REQUIRE(lu.isA<Function>());
   Object funcall = lang->compile(vm.list(vm.make<Symbol>("f"),
-                                         vm.make<IntegerType>(1),
-                                         vm.make<IntegerType>(2)));
+                                         vm.make<UIntegerType>(1),
+                                         vm.make<UIntegerType>(2)));
   Object res = vm.eval(funcall);
-  REQUIRE(res.isA<IntegerType>());
-  REQUIRE(res.as<IntegerType>() == 1);
+  REQUIRE(res.isA<UIntegerType>());
+  REQUIRE(res.as<UIntegerType>() == 1);
 }
 
 TEST_CASE("scm_nested_lambdas", "[Scheme]")
@@ -202,69 +202,69 @@ TEST_CASE("scm_nested_lambdas", "[Scheme]")
   {
     // (first 1 2)
     Object select = lang->compile(vm.list(first,
-                                          vm.make<IntegerType>(1),
-                                          vm.make<IntegerType>(2)));
+                                          vm.make<UIntegerType>(1),
+                                          vm.make<UIntegerType>(2)));
     REQUIRE(select.isA<Function>());
     REQUIRE(select.as<Function>()->numArguments() == 0);
     Object res = vm.eval(select);
-    REQUIRE(res.isA<IntegerType>());
-    REQUIRE(res.as<IntegerType>() == 1);
+    REQUIRE(res.isA<UIntegerType>());
+    REQUIRE(res.as<UIntegerType>() == 1);
   }
   {
     // (first 3 (second 1 2))
     Object select = lang->compile(vm.list(first,
-                                          vm.make<IntegerType>(3),
+                                          vm.make<UIntegerType>(3),
                                           vm.list(second,
-                                                  vm.make<IntegerType>(1),
-                                                  vm.make<IntegerType>(2))));
+                                                  vm.make<UIntegerType>(1),
+                                                  vm.make<UIntegerType>(2))));
     REQUIRE(select.isA<Function>());
     REQUIRE(select.as<Function>()->numArguments() == 0);
     Object res = vm.eval(select);
-    REQUIRE(res.isA<IntegerType>());
-    REQUIRE(res.as<IntegerType>() == 3);
+    REQUIRE(res.isA<UIntegerType>());
+    REQUIRE(res.as<UIntegerType>() == 3);
   }
   {
     // (second (second 1 2) 3)
     Object select = lang->compile(vm.list(second,
                                           vm.list(second,
-                                                  vm.make<IntegerType>(1),
-                                                  vm.make<IntegerType>(2)),
-                                          vm.make<IntegerType>(3)));
+                                                  vm.make<UIntegerType>(1),
+                                                  vm.make<UIntegerType>(2)),
+                                          vm.make<UIntegerType>(3)));
     REQUIRE(select.isA<Function>());
     REQUIRE(select.as<Function>()->numArguments() == 0);
     Object res = vm.eval(select);
-    REQUIRE(res.isA<IntegerType>());
-    REQUIRE(res.as<IntegerType>() == 3);
+    REQUIRE(res.isA<UIntegerType>());
+    REQUIRE(res.as<UIntegerType>() == 3);
   }
   {
     // (first (first 1 2) 3)
     Object select = lang->compile(vm.list(first,
                                           vm.list(first,
-                                                  vm.make<IntegerType>(1),
-                                                  vm.make<IntegerType>(2)),
-                                          vm.make<IntegerType>(3)));
+                                                  vm.make<UIntegerType>(1),
+                                                  vm.make<UIntegerType>(2)),
+                                          vm.make<UIntegerType>(3)));
     REQUIRE(select.isA<Function>());
     REQUIRE(select.as<Function>()->numArguments() == 0);
     Object res = vm.eval(select);
-    REQUIRE(res.isA<IntegerType>());
-    REQUIRE(res.as<IntegerType>() == 1);
+    REQUIRE(res.isA<UIntegerType>());
+    REQUIRE(res.as<UIntegerType>() == 1);
   }
   {
 
     // (second (second 1 2) (first 3 4))
     Object select = lang->compile(vm.list(second,
                                           vm.list(second,
-                                                  vm.make<IntegerType>(1),
-                                                  vm.make<IntegerType>(2)),
+                                                  vm.make<UIntegerType>(1),
+                                                  vm.make<UIntegerType>(2)),
                                           vm.list(first,
-                                                  vm.make<IntegerType>(3),
-                                                  vm.make<IntegerType>(4))));
+                                                  vm.make<UIntegerType>(3),
+                                                  vm.make<UIntegerType>(4))));
     REQUIRE(select.isA<Function>());
     REQUIRE(select.as<Function>()->numArguments() == 0);
     //select.as<Function>()->disassemble(std::cout);
     Object res = vm.eval(select);
-    REQUIRE(res.isA<IntegerType>());
-    REQUIRE(res.as<IntegerType>() == 3);
+    REQUIRE(res.isA<UIntegerType>());
+    REQUIRE(res.as<UIntegerType>() == 3);
  }
 }
 
@@ -294,15 +294,15 @@ TEST_CASE("scm_nested_scopes_1", "[Scheme]")
   REQUIRE(func.as<Function>()->getArgumentTraits(0).isReference());
   REQUIRE_FALSE(func.as<Function>()->getArgumentTraits(1).isReference());
 
-  auto func2 = vm.eval(func, vm.make<IntegerType>(1), vm.make<IntegerType>(2));
+  auto func2 = vm.eval(func, vm.make<UIntegerType>(1), vm.make<UIntegerType>(2));
   REQUIRE(func2.isA<Function>());
   REQUIRE(func2.as<Function>()->numArguments() == 2);
   REQUIRE_FALSE(func2.as<Function>()->getArgumentTraits(0).isReference());
   REQUIRE_FALSE(func2.as<Function>()->getArgumentTraits(1).isReference());
 
-  auto res = vm.eval(func2, vm.make<IntegerType>(3), vm.make<IntegerType>(4));
-  REQUIRE(res.isA<IntegerType>());
-  REQUIRE(res.as<IntegerType>() == 1);
+  auto res = vm.eval(func2, vm.make<UIntegerType>(3), vm.make<UIntegerType>(4));
+  REQUIRE(res.isA<UIntegerType>());
+  REQUIRE(res.as<UIntegerType>() == 1);
 }
 
 TEST_CASE("scm_nested_scopes_2", "[Scheme]")
@@ -340,8 +340,8 @@ TEST_CASE("scm_nested_scopes_2", "[Scheme]")
     (lambda (c d)
       (lambda (c d) a)) */
   auto func1 = vm.eval(func,
-                       vm.make<IntegerType>(1),
-                       vm.make<IntegerType>(2));
+                       vm.make<UIntegerType>(1),
+                       vm.make<UIntegerType>(2));
   REQUIRE(func1.isA<Function>());
   REQUIRE(func1.as<Function>()->numArguments() == 2);
   REQUIRE_FALSE(func1.as<Function>()->getArgumentTraits(0).isReference());
@@ -349,17 +349,17 @@ TEST_CASE("scm_nested_scopes_2", "[Scheme]")
 
   /* (lambda (c d) a)) */
   auto func2 = vm.eval(func1,
-                       vm.make<IntegerType>(5),
-                       vm.make<IntegerType>(6));
+                       vm.make<UIntegerType>(5),
+                       vm.make<UIntegerType>(6));
   REQUIRE(func2.as<Function>()->numArguments() == 2);
   REQUIRE_FALSE(func2.as<Function>()->getArgumentTraits(0).isReference());
   REQUIRE_FALSE(func2.as<Function>()->getArgumentTraits(1).isReference());
 
   auto res = vm.eval(func2,
-                     vm.make<IntegerType>(3),
-                     vm.make<IntegerType>(4));
-  REQUIRE(res.isA<IntegerType>());
-  REQUIRE(res.as<IntegerType>() == 1);
+                     vm.make<UIntegerType>(3),
+                     vm.make<UIntegerType>(4));
+  REQUIRE(res.isA<UIntegerType>());
+  REQUIRE(res.as<UIntegerType>() == 1);
 }
 
 
@@ -378,11 +378,11 @@ TEST_CASE("scm_car_lambda", "[Scheme]")
                                             vm.list(vm.make<Symbol>("a"),
                                                     vm.make<Symbol>("b")),
                                             vm.make<Symbol>("b")),
-                                    vm.make<IntegerType>(1),
-                                    vm.make<IntegerType>(2)));
+                                    vm.make<UIntegerType>(1),
+                                    vm.make<UIntegerType>(2)));
   auto res = vm.eval(expr);
-  REQUIRE(res.isA<IntegerType>());
-  REQUIRE(res.as<IntegerType>() == 2);
+  REQUIRE(res.isA<UIntegerType>());
+  REQUIRE(res.as<UIntegerType>() == 2);
 }
 
 TEST_CASE("scm_car_lambda_2", "[Scheme]")
@@ -409,16 +409,16 @@ TEST_CASE("scm_car_lambda_2", "[Scheme]")
                                                             vm.list(vm.make<Symbol>("c"),
                                                                     vm.make<Symbol>("d")),
                                                             vm.make<Symbol>("a"))),
-                                            vm.make<IntegerType>(1),
-                                            vm.make<IntegerType>(2)),
-                                    vm.make<IntegerType>(3),
-                                    vm.make<IntegerType>(4)));
+                                            vm.make<UIntegerType>(1),
+                                            vm.make<UIntegerType>(2)),
+                                    vm.make<UIntegerType>(3),
+                                    vm.make<UIntegerType>(4)));
   REQUIRE(func.isA<Function>());
   REQUIRE(func.as<Function>()->numArguments() == 0);
   //func.as<Function>()->disassemble(std::cout);
   auto res = vm.eval(func);
-  REQUIRE(res.isA<IntegerType>());
-  REQUIRE(res.as<IntegerType>() == 1);
+  REQUIRE(res.isA<UIntegerType>());
+  REQUIRE(res.as<UIntegerType>() == 1);
 }
 
 TEST_CASE("scm_car_lambda_3", "[Scheme]")
@@ -442,14 +442,12 @@ TEST_CASE("scm_car_lambda_3", "[Scheme]")
                                                             vm.list(vm.make<Symbol>("c"),
                                                                     vm.make<Symbol>("d")),
                                                             vm.make<Symbol>("d"))),
-                                            vm.make<IntegerType>(1),
-                                            vm.make<IntegerType>(2)),
-                                    vm.make<IntegerType>(3),
-                                    vm.make<IntegerType>(4)));
+                                            vm.make<UIntegerType>(1),
+                                            vm.make<UIntegerType>(2)),
+                                    vm.make<UIntegerType>(3),
+                                    vm.make<UIntegerType>(4)));
   REQUIRE(func.as<Function>()->numArguments() == 0);
   auto res = vm.eval(func);
-  REQUIRE(res.isA<IntegerType>());
-  REQUIRE(res.as<IntegerType>() == 4);
+  REQUIRE(res.isA<UIntegerType>());
+  REQUIRE(res.as<UIntegerType>() == 4);
 }
-
-

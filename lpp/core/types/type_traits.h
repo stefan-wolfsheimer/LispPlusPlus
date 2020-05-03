@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2019, Stefan Wolfsheimer
+Copyright (c) 2020, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -50,7 +50,6 @@ namespace Lisp
     // type matcher
     //
     ///////////////////////////////////////////////////////////////////////////
-
     /**
      * Matches exact type id
      */
@@ -123,14 +122,39 @@ namespace Lisp
     //
     ///////////////////////////////////////////////////////////////////////////
     template<typename CLS, typename TypeMatcher>
+    struct Boolean : public TypeMatcher
+    {
+      using Type = CLS;
+      using StorageTrait = AtomStorageTrait;
+
+      using IsPolymorphic = std::false_type;
+      using IsAtomic = std::true_type;
+      using IsBoolean = std::true_type;
+      using IsInteger = std::false_type;
+
+      static inline bool as(const CellDataType & data, TypeId tid)
+      {
+        if(TypeMatcher::isA(tid))
+        {
+          return data.boolValue;
+        }
+        else
+        {
+          return false;
+        }
+      }
+    };
+
+    template<typename CLS, typename TypeMatcher>
     struct Integer : public TypeMatcher
     {
       using Type = CLS;
       using StorageTrait = AtomStorageTrait;
       using IsPolymorphic = std::false_type;
       using IsAtomic = std::true_type;
+      using IsBoolean = std::false_type;
 
-      static inline IntegerType as(const CellDataType & data, TypeId tid)
+      static inline UIntegerType as(const CellDataType & data, TypeId tid)
       {
         if(TypeMatcher::isA(tid))
         {
@@ -150,6 +174,7 @@ namespace Lisp
       using StorageTrait = AtomStorageTrait;
       using IsPolymorphic = std::false_type;
       using IsAtomic = std::true_type;
+      using IsBoolean = std::false_type;
 
       static inline void * as(const CellDataType & data, TypeId tid)
       {
@@ -167,6 +192,7 @@ namespace Lisp
       using StorageTrait = ManagedStorageTrait;
       using IsPolymorphic = POLY;
       using IsAtomic = std::false_type;
+      using IsBoolean = std::false_type;
 
       static inline Type as(const CellDataType & data, TypeId tid)
       {
@@ -191,6 +217,7 @@ namespace Lisp
       using StorageTrait = ConsStorageTrait;
       using IsPolymorphic = std::false_type;
       using IsAtomic = std::false_type;
+      using IsBoolean = std::false_type;
 
       static inline Type as(const CellDataType & data, TypeId tid)
       {
@@ -215,6 +242,7 @@ namespace Lisp
       using StorageTrait = ContainerStorageTrait;
       using IsPolymorphic = POLY;
       using IsAtomic = std::false_type;
+      using IsBoolean = std::false_type;
 
       static inline Type as(const CellDataType & data, TypeId tid)
       {
@@ -239,6 +267,7 @@ namespace Lisp
       using StorageTrait = SymbolStorageTrait;
       using IsPolymorphic = std::false_type;
       using IsAtomic = std::false_type;
+      using IsBoolean = std::false_type;
 
       static inline Type as(const CellDataType & data, TypeId tid)
       {

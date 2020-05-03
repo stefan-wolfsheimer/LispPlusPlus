@@ -33,12 +33,12 @@ either expressed or implied, of the FreeBSD Project.
 #include <lpp/core/types/type_id.h>
 
 using Object = Lisp::Object;
-using IntegerType = Lisp::IntegerType;
-//using AtomType = Lisp::AtomType;
+using UIntegerType = Lisp::UIntegerType;
+
 
 TEST_CASE("integer_is_a_integer", "[Integer]")
 {
   Object obj(2);
-  REQUIRE(obj.isA<IntegerType>());
-  REQUIRE(obj.as<IntegerType>() == 2);
+  REQUIRE(obj.isA<UIntegerType>());
+  REQUIRE(obj.as<UIntegerType>() == 2);
 }

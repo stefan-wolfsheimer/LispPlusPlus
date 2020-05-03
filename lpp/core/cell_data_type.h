@@ -33,7 +33,8 @@ either expressed or implied, of the FreeBSD Project.
 namespace Lisp
 {
   typedef ::std::uint_least16_t TypeId;
-  typedef ::std::int_fast32_t IntegerType;
+  typedef ::std::uint_fast64_t UIntegerType;
+  typedef bool BooleanType;
 
   class ManagedType;
   class BasicCons;
@@ -41,7 +42,8 @@ namespace Lisp
 
   union CellDataType
   {
-    IntegerType intValue;
+    UIntegerType intValue;
+    BooleanType boolValue;
     ManagedType * pManaged;
     BasicCons * pCons;
     Container * pContainer;

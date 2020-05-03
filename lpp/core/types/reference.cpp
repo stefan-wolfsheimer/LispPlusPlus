@@ -38,9 +38,9 @@ void Reference::setValue(const Cell & rhs)
 {
   if(getCarCell().isA<Cons>())
   {
-    assert(getCdrCell().isA<IntegerType>());
-    assert(getCdrCell().as<IntegerType>() == 0 || getCdrCell().as<IntegerType>() == 1);
-    if(getCdrCell().as<IntegerType>() == 0)
+    assert(getCdrCell().isA<UIntegerType>());
+    assert(getCdrCell().as<UIntegerType>() == 0 || getCdrCell().as<UIntegerType>() == 1);
+    if(getCdrCell().as<UIntegerType>() == 0)
     {
       getCarCell().as<Cons>()->setCar(rhs);
     }
@@ -51,9 +51,9 @@ void Reference::setValue(const Cell & rhs)
   }
   else if(getCarCell().isA<Array>())
   {
-    assert(getCdrCell().isA<IntegerType>());
-    assert(getCdrCell().as<IntegerType>() >= 0);
-    getCarCell().as<Array>()->set(getCdrCell().as<IntegerType>(), rhs);
+    assert(getCdrCell().isA<UIntegerType>());
+    assert(getCdrCell().as<UIntegerType>() >= 0);
+    getCarCell().as<Array>()->set(getCdrCell().as<UIntegerType>(), rhs);
   }
   else if(getCarCell().isA<Symbol>())
   {
@@ -65,9 +65,9 @@ const Cell & Reference::getValue() const
 {
   if(getCarCell().isA<Cons>())
   {
-    assert(getCdrCell().isA<IntegerType>());
-    assert(getCdrCell().as<IntegerType>() == 0 || getCdrCell().as<IntegerType>() == 1);
-    if(getCdrCell().as<IntegerType>() == 0)
+    assert(getCdrCell().isA<UIntegerType>());
+    assert(getCdrCell().as<UIntegerType>() == 0 || getCdrCell().as<UIntegerType>() == 1);
+    if(getCdrCell().as<UIntegerType>() == 0)
     {
       return getCarCell().as<Cons>()->getCarCell();
     }
@@ -78,9 +78,9 @@ const Cell & Reference::getValue() const
   }
   else if(getCarCell().isA<Array>())
   {
-    assert(getCdrCell().isA<IntegerType>());
-    assert(getCdrCell().as<IntegerType>() >= 0);
-    return getCarCell().as<Array>()->atCell(getCdrCell().as<IntegerType>());
+    assert(getCdrCell().isA<UIntegerType>());
+    assert(getCdrCell().as<UIntegerType>() >= 0);
+    return getCarCell().as<Array>()->atCell(getCdrCell().as<UIntegerType>());
   }
   else if(getCarCell().isA<Symbol>())
   {

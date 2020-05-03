@@ -32,6 +32,7 @@ IF(CMAKE_BUILD_TYPE MATCHES Debug)
 
     add_executable(runtest
       runtests.cpp
+      test_core/numeric.cpp
       test_core/test_object.cpp
       test_core/test_integer.cpp
       test_core/test_cons_pages.cpp

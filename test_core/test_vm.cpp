@@ -40,7 +40,6 @@ using Object = Lisp::Object;
 using Cons = Lisp::Cons;
 using Nil = Lisp::Nil;
 using Function = Lisp::Function;
-using IntegerType = Lisp::IntegerType;
 
 
 TEST_CASE("is_debug_enabled", "[Vm]")

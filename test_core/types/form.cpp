@@ -40,9 +40,9 @@ using Object = Lisp::Object;
 using Cell = Lisp::Cell;
 using String = Lisp::String;
 using Form = Lisp::Form;
-using IntegerType = Lisp::IntegerType;
+using UIntegerType = Lisp::UIntegerType;
 using StringForm = Lisp::TypeOf<String, void>;
-using IntegerForm = Lisp::TypeOf<IntegerType, void>;
+using IntegerForm = Lisp::TypeOf<UIntegerType, void>;
 
 TEST_CASE("choice_of", "[Form]")
 {
@@ -91,7 +91,7 @@ TEST_CASE("choice_of2", "[Form]")
   using ChoiceOf = Lisp::ChoiceOf<Builder>;
   using FormBuilder = Lisp::FormBuilder<Builder>;
   using StringForm = Lisp::TypeOf<String, Builder>;
-  using IntegerForm = Lisp::TypeOf<IntegerType, Builder>;
+  using IntegerForm = Lisp::TypeOf<UIntegerType, Builder>;
 
   Vm vm;
   //@todo check if StringForm is captured
@@ -108,7 +108,7 @@ TEST_CASE("choice_of2", "[Form]")
   REQUIRE(choiceForm.as<FormBuilder>()->match(str, builder));
   REQUIRE(builder.obj.isA<String>());
   REQUIRE(choiceForm.as<FormBuilder>()->match(intval, builder));
-  REQUIRE(builder.obj.isA<IntegerType>());
+  REQUIRE(builder.obj.isA<UIntegerType>());
   REQUIRE(builder.stringObj.isA<String>());
-  REQUIRE(builder.intObj.isA<IntegerType>());
+  REQUIRE(builder.intObj.isA<UIntegerType>());
 }

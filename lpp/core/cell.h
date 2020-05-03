@@ -43,7 +43,24 @@ namespace Lisp
   class Object;
   class Container;
   class Collectible;
-  
+
+  struct PointerArg {};
+  struct CellArg {};
+  struct UIntegerTypeArg {};
+
+  template<typename T>
+  struct CellArgTrait
+  {
+    //@todo vararg conditional helper teplate
+    using Type = typename std::conditional<std::is_pointer<T>::value,
+                                           PointerArg,
+                                           typename std::conditional<std::is_same<T, Cell>::value,
+                                                                     CellArg,
+                                                                     typename std::conditional<std::is_same<T, UIntegerType>::value,
+                                                                                               UIntegerTypeArg,
+                                                                                               std::false_type>::type>::type>::type;
+  };
+
   class Cell
   {
   public:
@@ -51,12 +68,11 @@ namespace Lisp
     friend class Object;
 
     Cell();
+
     Cell(const Cell & rhs);
-    Cell(IntegerType rhs);
+    Cell(const UIntegerType & rhs);
     Cell(BasicCons * rhs, TypeId typeId);
     Cell(Container * rhs, TypeId typeId);
-
-    //Cell(Collectible * rhs, TypeId typeId);
     
     template<typename T>
     Cell(T * obj);
@@ -99,9 +115,14 @@ namespace Lisp
     TypeId typeId;
     CellDataType data;
     inline void unset();
+
+    template<typename T>
+    inline void init(T value, std::true_type, std::true_type);
+
     inline void init(BasicCons * cons, TypeId _typeId);
     inline void init(Container * container, TypeId _typeId);
-    inline void init(ManagedType * managedType, TypeId _typeId);
+    inline void init(ManagedType * obj, TypeId _typeId);
+
   private:
     template<typename T>
     inline bool _isA(AtomStorageTrait, std::false_type) const;
@@ -126,6 +147,16 @@ namespace Lisp
 
     template<typename T>
     inline bool _isA(ContainerStorageTrait, std::true_type) const;
+
+    // init
+    template<typename T>
+    inline void init(PointerArg, const T & value);
+
+    template<typename T>
+    inline void init(CellArg, const T & cell);
+
+    template<typename T>
+    inline void init(UIntegerTypeArg, const T & value);
   };
 }
 
@@ -178,26 +209,23 @@ inline Lisp::Cell::Cell()
   typeId = Lisp::TypeTraits<Lisp::Nil>::getTypeId();
 }
 
-inline Lisp::Cell::Cell(Lisp::IntegerType value)
+inline Lisp::Cell::Cell(const Lisp::UIntegerType & value)
 {
-  typeId = Lisp::TypeTraits<Lisp::IntegerType>::getTypeId();
-  data.intValue = value;
+  using Type = CellArgTrait<UIntegerType>::Type;
+  init(Type(), value);
 }
 
 inline Lisp::Cell::Cell(const Cell & rhs)
 {
-  typeId = rhs.typeId;
-  data = rhs.data;
-  if(rhs.isA<ManagedType>())
-  {
-    static_cast<ManagedType*>(data.pManaged)->refCount++;
-  }
+  using Type = CellArgTrait<Cell>::Type;
+  init(Type(), rhs);
 }
 
 template<typename T>
 inline Lisp::Cell::Cell(T * obj)
 {
-  init(obj, Lisp::TypeTraits<T>::getTypeId());
+  using Type = typename CellArgTrait<T*>::Type;
+  init(Type(), obj);
 }
 
 inline Lisp::Cell::Cell(BasicCons * rhs, TypeId _typeId) : typeId(_typeId)
@@ -214,7 +242,6 @@ inline Lisp::Cell::Cell(Container * rhs, TypeId _typeId) : typeId(_typeId)
 
 inline Lisp::Cell& Lisp::Cell::operator=(const Cell & rhs)
 {
-  //assert(!rhs.isA<BasicCons>() || rhs.as<BasicCons>()->isRoot());
   unset();
   typeId = rhs.typeId;
   data = rhs.data;
@@ -243,12 +270,37 @@ inline void Lisp::Cell::unset()
   }
 }
 
-inline void Lisp::Cell::init(Lisp::ManagedType * obj, Lisp::TypeId _typeId)
+// init
+template<typename T>
+inline void Lisp::Cell::init(PointerArg, const T & value)
 {
-  assert(Lisp::TypeTraits<ManagedType>::isA(_typeId));
+  using Traits = Lisp::TypeTraits<typename std::remove_pointer<T>::type>;
+  init(value, Traits::getTypeId());
+}
+
+template<typename T>
+inline void Lisp::Cell::init(CellArg, const T & rhs)
+{
+  typeId = rhs.typeId;
+  data = rhs.data;
+  if(rhs.isA<ManagedType>())
+  {
+    static_cast<ManagedType*>(data.pManaged)->refCount++;
+  }
+}
+
+template<typename T>
+inline void Lisp::Cell::init(UIntegerTypeArg, const T & value)
+{
+  typeId = Lisp::TypeTraits<Lisp::UIntegerType>::getTypeId();
+  data.intValue = value;
+}
+
+inline void Lisp::Cell::init(Lisp::BasicCons * obj, Lisp::TypeId _typeId)
+{
+  assert(Lisp::TypeTraits<BasicCons>::isA(_typeId));
   typeId = _typeId;
-  obj->refCount++;
-  data.pManaged = obj;
+  data.pCons = obj;
 }
 
 inline void Lisp::Cell::init(Lisp::Container * obj, Lisp::TypeId _typeId)
@@ -258,11 +310,12 @@ inline void Lisp::Cell::init(Lisp::Container * obj, Lisp::TypeId _typeId)
   data.pContainer = obj;
 }
 
-inline void Lisp::Cell::init(Lisp::BasicCons * obj, Lisp::TypeId _typeId)
+inline void Lisp::Cell::init(Lisp::ManagedType * obj, Lisp::TypeId _typeId)
 {
-  assert(Lisp::TypeTraits<BasicCons>::isA(_typeId));
+  assert(Lisp::TypeTraits<ManagedType>::isA(_typeId));
   typeId = _typeId;
-  data.pCons = obj;
+  obj->refCount++;
+  data.pManaged = obj;
 }
 
 inline Lisp::TypeId Lisp::Cell::getTypeId() const
@@ -333,7 +386,8 @@ inline typename Lisp::TypeTraits<T>::Type Lisp::Cell::as() const
   return TypeTraits<T>::as(data, typeId);
 }
 
-inline void Lisp::Cell::forEachChild(std::function<void(const Cell&, std::size_t index)> func) const
+inline void Lisp::Cell::forEachChild(std::function<void(const Cell&,
+                                                        std::size_t index)> func) const
 {
   std::size_t index = 0;
   forEachChild([&index, &func](const Cell& cell) {

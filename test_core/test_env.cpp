@@ -37,7 +37,7 @@ using Env = Lisp::Env;
 using Object = Lisp::Object;
 using Symbol = Lisp::Symbol;
 using Undefined = Lisp::Undefined;
-using IntegerType = Lisp::IntegerType;
+using UIntegerType = Lisp::UIntegerType;
 using ManagedType = Lisp::ManagedType;
 using Reference = Lisp::Reference;
 using Allocator = Lisp::Allocator;
@@ -67,6 +67,6 @@ TEST_CASE("env_make_reference", "[Env]")
   //@todo exception
   REQUIRE(env.find(a).isA<Undefined>());
   env.set(a, Object(2));
-  REQUIRE(env.find(a).isA<IntegerType>());
-  REQUIRE(env.find(a).as<IntegerType>() == 2);
+  REQUIRE(env.find(a).isA<UIntegerType>());
+  REQUIRE(env.find(a).as<UIntegerType>() == 2);
 }

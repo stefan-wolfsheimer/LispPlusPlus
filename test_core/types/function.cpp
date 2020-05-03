@@ -39,7 +39,7 @@ using Object = Lisp::Object;
 using Function = Lisp::Function;
 using Symbol = Lisp::Symbol;
 using Reference = Lisp::Reference;
-using IntegerType = Lisp::IntegerType;
+using UIntegerType = Lisp::UIntegerType;
 using Collectible = Lisp::Collectible;
 
 TEST_CASE("function", "[Function]")
@@ -63,7 +63,7 @@ TEST_CASE("function", "[Function]")
   std::size_t refIndex = f1.as<Function>()->getArgumentTraits(0).getReferenceIndex();
   REQUIRE(f1.as<Function>()->atCell(refIndex).isA<Reference>());
   REQUIRE(sa.as<Reference>() == f1.as<Function>()->atCell(refIndex).as<Reference>());
-  sa.as<Reference>()->setValue(vm.make<IntegerType>(12));
-  REQUIRE(f1.as<Function>()->getValue(refIndex).isA<IntegerType>());
-  REQUIRE(f1.as<Function>()->getValue(refIndex).as<IntegerType>() == 12);
+  sa.as<Reference>()->setValue(vm.make<UIntegerType>(12));
+  REQUIRE(f1.as<Function>()->getValue(refIndex).isA<UIntegerType>());
+  REQUIRE(f1.as<Function>()->getValue(refIndex).as<UIntegerType>() == 12);
 }

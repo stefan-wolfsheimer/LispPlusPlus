@@ -138,15 +138,15 @@ bool Lisp::Cell::checkIndex() const
 
 std::ostream & operator<<(std::ostream & ost, const Lisp::Cell & cell)
 {
-  using IntegerType = Lisp::IntegerType;
+  using UIntegerType = Lisp::UIntegerType;
   // @todo: implement meta type with introspection and streaming interface
   if(cell.isA<Lisp::Undefined>())
   {
     ost << "[UNDEFINED]";
   }
-  else if(cell.isA<Lisp::IntegerType>())
+  else if(cell.isA<Lisp::UIntegerType>())
   {
-    ost << cell.as<Lisp::IntegerType>();
+    ost << cell.as<Lisp::UIntegerType>();
   }
   else if(cell.isA<Lisp::Symbol>())
   {

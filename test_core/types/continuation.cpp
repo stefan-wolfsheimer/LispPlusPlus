@@ -44,7 +44,7 @@ using Color = Lisp::Color;
 
 // types
 using Nil = Lisp::Nil;
-using IntegerType = Lisp::IntegerType;
+using UIntegerType = Lisp::UIntegerType;
 using Cons = Lisp::Cons;
 using Symbol = Lisp::Symbol;
 using Function = Lisp::Function;
@@ -157,12 +157,12 @@ TEST_CASE("continuation_pushv", "[Continuation]")
 {
   Vm vm;
   Object func = vm.make<Function>();
-  func.as<Function>()->addPUSHV(vm.make<IntegerType>(1));
+  func.as<Function>()->addPUSHV(vm.make<UIntegerType>(1));
   Object cont = vm.make<Continuation>(func.as<Function>());
   Object res(cont.as<Continuation>()->eval());
   REQUIRE(cont.as<Continuation>()->stackSize() == 1u);
-  REQUIRE(res.isA<IntegerType>());
-  REQUIRE(res.as<IntegerType>() == 1);
+  REQUIRE(res.isA<UIntegerType>());
+  REQUIRE(res.as<UIntegerType>() == 1);
 }
 
 TEST_CASE("continuation_returns", "[Continuation]")
@@ -175,55 +175,55 @@ TEST_CASE("continuation_returns", "[Continuation]")
   cont.as<Continuation>()->push(Cell(2));
   Object res(cont.as<Continuation>()->eval());
   REQUIRE(cont.as<Continuation>()->stackSize() == 1u);
-  REQUIRE(res.isA<IntegerType>());
-  REQUIRE(res.as<IntegerType>() == 2);
+  REQUIRE(res.isA<UIntegerType>());
+  REQUIRE(res.as<UIntegerType>() == 2);
 }
 
 TEST_CASE("continuation_pushl", "[Continuation]")
 {
   Vm vm;
   Object func = vm.make<Function>();
-  vm.define("a", vm.make<IntegerType>(3));
+  vm.define("a", vm.make<UIntegerType>(3));
   func.as<Function>()->addPUSHL(vm.make<Symbol>("a"));
   Object cont = vm.make<Continuation>(func.as<Function>());
   Object res(cont.as<Continuation>()->eval());
   REQUIRE(cont.as<Continuation>()->stackSize() == 1u);
-  REQUIRE(res.isA<IntegerType>());
-  REQUIRE(res.as<IntegerType>() == 3);
+  REQUIRE(res.isA<UIntegerType>());
+  REQUIRE(res.as<UIntegerType>() == 3);
 }
 
 TEST_CASE("continuation_defines", "[Continuation]")
 {
   Vm vm;
   Object func = vm.make<Function>();
-  func.as<Function>()->addPUSHV(vm.make<IntegerType>(10));
+  func.as<Function>()->addPUSHV(vm.make<UIntegerType>(10));
   func.as<Function>()->addDEFINES(vm.make<Symbol>("a"));
   Object cont = vm.make<Continuation>(func.as<Function>());
   Object res(cont.as<Continuation>()->eval());
   REQUIRE(cont.as<Continuation>()->stackSize() == 1u);
   res = vm.find("a");
-  REQUIRE(res.isA<IntegerType>());
-  REQUIRE(res.as<IntegerType>() == 10);
+  REQUIRE(res.isA<UIntegerType>());
+  REQUIRE(res.as<UIntegerType>() == 10);
 }
 
 TEST_CASE("continuation_funcall", "[Continuation]")
 {
   Vm vm;
   Object lambda = vm.make<Function>();
-  lambda.as<Function>()->addPUSHV(vm.make<IntegerType>(10));
+  lambda.as<Function>()->addPUSHV(vm.make<UIntegerType>(10));
   lambda.as<Function>()->addArgument(vm.make<Symbol>("a"));
   lambda.as<Function>()->addArgument(vm.make<Symbol>("b"));
   lambda.as<Function>()->addArgument(vm.make<Symbol>("c"));
 
   Object func = vm.make<Function>();
   func.as<Function>()->addPUSHV(lambda);
-  func.as<Function>()->addPUSHV(vm.make<IntegerType>(10));
-  func.as<Function>()->addPUSHV(vm.make<IntegerType>(20));
-  func.as<Function>()->addPUSHV(vm.make<IntegerType>(30));
+  func.as<Function>()->addPUSHV(vm.make<UIntegerType>(10));
+  func.as<Function>()->addPUSHV(vm.make<UIntegerType>(20));
+  func.as<Function>()->addPUSHV(vm.make<UIntegerType>(30));
   func.as<Function>()->addFUNCALL(3);
 
   Object cont = vm.make<Continuation>(func.as<Function>());
   Object res(cont.as<Continuation>()->eval());
-  REQUIRE(res.as<IntegerType>() == 10);
+  REQUIRE(res.as<UIntegerType>() == 10);
   REQUIRE(cont.as<Continuation>()->stackSize() == 1u);
 }
