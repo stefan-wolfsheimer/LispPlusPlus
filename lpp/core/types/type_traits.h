@@ -30,9 +30,41 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #pragma once
 #include <lpp/core/cell_data_type.h>
+#include <type_traits>
 
 namespace Lisp
 {
+  /* Flexible Conditional
+   */
+  template<typename ...R>
+  struct Conditional;
+
+  template<typename T1, typename T2>
+  struct Conditional<std::true_type, T1, T2>
+  {
+    using type = T1;
+  };
+
+  template<typename T1, typename T2>
+  struct Conditional<std::false_type, T1, T2>
+  {
+    using type = T2;
+  };
+
+  template<typename T, typename ...R>
+  struct Conditional<std::true_type, T, R...>
+  {
+    using type = T;
+  };
+
+  template<typename T, typename ...R>
+  struct Conditional<std::false_type, T, R...>
+  {
+    using type = typename Conditional<R...>::type;
+  };
+
+  /** Storage class traits
+   */
   struct AtomStorageTrait {};
   struct ManagedStorageTrait {};
   struct ConsStorageTrait {};

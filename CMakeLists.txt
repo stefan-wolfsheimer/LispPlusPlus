@@ -38,6 +38,7 @@ IF(CMAKE_BUILD_TYPE MATCHES Debug)
       test_core/test_cons_pages.cpp
       test_core/test_collectible_container.cpp
       test_core/test_cons.cpp
+      test_core/types/traits.cpp
       test_core/types/string.cpp
       test_core/types/array.cpp
       test_core/types/polymorphic_object.cpp
