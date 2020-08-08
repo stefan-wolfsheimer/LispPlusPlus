@@ -33,6 +33,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <functional>
 #include <iostream>
 #include <assert.h>
+#include <lpp/core/types/type_traits.h>
 #include <lpp/core/types/type_id.h>
 #include <lpp/core/types/managed_type.h>
 #include <lpp/core/memory/color.h>
@@ -51,14 +52,13 @@ namespace Lisp
   template<typename T>
   struct CellArgTrait
   {
-    //@todo vararg conditional helper teplate
-    using Type = typename std::conditional<std::is_pointer<T>::value,
-                                           PointerArg,
-                                           typename std::conditional<std::is_same<T, Cell>::value,
-                                                                     CellArg,
-                                                                     typename std::conditional<std::is_same<T, UIntegerType>::value,
-                                                                                               UIntegerTypeArg,
-                                                                                               std::false_type>::type>::type>::type;
+    using Type = typename Conditional<typename std::is_pointer<T>::type,
+                                      PointerArg,
+                                      typename std::is_same<T, Cell>::type,
+                                      CellArg,
+                                      typename std::is_same<T, UIntegerType>::type,
+                                      UIntegerTypeArg,
+                                      std::false_type>::type;
   };
 
   class Cell
