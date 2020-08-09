@@ -54,7 +54,6 @@ namespace Lisp
     inline Object list(const Object & a);
     inline Object list(Object && a);
 
-    //@todo using std::forward to avoid different versions
     template<typename... ARGS>
     Object list(const Object & a, const ARGS & ... rest);
 
@@ -154,6 +153,7 @@ Lisp::Object Lisp::Vm::list(const Lisp::Object & a, const ARGS & ... rest)
 template<typename... ARGS>
 Lisp::Object Lisp::Vm::list(Lisp::Object && a, const ARGS & ... rest)
 {
+  // std::forward not working because Lisp::Object is not a tempalte parameter type
   return make<Cons>(a, std::move(list(rest...)));
 }
 
