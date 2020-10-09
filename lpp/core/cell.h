@@ -119,6 +119,7 @@ namespace Lisp
     template<typename T>
     inline void init(T value, std::true_type, std::true_type);
 
+    inline void initCell(const Cell & rhs);
     inline void init(BasicCons * cons, TypeId _typeId);
     inline void init(Container * container, TypeId _typeId);
     inline void init(ManagedType * obj, TypeId _typeId);
@@ -280,6 +281,11 @@ inline void Lisp::Cell::init(PointerArg, const T & value)
 
 template<typename T>
 inline void Lisp::Cell::init(CellArg, const T & rhs)
+{
+  initCell(rhs);
+}
+
+inline void Lisp::Cell::initCell(const Cell & rhs)
 {
   typeId = rhs.typeId;
   data = rhs.data;
