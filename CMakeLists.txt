@@ -13,6 +13,10 @@ endif()
 
 SET(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
 SET(CMAKE_CXX_FLAGS_DEBUG  "-O0 -g")
+# @todo: determine -DHAS_FMEMOPEN automatically
+# @todo: create config.h file
+SET(CMAKE_C_FLAGS_DEBUG  "-O0 -g -DDEBUG -DWITH_COLOR -DHAS_FMEMOPEN -Werror -Wall")
+SET(CMAKE_C_FLAGS_RELEASE "-O2 -DNDEBUG -DWITH_COLOR")
 
 include_directories (${PROJECT_SOURCE_DIR}/Catch2/single_include)
 include_directories (${PROJECT_SOURCE_DIR}/CliArgs/include)
@@ -22,39 +26,54 @@ include_directories (${PROJECT_SOURCE_DIR})
 add_subdirectory (lpp/core)
 add_subdirectory (lpp/scheme)
 add_subdirectory (lpp/simul)
-
-
+add_subdirectory (lisp/util)
+add_subdirectory (lisp/core)
+add_subdirectory (test_util)
+# @todo rename to test_core2
+add_subdirectory (test_core2)
 
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
-    message("debug mode")
-    add_library(Catch INTERFACE)
-    target_include_directories(Catch INTERFACE test)
+  message("debug mode")
+  add_library(Catch INTERFACE)
+  target_include_directories(Catch INTERFACE test)
 
-    add_executable(runtest
-      runtests.cpp
-      test_core/numeric.cpp
-      test_core/test_object.cpp
-      test_core/test_integer.cpp
-      test_core/test_cons_pages.cpp
-      test_core/test_collectible_container.cpp
-      test_core/test_cons.cpp
-      test_core/types/traits.cpp
-      test_core/types/string.cpp
-      test_core/types/array.cpp
-      test_core/types/polymorphic_object.cpp
-      test_core/types/polymorphic_container.cpp
-      test_core/types/form.cpp
-      test_core/types/function.cpp
-      test_core/types/continuation.cpp
-      test_core/memory/allocator.cpp
-      test_core/test_env.cpp
-      test_core/test_util.cpp
-      test_core/test_vm.cpp
-      test_core/test_builtin_function.cpp
-      test_scheme/language.cpp
-      test_simul/test_gc_sim.cpp
-      )
-    target_link_libraries(runtest Catch Scheme Core Simul)
+  add_executable(
+    runtest
+    runtests.cpp
+    #      test_core/numeric.cpp
+    test_core/test_object.cpp
+    test_core/test_integer.cpp
+    test_core/test_cons_pages.cpp
+    test_core/test_collectible_container.cpp
+    test_core/test_cons.cpp
+    test_core/types/traits.cpp
+    test_core/types/string.cpp
+    test_core/types/array.cpp
+    test_core/types/polymorphic_object.cpp
+    test_core/types/polymorphic_container.cpp
+    test_core/types/form.cpp
+    test_core/types/function.cpp
+    test_core/types/continuation.cpp
+    test_core/memory/allocator.cpp
+    test_core/test_env.cpp
+    test_core/test_util.cpp
+    test_core/test_vm.cpp
+    test_core/test_builtin_function.cpp
+    test_scheme/language.cpp
+    test_simul/test_gc_sim.cpp
+    )
+  target_link_libraries(runtest Catch Scheme Core Simul)
+  add_executable(
+    unit_tests
+    unit_tests.c
+    )
+  target_link_libraries(unit_tests
+    TestUtil
+    TestCore
+    Util
+    LispCore
+
+    )
 ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
 
 # add_library(Simul INTERFACE)
@@ -63,4 +82,3 @@ target_include_directories(Catch INTERFACE test)
 
 add_executable(gc_sim gc_sim.cpp)
 target_link_libraries(gc_sim Simul Scheme Core)
-
