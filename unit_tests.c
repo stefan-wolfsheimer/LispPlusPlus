@@ -8,6 +8,7 @@ void test_assertion(unit_context_t * ctx);
 void test_dl_list(unit_context_t * ctx);
 
 /* core */
+void test_gc(unit_context_t * ctx);
 void test_cons(unit_context_t * ctx);
 
 int main(int argc, const char ** argv)
@@ -20,6 +21,7 @@ int main(int argc, const char ** argv)
   test_test(ctx);
   test_dl_list(ctx);
 
+  test_gc(ctx);
   test_cons(ctx);
 
   int parse_result = unit_parse_argv(ctx, argc, argv);

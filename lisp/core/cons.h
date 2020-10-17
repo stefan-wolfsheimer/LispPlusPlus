@@ -33,7 +33,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <lisp/util/dl_list.h>
 #include <stddef.h>
 
-/* @todo move to different cell */
+/* @todo move to different module */
 typedef struct lisp_cell_t
 {
 } lisp_cell_t;
@@ -45,32 +45,5 @@ typedef struct lisp_cons_t
   lisp_cell_t car;
   lisp_cell_t cdr;
 } lisp_cons_t;
-
-typedef struct lisp_cons_pages_t
-{
-  void ** pages;
-  void * current_page;
-  lisp_dl_list_t recycled;
-  size_t page_size;
-  size_t num_pages;
-  size_t pos;
-} lisp_cons_pages_t;
-
-/**
- * Initialize cons allocator
- */
-int lisp_init_cons_pages(lisp_cons_pages_t * pages);
-
-int lisp_free_cons_pages(lisp_cons_pages_t * pages);
-
-int lisp_cons_pages_set_size(lisp_cons_pages_t * pages, size_t page_size);
-
-
-lisp_cons_t * lisp_cons_alloc(struct lisp_cons_pages_t * pages);
-
-/** 
- * Frees an allocated cons
- */
-void lisp_cons_free(lisp_cons_pages_t * pages, lisp_cons_t * cons);
 
 #endif
