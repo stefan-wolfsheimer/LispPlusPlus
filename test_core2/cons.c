@@ -29,21 +29,34 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include <lisp/util/unit_test.h>
-#include <lisp/core/gc.h>
+#include <lisp/util/xmalloc.h>
+#include <lisp/core/vm.h>
 #include <lisp/core/cons.h>
 #include <lisp/core/error.h>
 
-/*
-  static void test_cons_alloc(unit_test_t * tst)
-  {
-  }
-*/
+static void test_make_cons(unit_test_t * tst)
+{
+  lisp_vm_t vm;
+  lisp_cell_t cell;
+  lisp_cons_t * cons;
+  memcheck_begin();
+  ASSERT_EQ_I(tst, lisp_init_vm(&vm), LISP_OK);
+  ASSERT_EQ_I(tst, lisp_make_cons(&vm,
+                                  &cell,
+                                  &lisp_nil,
+                                  &lisp_nil), LISP_OK);
+  cons = cell.data.cons;
+  ASSERT_EQ_I(tst, cons->ref_count, 1u);
+  ASSERT_FALSE(tst, lisp_is_atomic(&cell));
+  ASSERT(tst, lisp_is_root_cell(&cell));
+  ASSERT_EQ_I(tst, lisp_free_vm(&vm), LISP_OK);
+  ASSERT_MEMCHECK(tst);
+  memcheck_end();
+}
 
 void test_cons(unit_context_t * ctx)
 {
-  /*
-     unit_suite_t * suite = unit_create_suite(ctx, "cons");
-     TEST(suite, test_cons_alloc);
-  */
+  unit_suite_t * suite = unit_create_suite(ctx, "cons");
+  TEST(suite, test_make_cons);
 }
 

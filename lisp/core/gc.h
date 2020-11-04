@@ -3,19 +3,22 @@
 #include <lisp/util/dl_list.h>
 #include <stddef.h>
 
+#define LISP_GC_NUM_COLORS 3
+
+/**
+ * Color for 3-generation garbage collector
+ */
 typedef enum lisp_gc_color_t
 { 
   LISP_GC_WHITE = 0,
-  LISP_GC_GREY = 1,
-  LISP_GC_BLACK = 2,
-  // todo remove this cases
-  LISP_GC_WHITE_ROOT = 3,
-  LISP_GC_GREY_ROOT = 4,
-  LISP_GC_BLACK_ROOT = 5
+  LISP_GC_GREY  = 1,
+  LISP_GC_BLACK = 2
 } lisp_gc_color_t;
 
-#define LISP_GC_NUM_COLORS 6
-
+/**
+ * List of objects in garbage collector
+ * generation.
+ */
 typedef struct lisp_gc_collectible_list_t
 {
   lisp_dl_list_t objects;

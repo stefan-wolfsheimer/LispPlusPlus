@@ -30,20 +30,14 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #ifndef __LIPS_CONS_H__
 #define __LIPS_CONS_H__
-#include <lisp/util/dl_list.h>
 #include <stddef.h>
-
-/* @todo move to different module */
-typedef struct lisp_cell_t
-{
-} lisp_cell_t;
-
-struct lisp_vm_t;
+#include "cell.h"
 
 typedef struct lisp_cons_t
 {
   lisp_cell_t car;
   lisp_cell_t cdr;
+  size_t ref_count;
 } lisp_cons_t;
 
 #endif
