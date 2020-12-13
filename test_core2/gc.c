@@ -68,20 +68,35 @@ static void test_gc_alloc_cons(unit_test_t * tst)
   ASSERT_LISP_CHECK_GC(tst, &gc);
   ASSERT_LISP_OK(tst, lisp_gc_set_cons_page_size(&gc, 4));
   ASSERT_EQ_I(tst, gc.num_cons_pages, 0u);
+
   lisp_cons_t * cons1 = lisp_gc_alloc_cons(&gc);
   ASSERT_EQ_I(tst, gc.num_cons_pages, 1u);
+  ASSERT_EQ_I(tst, lisp_cons_get_color(cons1), LISP_GC_WHITE);
+  ASSERT_FALSE(tst, lisp_cons_is_root(cons1));
   ASSERT_LISP_CHECK_GC(tst, &gc);
+
   lisp_cons_t * cons2 = lisp_gc_alloc_cons(&gc);
   ASSERT_EQ_I(tst, gc.num_cons_pages, 1u);
+  ASSERT_EQ_I(tst, lisp_cons_get_color(cons2), LISP_GC_WHITE);
+  ASSERT_FALSE(tst, lisp_cons_is_root(cons2));
   ASSERT_LISP_CHECK_GC(tst, &gc);
+
   lisp_cons_t * cons3 = lisp_gc_alloc_cons(&gc);
   ASSERT_EQ_I(tst, gc.num_cons_pages, 1u);
+  ASSERT_EQ_I(tst, lisp_cons_get_color(cons3), LISP_GC_WHITE);
+  ASSERT_FALSE(tst, lisp_cons_is_root(cons3));
   ASSERT_LISP_CHECK_GC(tst, &gc);
+
   lisp_cons_t * cons4 = lisp_gc_alloc_cons(&gc);
   ASSERT_EQ_I(tst, gc.num_cons_pages, 1u);
+  ASSERT_EQ_I(tst, lisp_cons_get_color(cons4), LISP_GC_WHITE);
+  ASSERT_FALSE(tst, lisp_cons_is_root(cons4));
   ASSERT_LISP_CHECK_GC(tst, &gc);
+
   lisp_cons_t * cons5 = lisp_gc_alloc_cons(&gc);
   ASSERT_EQ_I(tst, gc.num_cons_pages, 2u);
+  ASSERT_EQ_I(tst, lisp_cons_get_color(cons5), LISP_GC_WHITE);
+  ASSERT_FALSE(tst, lisp_cons_is_root(cons5));
   ASSERT_EQ_I(tst, gc.cons_pos, 1u);
   ASSERT_LISP_CHECK_GC(tst, &gc);
 
@@ -96,17 +111,30 @@ static void test_gc_alloc_cons(unit_test_t * tst)
   lisp_gc_free_cons(&gc, cons3);
   ASSERT_EQ_I(tst, gc.cons_pos, 1u);
   ASSERT_LISP_CHECK_GC(tst, &gc);
+
   cons1 = lisp_gc_alloc_cons(&gc);
+  ASSERT_EQ_I(tst, gc.cons_pos, 1u);
+  ASSERT_EQ_I(tst, lisp_cons_get_color(cons1), LISP_GC_WHITE);
+  ASSERT_FALSE(tst, lisp_cons_is_root(cons1));
   ASSERT_LISP_CHECK_GC(tst, &gc);
+
   cons2 = lisp_gc_alloc_cons(&gc);
+  ASSERT_EQ_I(tst, gc.cons_pos, 1u);
+  ASSERT_EQ_I(tst, lisp_cons_get_color(cons2), LISP_GC_WHITE);
+  ASSERT_FALSE(tst, lisp_cons_is_root(cons2));
   ASSERT_LISP_CHECK_GC(tst, &gc);
+
   cons3 = lisp_gc_alloc_cons(&gc);
   ASSERT_EQ_I(tst, gc.cons_pos, 1u);
+  ASSERT_EQ_I(tst, lisp_cons_get_color(cons3), LISP_GC_WHITE);
+  ASSERT_FALSE(tst, lisp_cons_is_root(cons3));
   ASSERT_EQ_I(tst, gc.num_cons_pages, 2u);
   ASSERT_LISP_CHECK_GC(tst, &gc);
 
   cons4 = lisp_gc_alloc_cons(&gc);
   ASSERT_EQ_I(tst, gc.cons_pos, 2u);
+  ASSERT_EQ_I(tst, lisp_cons_get_color(cons4), LISP_GC_WHITE);
+  ASSERT_FALSE(tst, lisp_cons_is_root(cons4));
   ASSERT_EQ_I(tst, gc.num_cons_pages, 2u);
   ASSERT_NEQ_PTR(tst, cons1, NULL);
   ASSERT_NEQ_PTR(tst, cons1, cons2);
@@ -121,9 +149,100 @@ static void test_gc_alloc_cons(unit_test_t * tst)
   memcheck_end();
 }
 
+static void test_gc_alloc_root_cons(unit_test_t * tst)
+{
+  lisp_gc_t gc;
+  memcheck_begin();
+  ASSERT_LISP_OK(tst, lisp_init_gc(&gc));
+  ASSERT_LISP_CHECK_GC(tst, &gc);
+  ASSERT_LISP_OK(tst, lisp_gc_set_cons_page_size(&gc, 4));
+  ASSERT_EQ_I(tst, gc.num_cons_pages, 0u);
+
+  lisp_cons_t * cons1 = lisp_gc_alloc_root_cons(&gc);
+  ASSERT_EQ_I(tst, gc.num_cons_pages, 1u);
+  ASSERT_EQ_I(tst, lisp_cons_get_color(cons1), LISP_GC_WHITE);
+  ASSERT(tst, lisp_cons_is_root(cons1));
+  ASSERT_LISP_CHECK_GC(tst, &gc);
+
+  lisp_cons_t * cons2 = lisp_gc_alloc_root_cons(&gc);
+  ASSERT_EQ_I(tst, gc.num_cons_pages, 1u);
+  ASSERT_EQ_I(tst, lisp_cons_get_color(cons2), LISP_GC_WHITE);
+  ASSERT(tst, lisp_cons_is_root(cons2));
+  ASSERT_LISP_CHECK_GC(tst, &gc);
+
+  lisp_cons_t * cons3 = lisp_gc_alloc_root_cons(&gc);
+  ASSERT_EQ_I(tst, gc.num_cons_pages, 1u);
+  ASSERT_EQ_I(tst, lisp_cons_get_color(cons3), LISP_GC_WHITE);
+  ASSERT(tst, lisp_cons_is_root(cons3));
+  ASSERT_LISP_CHECK_GC(tst, &gc);
+
+  lisp_cons_t * cons4 = lisp_gc_alloc_root_cons(&gc);
+  ASSERT_EQ_I(tst, gc.num_cons_pages, 1u);
+  ASSERT_EQ_I(tst, lisp_cons_get_color(cons4), LISP_GC_WHITE);
+  ASSERT(tst, lisp_cons_is_root(cons4));
+  ASSERT_LISP_CHECK_GC(tst, &gc);
+
+  lisp_cons_t * cons5 = lisp_gc_alloc_root_cons(&gc);
+  ASSERT_EQ_I(tst, gc.num_cons_pages, 2u);
+  ASSERT_EQ_I(tst, lisp_cons_get_color(cons5), LISP_GC_WHITE);
+  ASSERT(tst, lisp_cons_is_root(cons5));
+  ASSERT_EQ_I(tst, gc.cons_pos, 1u);
+  ASSERT_LISP_CHECK_GC(tst, &gc);
+
+  ASSERT_NEQ_PTR(tst, cons1, NULL);
+  ASSERT_NEQ_PTR(tst, cons1, cons2);
+  ASSERT_NEQ_PTR(tst, cons2, cons3);
+  ASSERT_NEQ_PTR(tst, cons3, cons4);
+  ASSERT_NEQ_PTR(tst, cons4, cons5);
+
+  lisp_gc_free_cons(&gc, cons1);
+  lisp_gc_free_cons(&gc, cons2);
+  lisp_gc_free_cons(&gc, cons3);
+  ASSERT_EQ_I(tst, gc.cons_pos, 1u);
+  ASSERT_LISP_CHECK_GC(tst, &gc);
+
+  cons1 = lisp_gc_alloc_root_cons(&gc);
+  ASSERT_EQ_I(tst, gc.cons_pos, 1u);
+  ASSERT_EQ_I(tst, lisp_cons_get_color(cons1), LISP_GC_WHITE);
+  ASSERT(tst, lisp_cons_is_root(cons1));
+  ASSERT_LISP_CHECK_GC(tst, &gc);
+
+  cons2 = lisp_gc_alloc_root_cons(&gc);
+  ASSERT_EQ_I(tst, gc.cons_pos, 1u);
+  ASSERT_EQ_I(tst, lisp_cons_get_color(cons2), LISP_GC_WHITE);
+  ASSERT(tst, lisp_cons_is_root(cons2));
+  ASSERT_LISP_CHECK_GC(tst, &gc);
+
+  cons3 = lisp_gc_alloc_root_cons(&gc);
+  ASSERT_EQ_I(tst, gc.cons_pos, 1u);
+  ASSERT_EQ_I(tst, lisp_cons_get_color(cons3), LISP_GC_WHITE);
+  ASSERT(tst, lisp_cons_is_root(cons3));
+  ASSERT_EQ_I(tst, gc.num_cons_pages, 2u);
+  ASSERT_LISP_CHECK_GC(tst, &gc);
+
+  cons4 = lisp_gc_alloc_root_cons(&gc);
+  ASSERT_EQ_I(tst, gc.cons_pos, 2u);
+  ASSERT_EQ_I(tst, lisp_cons_get_color(cons4), LISP_GC_WHITE);
+  ASSERT(tst, lisp_cons_is_root(cons4));
+  ASSERT_EQ_I(tst, gc.num_cons_pages, 2u);
+  ASSERT_NEQ_PTR(tst, cons1, NULL);
+  ASSERT_NEQ_PTR(tst, cons1, cons2);
+  ASSERT_NEQ_PTR(tst, cons2, cons3);
+  ASSERT_NEQ_PTR(tst, cons3, cons4);
+  ASSERT_NEQ_PTR(tst, cons4, cons5);
+  ASSERT_LISP_CHECK_GC(tst, &gc);
+  
+  ASSERT_LISP_OK(tst, lisp_free_gc(&gc));
+
+  ASSERT_MEMCHECK(tst);
+  memcheck_end();
+}
+
+
 void test_gc(unit_context_t * ctx)
 {
    unit_suite_t * suite = unit_create_suite(ctx, "gc");
    TEST(suite, test_gc_alloc_cons);
+   TEST(suite, test_gc_alloc_root_cons);
 }
 
