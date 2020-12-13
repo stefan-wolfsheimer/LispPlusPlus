@@ -2,8 +2,12 @@
 #define __LISP_GC_H__
 #include <lisp/util/dl_list.h>
 #include <stddef.h>
+#include <stdio.h>
 
 #define LISP_GC_NUM_COLORS 3
+/* dump modes for garbage collector dump function */
+#define LISP_GC_DUMP_SILENT 0
+#define LISP_GC_DUMP_HUMAN 1
 
 /**
  * Color for 3-generation garbage collector
@@ -61,6 +65,17 @@ typedef struct lisp_gc_t
 } lisp_gc_t;
 
 /**
+ * Iterator for conses in garbage collector
+ */
+typedef struct lisp_gc_cons_iterator_t
+{
+  short int is_valid;
+  lisp_gc_collectible_list_t * current_list;
+  lisp_dl_item_t * current_item;
+  struct lisp_cons_t * cons;
+} lisp_gc_cons_iterator_t;
+
+/**
  * Initialize garbage collector object
  */
 int lisp_init_gc(lisp_gc_t * gc);
@@ -97,5 +112,39 @@ struct lisp_cons_t * lisp_gc_alloc_root_cons(lisp_gc_t * gc);
  * @param cons object to be freed.
  */
 void lisp_gc_free_cons(lisp_gc_t * gc, struct lisp_cons_t * cons);
+
+/**
+ * Set the iterator to the first active
+ * @param gc garbage collector object
+ * @param pointer to iterator (@todo use return value instead)
+ */
+void lisp_gc_first_cons(lisp_gc_t * gc, lisp_gc_cons_iterator_t * itr);
+
+/**
+ * Iterate to the next cons
+ * @param gc garbage collector object
+ * @param pointer to iterator
+ */
+void lisp_gc_next_cons(lisp_gc_t * gc, lisp_gc_cons_iterator_t * itr);
+
+/**
+ * Get number of allocated active conses.
+ */
+size_t lisp_gc_num_conses(lisp_gc_t * gc);
+
+/**
+ * Get total number of allocated conses.
+ * Currently active plus recycled.
+ */
+size_t lisp_gc_num_allocated_conses(lisp_gc_t * gc);
+
+/**
+ * Get number of recycled conses
+ */
+size_t lisp_gc_num_recycled_conses(lisp_gc_t * gc);
+
+int lisp_gc_check(lisp_gc_t * gc);
+
+void lisp_gc_dump(FILE * fp, lisp_gc_t * gc, int mode);
 
 #endif

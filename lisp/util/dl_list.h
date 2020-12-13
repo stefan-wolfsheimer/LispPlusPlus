@@ -63,6 +63,12 @@ static inline void lisp_init_dl_list(lisp_dl_list_t * ll);
 static inline int lisp_dl_list_empty(const lisp_dl_list_t * ll);
 
 /**
+ * Return size of the list.
+ * Note: linear complexity.
+ */
+static inline size_t lisp_dl_list_size(const lisp_dl_list_t * ll);
+
+/**
  * Append an item at the end of a double-linked list
  */
 static inline void lisp_dl_list_append(lisp_dl_list_t * ll,
@@ -102,6 +108,18 @@ static inline void lisp_init_dl_list(lisp_dl_list_t * ll)
 static inline int lisp_dl_list_empty(const lisp_dl_list_t * ll)
 {
   return (ll->first == NULL);
+}
+
+static inline size_t lisp_dl_list_size(const lisp_dl_list_t * ll)
+{
+  size_t ret = 0;
+  lisp_dl_item_t * itr = ll->first;
+  while(itr != NULL)
+  {
+    ret++;
+    itr = itr->next;
+  }
+  return ret;
 }
 
 static inline void lisp_dl_list_append(lisp_dl_list_t * ll,

@@ -34,24 +34,57 @@ either expressed or implied, of the FreeBSD Project.
 #include <lisp/core/cons.h>
 #include <lisp/core/error.h>
 
+/* @todo move to general include file */
+#define LISP_GC_DUMP_TEST LISP_GC_DUMP_HUMAN
+/* LISP_GC_DUMP_SILENT 0
+   LISP_GC_DUMP_HUMAN 1
+*/
+
+#define ASSERT_LISP_OK(__TST__, __EXPR__) \
+ ASSERT_EQ_I(__TST__, __EXPR__, LISP_OK);
+
+ assertion_t * assertion_create_cmp_i(const char * file, 
+				     int          line,
+				     const char * lhs_expr,
+				     const char * rhs_expr,
+				     int          lhs,
+				     int          rhs,
+				     const char * cmp_op,
+				     int          only_on_failure);
+
+#define ASSERT_LISP_CHECK_GC(__TST__, __GC__)                           \
+  if(!CHECK_EQ_I((__TST__), lisp_gc_check((__GC__)), LISP_OK))          \
+  {                                                                     \
+    lisp_gc_dump(stdout, (__GC__), LISP_GC_DUMP_TEST);                  \
+    return ;                                                            \
+  }
+
+
 static void test_gc_alloc_cons(unit_test_t * tst)
 {
   lisp_gc_t gc;
   memcheck_begin();
-  ASSERT_EQ_I(tst, lisp_init_gc(&gc), LISP_OK);
-  ASSERT_EQ_I(tst, lisp_gc_set_cons_page_size(&gc, 4), LISP_OK);
+  ASSERT_LISP_OK(tst, lisp_init_gc(&gc));
+  ASSERT_LISP_CHECK_GC(tst, &gc);
+  ASSERT_LISP_OK(tst, lisp_gc_set_cons_page_size(&gc, 4));
   ASSERT_EQ_I(tst, gc.num_cons_pages, 0u);
   lisp_cons_t * cons1 = lisp_gc_alloc_cons(&gc);
   ASSERT_EQ_I(tst, gc.num_cons_pages, 1u);
+  ASSERT_LISP_CHECK_GC(tst, &gc);
   lisp_cons_t * cons2 = lisp_gc_alloc_cons(&gc);
   ASSERT_EQ_I(tst, gc.num_cons_pages, 1u);
+  ASSERT_LISP_CHECK_GC(tst, &gc);
   lisp_cons_t * cons3 = lisp_gc_alloc_cons(&gc);
   ASSERT_EQ_I(tst, gc.num_cons_pages, 1u);
+  ASSERT_LISP_CHECK_GC(tst, &gc);
   lisp_cons_t * cons4 = lisp_gc_alloc_cons(&gc);
   ASSERT_EQ_I(tst, gc.num_cons_pages, 1u);
+  ASSERT_LISP_CHECK_GC(tst, &gc);
   lisp_cons_t * cons5 = lisp_gc_alloc_cons(&gc);
   ASSERT_EQ_I(tst, gc.num_cons_pages, 2u);
   ASSERT_EQ_I(tst, gc.cons_pos, 1u);
+  ASSERT_LISP_CHECK_GC(tst, &gc);
+
   ASSERT_NEQ_PTR(tst, cons1, NULL);
   ASSERT_NEQ_PTR(tst, cons1, cons2);
   ASSERT_NEQ_PTR(tst, cons2, cons3);
@@ -62,11 +95,16 @@ static void test_gc_alloc_cons(unit_test_t * tst)
   lisp_gc_free_cons(&gc, cons2);
   lisp_gc_free_cons(&gc, cons3);
   ASSERT_EQ_I(tst, gc.cons_pos, 1u);
+  ASSERT_LISP_CHECK_GC(tst, &gc);
   cons1 = lisp_gc_alloc_cons(&gc);
+  ASSERT_LISP_CHECK_GC(tst, &gc);
   cons2 = lisp_gc_alloc_cons(&gc);
+  ASSERT_LISP_CHECK_GC(tst, &gc);
   cons3 = lisp_gc_alloc_cons(&gc);
   ASSERT_EQ_I(tst, gc.cons_pos, 1u);
   ASSERT_EQ_I(tst, gc.num_cons_pages, 2u);
+  ASSERT_LISP_CHECK_GC(tst, &gc);
+
   cons4 = lisp_gc_alloc_cons(&gc);
   ASSERT_EQ_I(tst, gc.cons_pos, 2u);
   ASSERT_EQ_I(tst, gc.num_cons_pages, 2u);
@@ -75,8 +113,9 @@ static void test_gc_alloc_cons(unit_test_t * tst)
   ASSERT_NEQ_PTR(tst, cons2, cons3);
   ASSERT_NEQ_PTR(tst, cons3, cons4);
   ASSERT_NEQ_PTR(tst, cons4, cons5);
-
-  ASSERT_EQ_I(tst, lisp_free_gc(&gc), LISP_OK);
+  ASSERT_LISP_CHECK_GC(tst, &gc);
+  
+  ASSERT_LISP_OK(tst, lisp_free_gc(&gc));
 
   ASSERT_MEMCHECK(tst);
   memcheck_end();
