@@ -30,17 +30,16 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #ifndef __LISP_CELL_H__
 #define __LISP_CELL_H__
+#include <stddef.h>
 
 typedef unsigned short int lisp_type_id_t;
-
-struct lisp_cons_t;
 
 typedef struct lisp_cell_t
 {
   lisp_type_id_t type_id;
   union
   {
-    struct lisp_cons_t * cons;
+    void * obj;
   } data;
 } lisp_cell_t;
 
@@ -73,6 +72,18 @@ int lisp_is_reference(lisp_cell_t * cell);
  * @return true if cell has complex object storage class
  */
 int lisp_is_complex(lisp_cell_t * cell);
+
+/**
+ * Check if cell is cons
+ *
+ * @return true
+ */
+int lisp_is_cons(lisp_cell_t * cell);
+
+/**
+ * get reference count for objects and complex objects.
+ */
+size_t lisp_get_ref_count(lisp_cell_t * cell);
 
 int lisp_is_root_cell(lisp_cell_t * cell);
 

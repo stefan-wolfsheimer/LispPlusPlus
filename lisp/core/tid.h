@@ -5,7 +5,8 @@
  * storage classes
  * 00 atom
  * 01 managed object: requires constructor and destructor
- *                    but does not contain sub cells
+ *                    but does not contain sub cells.
+ *                    copy on write.
  * 10 reference:      immuatble managed object.
  *                    copied reference
  * 11 complex object: object that can contain sub cells

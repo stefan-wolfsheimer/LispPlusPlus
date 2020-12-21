@@ -37,7 +37,6 @@ typedef struct lisp_cons_t
 {
   lisp_cell_t car;
   lisp_cell_t cdr;
-  size_t ref_count;
 } lisp_cons_t;
 
 #endif

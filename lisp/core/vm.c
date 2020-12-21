@@ -44,11 +44,15 @@ int lisp_make_cons(lisp_vm_t * vm,
 {
   int ret;
   cell->type_id = LISP_TID_CONS;
-  cell->data.cons = lisp_gc_alloc_root_cons(&vm->gc);
-  ret = _lisp_make_cons_cell(vm, &cell->data.cons->car, car);
+  cell->data.obj = lisp_gc_alloc_root_cons(&vm->gc);
+  ret = _lisp_make_cons_cell(vm,
+                             &((lisp_cons_t*)cell->data.obj)->car,
+                             car);
   if(!ret)
   {
-    return _lisp_make_cons_cell(vm, &cell->data.cons->cdr, cdr);
+    return _lisp_make_cons_cell(vm,
+                                &((lisp_cons_t*)cell->data.obj)->cdr,
+                                cdr);
   }
   else
   {

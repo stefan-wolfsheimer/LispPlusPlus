@@ -28,33 +28,32 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#include <lisp/util/unit_test.h>
-#include <lisp/util/xmalloc.h>
-#include <lisp/core/vm.h>
-#include <lisp/core/cons.h>
-#include <lisp/core/error.h>
+#ifndef __LISP_GC_ITERATOR_H__
+#define __LISP_GC_ITERATOR_H__
+#include "cell.h"
 
-static void test_make_cons(unit_test_t * tst)
+struct  lisp_dl_item_t;
+struct lisp_gc_t * gc;
+
+/**
+ * Iterator for all complex objects in garbage collector.
+ * (conses and other objects such as arrays)
+ */
+typedef struct lisp_gc_iterator_t
 {
-  lisp_vm_t vm;
   lisp_cell_t cell;
-  memcheck_begin();
-  ASSERT_EQ_I(tst, lisp_init_vm(&vm), LISP_OK);
-  ASSERT_EQ_I(tst, lisp_make_cons(&vm,
-                                  &cell,
-                                  &lisp_nil,
-                                  &lisp_nil), LISP_OK);
-  ASSERT_EQ_I(tst, lisp_get_ref_count(&cell), 1u);
-  ASSERT_FALSE(tst, lisp_is_atomic(&cell));
-  ASSERT(tst, lisp_is_root_cell(&cell));
-  ASSERT_EQ_I(tst, lisp_free_vm(&vm), LISP_OK);
-  ASSERT_MEMCHECK(tst);
-  memcheck_end();
-}
 
-void test_cons(unit_context_t * ctx)
-{
-  unit_suite_t * suite = unit_create_suite(ctx, "cons");
-  TEST(suite, test_make_cons);
-}
+  int current_index;
+  struct lisp_dl_item_t * current_item;
+} lisp_gc_iterator_t;
 
+/**
+ * Initialize GC iterator.
+ */
+void lisp_gc_first(struct lisp_gc_t * gc, lisp_gc_iterator_t * itr);
+
+int lisp_gc_is_valid(lisp_gc_iterator_t * itr);
+
+int lisp_gc_next(struct lisp_gc_t * gc, lisp_gc_iterator_t * itr);
+
+#endif

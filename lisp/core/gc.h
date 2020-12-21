@@ -3,12 +3,15 @@
 #include <lisp/util/dl_list.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <stddef.h>
 
 /* dump modes for garbage collector dump function */
 #define LISP_GC_DUMP_SILENT 0
 #define LISP_GC_DUMP_HUMAN 1
 
 #define LISP_GC_NUM_COLORS 3
+
+struct lisp_gc_iterator_t;
 
 /**
  * Color for 3-generation garbage collector
@@ -46,10 +49,19 @@ typedef struct lisp_gc_color_map_t
 
 } lisp_gc_color_map_t;
 
+/**
+ * cons or other complex object
+ */
+typedef struct lisp_complex_object_t
+{
+  lisp_gc_collectible_list_t * lst;
+  size_t ref_count;
+} lisp_complex_object_t;
+
 typedef struct lisp_gc_t
 {
   lisp_gc_color_map_t cons_color_map;
-  lisp_gc_color_map_t complex_object_color_map;
+  lisp_gc_color_map_t object_color_map;
 
   /* cons memory */
   void ** cons_pages;
@@ -60,17 +72,6 @@ typedef struct lisp_gc_t
   size_t cons_pos;
 
 } lisp_gc_t;
-
-/**
- * Iterator for conses in garbage collector
- */
-typedef struct lisp_gc_cons_iterator_t
-{
-  short int is_valid;
-  lisp_gc_collectible_list_t * current_list;
-  lisp_dl_item_t * current_item;
-  struct lisp_cons_t * cons;
-} lisp_gc_cons_iterator_t;
 
 /*****************************************************************************
  lisp_gc_t constructor / destructor
@@ -111,6 +112,22 @@ struct lisp_cons_t * lisp_gc_alloc_cons(lisp_gc_t * gc);
 struct lisp_cons_t * lisp_gc_alloc_root_cons(lisp_gc_t * gc);
 
 /**
+ * Allocate a object
+ * The object is added to the white list.
+ *
+ * @return pointer to object of size
+ */
+void * lisp_gc_alloc_object(lisp_gc_t * gc, size_t size);
+
+/**
+ * Allocate a root object
+ * The object is added to the white (root) list.
+ *
+ * @return pointer to object of size
+ */
+void * lisp_gc_alloc_root_object(lisp_gc_t * gc, size_t size);
+
+/**
  * free lisp_cons_t object allocated lisp_gc_alloc_cons.
  *
  * @param gc garbage collector object
@@ -146,25 +163,6 @@ size_t lisp_gc_num_allocated_conses(lisp_gc_t * gc);
  * Get number of recycled conses
  */
 size_t lisp_gc_num_recycled_conses(lisp_gc_t * gc);
-
-/****************************************************************************
- lisp_cons_t iteration
- ****************************************************************************/
-/**
- * Set the iterator to the first active
- *
- * @param gc garbage collector object
- */
-lisp_gc_cons_iterator_t lisp_gc_first_cons(lisp_gc_t * gc);
-
-/**
- * Iterate to the next cons
- *
- * @param gc garbage collector object
- * @param pointer to iterator
- */
-void lisp_gc_next_cons(lisp_gc_t * gc, lisp_gc_cons_iterator_t * itr);
-
 
 /****************************************************************************
  lisp_gc_t consistency checks and dump
