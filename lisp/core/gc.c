@@ -100,19 +100,20 @@ static int lisp_init_color_map(lisp_gc_color_map_t * map)
 /*****************************************************************************
  lisp_cons_t cast functions
  ****************************************************************************/
-inline static lisp_collectible_object_t *
-_lisp_cons_as_collectible_object(const lisp_cons_t * cons)
+inline static lisp_gc_collectible_list_t *
+_lisp_cons_get_collectible_list(const lisp_cons_t * cons)
 {
-  return (lisp_collectible_object_t*)(
-                                      ((char*)cons) -
-                                      sizeof(lisp_collectible_object_t));
+  return *((lisp_gc_collectible_list_t**)(
+                                          ((char*)cons) -
+                                          sizeof(lisp_gc_collectible_list_t**)
+                                          ));
 }
 
 inline static lisp_dl_item_t *
 _lisp_cons_as_dl_item(const lisp_cons_t * cons)
 {
   return (lisp_dl_item_t*) (((char*)cons) -
-                            sizeof(lisp_collectible_object_t) -
+                            sizeof(lisp_gc_collectible_list_t*) -
                             sizeof(lisp_dl_item_t));
 }
 
@@ -180,7 +181,7 @@ static lisp_cons_t * _lisp_gc_alloc_cons(lisp_gc_t * gc,
     if(gc->cons_pos >= gc->cons_page_size)
     {
       gc->current_cons_page = MALLOC((sizeof(lisp_dl_item_t) +
-                                      sizeof(lisp_collectible_object_t) +
+                                      sizeof(lisp_gc_collectible_list_t*) +
                                       sizeof(lisp_cons_t)) * gc->cons_page_size);
       gc->cons_pages = REALLOC(gc->cons_pages,
                                sizeof(void*) * (gc->num_cons_pages + 1));
@@ -195,18 +196,15 @@ static lisp_cons_t * _lisp_gc_alloc_cons(lisp_gc_t * gc,
                              (char*) gc->current_cons_page +
                              ((
                                sizeof(lisp_dl_item_t) +
-                               sizeof(lisp_collectible_object_t) +
+                               sizeof(lisp_gc_collectible_list_t*) +
                                sizeof(lisp_cons_t)) *
                               gc->cons_pos++));
   }
   lisp_dl_list_append(&list->objects, item);
-  (
-   (lisp_collectible_object_t*)
-   (((char*)item) + sizeof(lisp_dl_item_t))
-  )->lst = list;
+  *((lisp_gc_collectible_list_t**) (((char*)item) + sizeof(lisp_dl_item_t))) = list;
   return (lisp_cons_t*)(((char*) item) +
                         sizeof(lisp_dl_item_t) +
-                        sizeof(lisp_collectible_object_t));
+                        sizeof(lisp_gc_collectible_list_t*));
 }
 
 lisp_cons_t * lisp_gc_alloc_cons(lisp_gc_t * gc)
@@ -225,7 +223,7 @@ lisp_cons_t * lisp_gc_alloc_root_cons(lisp_gc_t * gc)
 
 void lisp_gc_free_cons(lisp_gc_t * gc, lisp_cons_t * cons)
 {
-  lisp_dl_list_remove(&_lisp_cons_as_collectible_object(cons)->lst->objects,
+  lisp_dl_list_remove(&_lisp_cons_get_collectible_list(cons)->objects,
                       _lisp_cons_as_dl_item(cons));
   lisp_dl_list_append(&gc->recycled_conses,
                       _lisp_cons_as_dl_item(cons));
@@ -236,12 +234,12 @@ void lisp_gc_free_cons(lisp_gc_t * gc, lisp_cons_t * cons)
  ****************************************************************************/
 lisp_gc_color_t lisp_cons_get_color(const lisp_cons_t * cons)
 {
-  return _lisp_cons_as_collectible_object(cons)->lst->color;
+  return _lisp_cons_get_collectible_list(cons)->color;
 }
 
 short int lisp_cons_is_root(const lisp_cons_t * cons)
 {
-  return _lisp_cons_as_collectible_object(cons)->lst->is_root;
+  return _lisp_cons_get_collectible_list(cons)->is_root;
 }
 
 size_t lisp_gc_num_conses(lisp_gc_t * gc)
@@ -289,7 +287,7 @@ lisp_gc_cons_iterator_t lisp_gc_first_cons(lisp_gc_t * gc)
       itr.is_valid = 1;
       itr.cons = (lisp_cons_t*)(((char*) itr.current_item) +
                                 sizeof(lisp_dl_item_t) +
-                                sizeof(lisp_collectible_object_t));
+                                sizeof(lisp_gc_collectible_list_t*));
       break;
     }
   }
@@ -323,8 +321,7 @@ void lisp_gc_next_cons(lisp_gc_t * gc, lisp_gc_cons_iterator_t * itr)
           itr->is_valid = 1;
           itr->cons = (lisp_cons_t*)(((char*) itr->current_item) +
                                      sizeof(lisp_dl_item_t) +
-                                     sizeof(lisp_collectible_object_t)
-                                     );
+                                     sizeof(lisp_gc_collectible_list_t*));
           break;
         }
       }
@@ -333,8 +330,7 @@ void lisp_gc_next_cons(lisp_gc_t * gc, lisp_gc_cons_iterator_t * itr)
     {
       itr->cons = (lisp_cons_t*)(((char*) itr->current_item) +
                                  sizeof(lisp_dl_item_t) +
-                                 sizeof(lisp_collectible_object_t)
-                                 );
+                                 sizeof(lisp_gc_collectible_list_t*));
     }
   }
 }
@@ -352,6 +348,10 @@ int lisp_gc_check(lisp_gc_t * gc)
       lisp_gc_next_cons(gc, &itr))
   {
     num_conses++;
+    if(lisp_cons_get_color(itr.cons) == LISP_GC_BLACK)
+    {
+      /* for each children */
+    }
   }
   if(lisp_gc_num_allocated_conses(gc) !=
      (num_conses + lisp_gc_num_recycled_conses(gc)))

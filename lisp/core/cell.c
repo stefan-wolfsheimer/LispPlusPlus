@@ -9,17 +9,32 @@ lisp_cell_t lisp_nil =
 
 int lisp_is_atomic(lisp_cell_t * cell)
 {
-  return (cell->type_id < LISP_TID_MANAGED_ATOM_END);
+  return LISP_IS_STORAGE_ATOM_TID(cell->type_id);
+}
+
+int lisp_is_object(lisp_cell_t * cell)
+{
+  return LISP_IS_STORAGE_OBJECT_TID(cell->type_id);
+}
+
+int lisp_is_reference(lisp_cell_t * cell)
+{
+  return LISP_IS_STORAGE_REFERENCE_TID(cell->type_id);
+}
+
+int lisp_is_complex(lisp_cell_t * cell)
+{
+  return LISP_IS_STORAGE_COMPLEX_TID(cell->type_id);
 }
 
 int lisp_is_root_cell(lisp_cell_t * cell)
 {
-  if(cell->type_id < LISP_TID_COMPOUND_END)
+  if(LISP_IS_STORAGE_COMPLEX_TID(cell->type_id))
   {
-    return 1;
+    return ((lisp_gc_collectible_list_t**)cell->data.cons)[-1]->is_root;
   }
   else
   {
-    return ((lisp_collectible_object_t*)cell->data.cons)[-1].lst->is_root;
+    return 1;
   }
 }

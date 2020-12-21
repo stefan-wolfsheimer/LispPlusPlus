@@ -46,7 +46,34 @@ typedef struct lisp_cell_t
 
 extern lisp_cell_t lisp_nil;
 
+/**
+ * Check for storage class of cell.
+ *
+ * @return true if cell has atomic storage class
+ */
 int lisp_is_atomic(lisp_cell_t * cell);
+
+/**
+ * Check for storage class of cell.
+ *
+ * @return true if cell has object storage class
+ */
+int lisp_is_object(lisp_cell_t * cell);
+
+/**
+ * Check for storage class of cell.
+ *
+ * @return true if cell has reference (imutable object) storage class
+ */
+int lisp_is_reference(lisp_cell_t * cell);
+
+/**
+ * Check for storage class of cell.
+ *
+ * @return true if cell has complex object storage class
+ */
+int lisp_is_complex(lisp_cell_t * cell);
+
 int lisp_is_root_cell(lisp_cell_t * cell);
 
 #endif

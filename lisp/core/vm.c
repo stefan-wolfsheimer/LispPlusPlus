@@ -20,7 +20,7 @@ static int _lisp_make_cons_cell(lisp_vm_t * vm,
 {
   if(source)
   {
-    if(source->type_id < LISP_TID_ATOMIC_END)
+    if(LISP_IS_STORAGE_ATOM_TID(source->type_id))
     {
       target->type_id = source->type_id;
       target->data = source->data;

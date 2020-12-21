@@ -46,14 +46,10 @@ typedef struct lisp_gc_color_map_t
 
 } lisp_gc_color_map_t;
 
-typedef struct lisp_collectible_object_t
-{
-  lisp_gc_collectible_list_t * lst;
-} lisp_collectible_object_t;
-
 typedef struct lisp_gc_t
 {
   lisp_gc_color_map_t cons_color_map;
+  lisp_gc_color_map_t complex_object_color_map;
 
   /* cons memory */
   void ** cons_pages;
@@ -108,6 +104,7 @@ struct lisp_cons_t * lisp_gc_alloc_cons(lisp_gc_t * gc);
 
 /**
  * Allocate a root cons object.
+ * The cons is added to the white (root) list.
  *
  * @return pointer to lisp_cons_t structure
  */
