@@ -28,68 +28,57 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#ifndef __LISP_CELL_H__
-#define __LISP_CELL_H__
-#include <stddef.h>
+#include "array.h"
+#include "cell.h"
+#include "cell_iterator.h"
+#include "error.h"
+#include "tid.h"
+#include <assert.h>
 
-typedef unsigned short int lisp_type_id_t;
-
-typedef struct lisp_cell_t
+static int _array_first_child(lisp_cell_iterator_t * itr)
 {
-  lisp_type_id_t type_id;
-  union
+  assert(lisp_is_array(itr->parent));
+  lisp_array_t* arr = lisp_as_array(itr->parent);
+  lisp_cell_t* data = (lisp_cell_t*) &arr[1];
+  itr->index = 0;
+  if(arr->size == 0)
   {
-    void * obj;
-  } data;
-} lisp_cell_t;
+    itr->child = NULL;
+  }
+  else
+  {
+    itr->child = data;
+  }
+  return LISP_OK;
+}
 
-extern lisp_cell_t lisp_nil;
+static int _array_iterator_is_valid(lisp_cell_iterator_t * itr)
+{
+  return (itr->child != NULL);
+}
 
-/**
- * Check for storage class of cell.
- *
- * @return true if cell has atomic storage class
- */
-int lisp_is_atomic(lisp_cell_t * cell);
+static int _array_next_child(lisp_cell_iterator_t * itr)
+{
+  assert(lisp_is_array(itr->parent));
+  lisp_array_t* arr = lisp_as_array(itr->parent);
+  lisp_cell_t* data = (lisp_cell_t*) &arr[1];
+  itr->index++;
+  if(itr->index < arr->size)
+  {
+    itr->child = data + itr->index;
+  }
+  else
+  {
+    itr->child = NULL;
+  }
+  return (itr->child != NULL);
+}
 
-/**
- * Check for storage class of cell.
- *
- * @return true if cell has object storage class
- */
-int lisp_is_object(lisp_cell_t * cell);
+int lisp_init_array_type(struct lisp_type_t * t)
+{
+  t->lisp_cell_first_child_ptr = _array_first_child;
+  t->lisp_cell_child_iterator_is_valid_ptr = _array_iterator_is_valid;
+  t->lisp_cell_next_child_ptr = _array_next_child;
+  return LISP_OK;
 
-/**
- * Check for storage class of cell.
- *
- * @return true if cell has reference (imutable object) storage class
- */
-int lisp_is_reference(lisp_cell_t * cell);
-
-/**
- * Checks if cells has storage class of complex object, e.g. lisp_cons_t
- *
- * @return true if cell has complex object storage class
- */
-int lisp_is_complex(lisp_cell_t * cell);
-
-/**
- * Check if cell is cons
- *
- * @return true
- */
-int lisp_is_cons(lisp_cell_t * cell);
-
-struct lisp_cons_t * lisp_as_cons(lisp_cell_t * cell);
-
-int lisp_is_array(lisp_cell_t * cell);
-struct lisp_array_t * lisp_as_array(lisp_cell_t * cell);
-
-/**
- * get reference count for objects and complex objects.
- */
-size_t lisp_get_ref_count(lisp_cell_t * cell);
-
-int lisp_is_root_cell(lisp_cell_t * cell);
-
-#endif
+}

@@ -76,6 +76,64 @@ typedef struct lisp_gc_t
 
 } lisp_gc_t;
 
+/**
+ * Garbage collector statistics
+ */
+typedef struct lisp_gc_stat_t
+{
+  /**
+   * Number of root objects (directly reachable)
+   */
+  size_t num_root;
+
+  /**
+   * Number of bulk objects (reachable from root)
+   */
+  size_t num_bulk;
+
+  /**
+   * Total number of objects.
+   * num_reachable = num_root + num_bulk;
+   */
+  size_t num_reachable;
+
+  /**
+   * Number of allocated objects.
+   * The (num_allocated - num_reachable) is the number
+   * of unreachable objects.
+   */
+  size_t num_allocated;
+
+  /**
+   * Void Conses that have been marked as unreachable.
+   */
+  size_t num_void;
+
+  /**
+   * Void Conses that have been marked as unreachable.
+   */
+  size_t num_disposed;
+
+  /**
+   * Number of full garbage collector cycles
+   */
+  size_t num_cycles;
+
+
+  /**
+   * Number of leave nodes of the reachibility graph.
+   * That is the number of child objects that are not a complex object
+   */
+  size_t num_leaves;
+
+  /**
+   * Number of edges of the dependency graph.
+   */
+  size_t num_edges;
+
+} lisp_gc_stat_t;
+
+
 /*****************************************************************************
  lisp_gc_t constructor / destructor
  ****************************************************************************/
@@ -168,10 +226,13 @@ size_t lisp_gc_num_allocated_conses(lisp_gc_t * gc);
 size_t lisp_gc_num_recycled_conses(lisp_gc_t * gc);
 
 /****************************************************************************
- lisp_gc_t consistency checks and dump
+ lisp_gc_t consistency checks, dump and statistics
  ****************************************************************************/
 int lisp_gc_check(lisp_gc_t * gc);
 
 void lisp_gc_dump(FILE * fp, lisp_gc_t * gc, int mode);
+
+void lisp_gc_get_stats(lisp_gc_t * gc,
+                       lisp_gc_stat_t * stat);
 
 #endif

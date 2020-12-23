@@ -89,6 +89,18 @@ static int lisp_init_color_map(lisp_gc_color_map_t * map)
   return LISP_OK;
 }
 
+static int lisp_erase_list(lisp_gc_collectible_list_t * lst)
+{
+  lisp_dl_item_t * item;
+  while(!lisp_dl_list_empty(&lst->objects))
+  {
+    item = lst->objects.first;
+    lisp_dl_list_remove_first(&lst->objects);
+    FREE(item);
+  }
+  return LISP_OK;
+}
+
 /*****************************************************************************
  lisp_cons_t cast functions
  ****************************************************************************/
@@ -145,8 +157,36 @@ int lisp_free_gc(lisp_gc_t * gc)
   {
     FREE(gc->cons_pages);
   }
-
-  /** @todo: free managed objects */
+  ret = lisp_erase_list(gc->object_color_map.white_root);
+  if(ret != LISP_OK)
+  {
+    return ret;
+  }
+  ret = lisp_erase_list(gc->object_color_map.grey_root);
+  if(ret != LISP_OK)
+  {
+    return ret;
+  }
+  ret = lisp_erase_list(gc->object_color_map.white_root);
+  if(ret != LISP_OK)
+  {
+    return ret;
+  }
+  ret = lisp_erase_list(gc->object_color_map.white);
+  if(ret != LISP_OK)
+  {
+    return ret;
+  }
+  ret = lisp_erase_list(gc->object_color_map.grey);
+  if(ret != LISP_OK)
+  {
+    return ret;
+  }
+  ret = lisp_erase_list(gc->object_color_map.white);
+  if(ret != LISP_OK)
+  {
+    return ret;
+  }
   ret = lisp_free_color_map(&gc->object_color_map);
   return ret;
 }
@@ -313,7 +353,6 @@ size_t lisp_gc_num_recycled_conses(lisp_gc_t * gc)
  ****************************************************************************/
 int lisp_gc_check(lisp_gc_t * gc)
 {
-  /* @todo: check consistency of children */
   lisp_gc_iterator_t itr;
   lisp_cell_iterator_t citr;
   lisp_complex_object_t * obj;
@@ -382,4 +421,33 @@ void lisp_gc_dump(FILE * fp, lisp_gc_t * gc, int mode)
     _lisp_gc_dump_humamn(fp, gc);
     break;
   }
+}
+
+void lisp_gc_get_stats(lisp_gc_t * gc,
+                       lisp_gc_stat_t * stat)
+{
+  stat->num_root =
+    lisp_dl_list_size(&gc->cons_color_map.white_root->objects) +
+    lisp_dl_list_size(&gc->cons_color_map.grey_root->objects) +
+    lisp_dl_list_size(&gc->cons_color_map.black_root->objects) +
+    lisp_dl_list_size(&gc->object_color_map.white_root->objects) +
+    lisp_dl_list_size(&gc->object_color_map.grey_root->objects) +
+    lisp_dl_list_size(&gc->object_color_map.black_root->objects);
+  stat->num_bulk =
+    lisp_dl_list_size(&gc->cons_color_map.white->objects) +
+    lisp_dl_list_size(&gc->cons_color_map.grey->objects) +
+    lisp_dl_list_size(&gc->cons_color_map.black->objects) +
+    lisp_dl_list_size(&gc->object_color_map.white->objects) +
+    lisp_dl_list_size(&gc->object_color_map.grey->objects) +
+    lisp_dl_list_size(&gc->object_color_map.black->objects);
+  stat->num_reachable = stat->num_bulk + stat->num_root;
+  /*
+    @todo implement
+    stat->num_allocated
+    size_t num_void
+    size_t num_disposed
+    size_t num_cycles
+    size_t num_leaves
+    size_t num_edges
+  */
 }

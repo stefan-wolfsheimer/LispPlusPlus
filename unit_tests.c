@@ -10,6 +10,7 @@ void test_dl_list(unit_context_t * ctx);
 /* core */
 void test_gc(unit_context_t * ctx);
 void test_cons(unit_context_t * ctx);
+void test_array(unit_context_t * ctx);
 
 int main(int argc, const char ** argv)
 {
@@ -23,6 +24,7 @@ int main(int argc, const char ** argv)
 
   test_gc(ctx);
   test_cons(ctx);
+  test_array(ctx);
 
   int parse_result = unit_parse_argv(ctx, argc, argv);
   if(parse_result == UNIT_ARGV_RUN) 

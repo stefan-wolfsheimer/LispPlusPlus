@@ -1,8 +1,10 @@
 #include "vm.h"
 #include "error.h"
 #include "cell.h"
-#include "cons.h"
 #include "tid.h"
+
+#include "cons.h"
+#include "array.h"
 
 int lisp_init_vm(lisp_vm_t * vm)
 {
@@ -45,6 +47,10 @@ int lisp_make_cons(lisp_vm_t * vm,
   int ret;
   cell->type_id = LISP_TID_CONS;
   cell->data.obj = lisp_gc_alloc_root_cons(&vm->gc);
+  if(!cell->data.obj)
+  {
+    return LISP_BAD_ALLOC;
+  }
   ret = _lisp_make_cons_cell(vm,
                              &((lisp_cons_t*)cell->data.obj)->car,
                              car);
@@ -58,4 +64,25 @@ int lisp_make_cons(lisp_vm_t * vm,
   {
     return ret;
   }
+}
+
+int lisp_make_array(lisp_vm_t * vm, lisp_cell_t * cell, size_t n)
+{
+  lisp_cell_t * cells;
+  size_t i;
+  cell->type_id = LISP_TID_ARRAY;
+  cell->data.obj = lisp_gc_alloc_root_object(&vm->gc,
+                                             sizeof(lisp_array_t) +
+                                             sizeof(lisp_cell_t) * n);
+  ((lisp_array_t*)cell->data.obj)->size = n;
+  if(!cell->data.obj)
+  {
+    return LISP_BAD_ALLOC;
+  }
+  cells = (lisp_cell_t*)&(((lisp_array_t*)cell->data.obj)[1]);
+  for(i=0; i < n; i++)
+  {
+    cells[i].type_id = LISP_TID_NIL;
+  }
+  return LISP_OK;
 }

@@ -28,68 +28,17 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#ifndef __LISP_CELL_H__
-#define __LISP_CELL_H__
+#ifndef __LIPS_ARRAY_H__
+#define __LIPS_ARRAY_H__
 #include <stddef.h>
+struct lisp_cell_t;
+struct lisp_type_t;
 
-typedef unsigned short int lisp_type_id_t;
-
-typedef struct lisp_cell_t
+typedef struct lisp_array_t
 {
-  lisp_type_id_t type_id;
-  union
-  {
-    void * obj;
-  } data;
-} lisp_cell_t;
+  size_t size;
+} lisp_array_t;
 
-extern lisp_cell_t lisp_nil;
-
-/**
- * Check for storage class of cell.
- *
- * @return true if cell has atomic storage class
- */
-int lisp_is_atomic(lisp_cell_t * cell);
-
-/**
- * Check for storage class of cell.
- *
- * @return true if cell has object storage class
- */
-int lisp_is_object(lisp_cell_t * cell);
-
-/**
- * Check for storage class of cell.
- *
- * @return true if cell has reference (imutable object) storage class
- */
-int lisp_is_reference(lisp_cell_t * cell);
-
-/**
- * Checks if cells has storage class of complex object, e.g. lisp_cons_t
- *
- * @return true if cell has complex object storage class
- */
-int lisp_is_complex(lisp_cell_t * cell);
-
-/**
- * Check if cell is cons
- *
- * @return true
- */
-int lisp_is_cons(lisp_cell_t * cell);
-
-struct lisp_cons_t * lisp_as_cons(lisp_cell_t * cell);
-
-int lisp_is_array(lisp_cell_t * cell);
-struct lisp_array_t * lisp_as_array(lisp_cell_t * cell);
-
-/**
- * get reference count for objects and complex objects.
- */
-size_t lisp_get_ref_count(lisp_cell_t * cell);
-
-int lisp_is_root_cell(lisp_cell_t * cell);
+int lisp_init_array_type(struct lisp_type_t * t);
 
 #endif

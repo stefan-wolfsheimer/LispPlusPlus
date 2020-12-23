@@ -1,6 +1,7 @@
 #include "tid.h"
 #include "error.h"
 #include "cons.h"
+#include "array.h"
 #include <stddef.h>
 
 #define EMPTY_TYPE { NULL, NULL, NULL, NULL, NULL, NULL }
@@ -21,6 +22,7 @@ int lisp_load_static_types()
   if(!is_loaded)
   {
     REGISTER_TYPE(LISP_TID_CONS, lisp_init_cons_type);
+    REGISTER_TYPE(LISP_TID_ARRAY, lisp_init_array_type);
     is_loaded = 1;
   }
   return ret;

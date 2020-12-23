@@ -28,4 +28,10 @@ int lisp_make_cons(lisp_vm_t * vm,
                    const struct lisp_cell_t * car,
                    const struct lisp_cell_t * cdr);
 
+/**
+ * Create an array as root.
+ */
+int lisp_make_array(lisp_vm_t * vm,
+                    struct lisp_cell_t * cell,
+                    size_t n);
 #endif

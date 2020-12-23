@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #ifndef __LISP_CELL_ITERATOR_H__
 #define __LISP_CELL_ITERATOR_H__
+#include <stddef.h>
 
 struct lisp_type_t;
 struct cell_t;
@@ -45,6 +46,7 @@ typedef struct lisp_cell_iterator_t
     /* type specific field,
        i.e. index for arrays
      */
+    size_t index;
   };
 } lisp_cell_iterator_t;
 

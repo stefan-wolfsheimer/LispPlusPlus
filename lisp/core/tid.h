@@ -39,6 +39,7 @@
 
 #define LISP_TID_NIL              (0x00 + 0)
 #define LISP_TID_CONS             (0xc0 + 1)
+#define LISP_TID_ARRAY            (0xc0 + 2)
 
 struct lisp_cell_t;
 struct lisp_cell_iterator_t;
