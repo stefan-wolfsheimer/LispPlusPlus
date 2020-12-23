@@ -31,9 +31,8 @@ either expressed or implied, of the FreeBSD Project.
 #ifndef __LISP_GC_ITERATOR_H__
 #define __LISP_GC_ITERATOR_H__
 #include "cell.h"
-
-struct  lisp_dl_item_t;
-struct lisp_gc_t * gc;
+struct lisp_dl_item_t;
+struct lisp_gc_t;
 
 /**
  * Iterator for all complex objects in garbage collector.
@@ -42,7 +41,6 @@ struct lisp_gc_t * gc;
 typedef struct lisp_gc_iterator_t
 {
   lisp_cell_t cell;
-
   int current_index;
   struct lisp_dl_item_t * current_item;
 } lisp_gc_iterator_t;
@@ -52,8 +50,14 @@ typedef struct lisp_gc_iterator_t
  */
 void lisp_gc_first(struct lisp_gc_t * gc, lisp_gc_iterator_t * itr);
 
-int lisp_gc_is_valid(lisp_gc_iterator_t * itr);
+/**
+ * @return true if iterator is valid
+ */
+int lisp_gc_iterator_is_valid(lisp_gc_iterator_t * itr);
 
+/**
+ * Iterate to the next object in garbage collector
+ */
 int lisp_gc_next(struct lisp_gc_t * gc, lisp_gc_iterator_t * itr);
 
 #endif

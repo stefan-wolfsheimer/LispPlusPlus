@@ -31,6 +31,7 @@ either expressed or implied, of the FreeBSD Project.
 #include "gc_iterator.h"
 #include "gc.h"
 #include "tid.h"
+#include "error.h"
 
 lisp_gc_collectible_list_t * _get_color_map_list(lisp_gc_t * gc, int index)
 {
@@ -68,7 +69,7 @@ lisp_gc_collectible_list_t * _get_color_map_list(lisp_gc_t * gc, int index)
   return NULL;
 }
 
-int lisp_gc_is_valid(lisp_gc_iterator_t * itr)
+int lisp_gc_iterator_is_valid(lisp_gc_iterator_t * itr)
 {
   return (itr->current_index < LISP_GC_NUM_COLORS * 4);
 }
@@ -97,7 +98,7 @@ void lisp_gc_first(lisp_gc_t * gc, lisp_gc_iterator_t * itr)
 
 int lisp_gc_next(lisp_gc_t * gc, lisp_gc_iterator_t * itr)
 {
-  if(lisp_gc_is_valid(itr))
+  if(lisp_gc_iterator_is_valid(itr))
   {
     itr->current_item = itr->current_item->next;
     if(itr->current_item)

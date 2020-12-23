@@ -67,7 +67,7 @@ int lisp_is_object(lisp_cell_t * cell);
 int lisp_is_reference(lisp_cell_t * cell);
 
 /**
- * Check for storage class of cell.
+ * Checks if cells has storage class of complex object, e.g. lisp_cons_t
  *
  * @return true if cell has complex object storage class
  */
@@ -79,6 +79,8 @@ int lisp_is_complex(lisp_cell_t * cell);
  * @return true
  */
 int lisp_is_cons(lisp_cell_t * cell);
+
+struct lisp_cons_t * lisp_as_cons(lisp_cell_t * cell);
 
 /**
  * get reference count for objects and complex objects.

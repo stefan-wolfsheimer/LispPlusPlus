@@ -1,6 +1,8 @@
 #include "gc.h"
 #include "gc_iterator.h"
+#include "cell_iterator.h"
 #include "error.h"
+#include "tid.h"
 #include <lisp/util/xmalloc.h>
 #include <lisp/core/cons.h>
 
@@ -108,7 +110,12 @@ inline static lisp_dl_item_t * _lisp_cons_as_dl_item(const lisp_cons_t * cons)
  ****************************************************************************/
 int lisp_init_gc(lisp_gc_t * gc)
 {
-  int ret = lisp_init_color_map(&gc->cons_color_map);
+  int ret = lisp_load_static_types();
+  if(ret != LISP_OK)
+  {
+    return ret;
+  }
+  ret = lisp_init_color_map(&gc->cons_color_map);
   if(ret != LISP_OK)
   {
     return ret;
@@ -200,9 +207,13 @@ static lisp_cons_t * _lisp_gc_alloc_cons(lisp_gc_t * gc,
   obj = (lisp_complex_object_t *)(((char*)item) + sizeof(lisp_dl_item_t));
   obj->lst = list;
   obj->ref_count = ref_count;
-  return (lisp_cons_t*)(((char*) item) +
-                        sizeof(lisp_dl_item_t) +
-                        sizeof(lisp_complex_object_t));
+  lisp_cons_t * ret = (lisp_cons_t*)((
+                                      (char*) item) +
+                                     sizeof(lisp_dl_item_t) +
+                                     sizeof(lisp_complex_object_t));
+  ret->car.type_id = LISP_TID_NIL;
+  ret->cdr.type_id = LISP_TID_NIL;
+  return ret;
 }
 
 lisp_cons_t * lisp_gc_alloc_cons(lisp_gc_t * gc)
@@ -304,19 +315,36 @@ int lisp_gc_check(lisp_gc_t * gc)
 {
   /* @todo: check consistency of children */
   lisp_gc_iterator_t itr;
+  lisp_cell_iterator_t citr;
+  lisp_complex_object_t * obj;
+  lisp_complex_object_t * parent_obj;
   size_t num_conses = 0;
   for(lisp_gc_first(gc, &itr);
-      lisp_gc_is_valid(&itr);
+      lisp_gc_iterator_is_valid(&itr);
       lisp_gc_next(gc, &itr))
   {
     if(lisp_is_cons(&itr.cell))
     {
       num_conses++;
     }
-    //if(lisp_cons_get_color(itr.cons) == LISP_GC_BLACK)
-    //{
-    /* for each children */
-    //}
+    parent_obj = _lisp_as_complex_object(itr.cell.data.obj);
+    for(lisp_first_child(&itr.cell, &citr);
+        lisp_cell_iterator_is_valid(&citr);
+        lisp_cell_next_child(&citr))
+    {
+      if(lisp_is_complex(citr.child))
+      {
+        if(parent_obj->lst->color == LISP_GC_BLACK)
+        {
+          obj = _lisp_as_complex_object(citr.child->data.obj);
+          if(obj->lst->color == LISP_GC_WHITE)
+          {
+            /* check if black has no white child */
+            return LISP_INVALID;
+          }
+        }
+      }
+    }
   }
   if(lisp_gc_num_allocated_conses(gc) !=
      (num_conses + lisp_gc_num_recycled_conses(gc)))
@@ -331,7 +359,7 @@ static void _lisp_gc_dump_humamn(FILE * fp, lisp_gc_t * gc)
   lisp_gc_iterator_t itr;
   size_t num_conses = 0;
   for(lisp_gc_first(gc, &itr);
-      lisp_gc_is_valid(&itr);
+      lisp_gc_iterator_is_valid(&itr);
       lisp_gc_next(gc, &itr))
   {
     if(lisp_is_cons(&itr.cell))

@@ -28,19 +28,42 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#ifndef __LIPS_CONS_H__
-#define __LIPS_CONS_H__
-#include <stddef.h>
-#include "cell.h"
+#ifndef __LISP_CELL_ITERATOR_H__
+#define __LISP_CELL_ITERATOR_H__
 
 struct lisp_type_t;
+struct cell_t;
 
-typedef struct lisp_cons_t
+typedef struct lisp_cell_iterator_t
 {
-  lisp_cell_t car;
-  lisp_cell_t cdr;
-} lisp_cons_t;
+  struct lisp_cell_t * parent;
+  struct lisp_cell_t * child;
+  struct lisp_type_t * type;
 
-int lisp_init_cons_type(struct lisp_type_t * t);
+  union
+  {
+    /* type specific field,
+       i.e. index for arrays
+     */
+  };
+} lisp_cell_iterator_t;
+
+/**
+ * Initialize cell iterator.
+ */
+int lisp_first_child(struct lisp_cell_t  * cell,
+                     lisp_cell_iterator_t * itr);
+
+
+/**
+ * @return true if iterator is valid
+ */
+int lisp_cell_iterator_is_valid(lisp_cell_iterator_t * itr);
+
+/**
+ * Iterate to the next child
+ */
+int lisp_cell_next_child(lisp_cell_iterator_t * itr);
+
 
 #endif

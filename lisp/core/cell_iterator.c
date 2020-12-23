@@ -28,19 +28,46 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#ifndef __LIPS_CONS_H__
-#define __LIPS_CONS_H__
-#include <stddef.h>
+#include "cell_iterator.h"
 #include "cell.h"
+#include "error.h"
+#include "tid.h"
 
-struct lisp_type_t;
-
-typedef struct lisp_cons_t
+int lisp_first_child(lisp_cell_t  * cell,
+                     lisp_cell_iterator_t * itr)
 {
-  lisp_cell_t car;
-  lisp_cell_t cdr;
-} lisp_cons_t;
+  itr->parent = cell;
+  itr->type = &lisp_static_types[cell->type_id];
+  if(itr->type->lisp_cell_first_child_ptr)
+  {
+    return itr->type->lisp_cell_first_child_ptr(itr);
+  }
+  else
+  {
+    return LISP_INVALID;
+  }
+}
 
-int lisp_init_cons_type(struct lisp_type_t * t);
+int lisp_cell_iterator_is_valid(lisp_cell_iterator_t * itr)
+{
+  if(itr->type->lisp_cell_child_iterator_is_valid_ptr)
+  {
+    return itr->type->lisp_cell_child_iterator_is_valid_ptr(itr);
+  }
+  else
+  {
+    return 0;
+  }
+}
 
-#endif
+int lisp_cell_next_child(lisp_cell_iterator_t * itr)
+{
+  if(itr->type->lisp_cell_next_child_ptr)
+  {
+    return itr->type->lisp_cell_next_child_ptr(itr);
+  }
+  else
+  {
+    return 0;
+  }
+}

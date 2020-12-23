@@ -60,7 +60,10 @@ typedef struct lisp_complex_object_t
 
 typedef struct lisp_gc_t
 {
+  /* active conses */
   lisp_gc_color_map_t cons_color_map;
+
+  /* active objects */
   lisp_gc_color_map_t object_color_map;
 
   /* cons memory */

@@ -32,6 +32,18 @@ int lisp_is_cons(lisp_cell_t * cell)
   return cell->type_id == LISP_TID_CONS;
 }
 
+struct lisp_cons_t * lisp_as_cons(lisp_cell_t * cell)
+{
+  if(cell->type_id == LISP_TID_CONS)
+  {
+    return (struct lisp_cons_t *)cell->data.obj;
+  }
+  else
+  {
+    return NULL;
+  }
+}
+
 size_t lisp_get_ref_count(lisp_cell_t * cell)
 {
   if(LISP_IS_STORAGE_COMPLEX_TID(cell->type_id))

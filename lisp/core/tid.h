@@ -1,6 +1,8 @@
 #ifndef __LIPS_TID_H__
 #define __LIPS_TID_H__
 
+#define LISP_NUM_TYPES 0x100
+
 /**
  * storage classes
  * 00 atom
@@ -37,5 +39,22 @@
 
 #define LISP_TID_NIL              (0x00 + 0)
 #define LISP_TID_CONS             (0xc0 + 1)
+
+struct lisp_cell_t;
+struct lisp_cell_iterator_t;
+
+typedef struct lisp_type_t
+{
+  int (*lisp_cell_first_child_ptr)(struct lisp_cell_iterator_t * itr);
+  int (*lisp_cell_child_iterator_is_valid_ptr)(struct lisp_cell_iterator_t * itr);
+  int (*lisp_cell_next_child_ptr)(struct lisp_cell_iterator_t * itr);
+} lisp_type_t;
+
+/**
+ * Ensure that static types are initialized.
+ */
+int lisp_load_static_types();
+
+extern lisp_type_t lisp_static_types[LISP_NUM_TYPES];
 
 #endif
