@@ -43,14 +43,6 @@ either expressed or implied, of the FreeBSD Project.
 #define ASSERT_LISP_OK(__TST__, __EXPR__) \
  ASSERT_EQ_I(__TST__, __EXPR__, LISP_OK);
 
- assertion_t * assertion_create_cmp_i(const char * file, 
-				     int          line,
-				     const char * lhs_expr,
-				     const char * rhs_expr,
-				     int          lhs,
-				     int          rhs,
-				     const char * cmp_op,
-				     int          only_on_failure);
 
 #define ASSERT_LISP_CHECK_GC(__TST__, __GC__)                           \
   if(!CHECK_EQ_I((__TST__), lisp_gc_check((__GC__)), LISP_OK))          \
