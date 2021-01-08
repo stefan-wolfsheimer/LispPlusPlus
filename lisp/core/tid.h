@@ -24,6 +24,10 @@
 #define LISP_STORAGE_REFERENCE    0x80
 #define LISP_STORAGE_COMPLEX      0xc0
 
+#define LISP_TID_NIL              (0x00 + 0)
+#define LISP_TID_CONS             (0xc0 + 0)
+#define LISP_TID_ARRAY            (0xc0 + 1)
+
 #define LISP_IS_STORAGE_ATOM_TID(TID)           \
   (((TID) & 0xc0) == LISP_STORAGE_ATOM)
 
@@ -36,16 +40,20 @@
 #define LISP_IS_STORAGE_COMPLEX_TID(TID)        \
   (((TID) & 0xc0) == LISP_STORAGE_COMPLEX)
 
+#define LISP_IS_CONS_TID(TID) ((TID) == LISP_TID_CONS)
+#define LISP_IS_NIL_TID(TID)  ((TID) == LISP_TID_NIL)
 
-#define LISP_TID_NIL              (0x00 + 0)
-#define LISP_TID_CONS             (0xc0 + 1)
-#define LISP_TID_ARRAY            (0xc0 + 2)
 
 struct lisp_cell_t;
 struct lisp_cell_iterator_t;
 
 typedef struct lisp_type_t
 {
+  /**
+   * This function is called before the
+   * memory is freed.
+   */
+  int (*lisp_destructor_ptr)(void * ptr);
   int (*lisp_cell_first_child_ptr)(struct lisp_cell_iterator_t * itr);
   int (*lisp_cell_child_iterator_is_valid_ptr)(struct lisp_cell_iterator_t * itr);
   int (*lisp_cell_next_child_ptr)(struct lisp_cell_iterator_t * itr);

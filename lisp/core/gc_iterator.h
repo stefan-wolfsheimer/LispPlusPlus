@@ -31,6 +31,7 @@ either expressed or implied, of the FreeBSD Project.
 #ifndef __LISP_GC_ITERATOR_H__
 #define __LISP_GC_ITERATOR_H__
 #include "cell.h"
+#include <lisp/util/hash_table.h>
 struct lisp_dl_item_t;
 struct lisp_gc_t;
 
@@ -44,6 +45,16 @@ typedef struct lisp_gc_iterator_t
   int current_index;
   struct lisp_dl_item_t * current_item;
 } lisp_gc_iterator_t;
+
+/**
+ * Iterator over all reachable conses / objects
+ */
+typedef struct lisp_gc_reachable_iterator_t
+{
+  hash_table_t todo;
+  hash_table_t root;
+  hash_table_entry_t * entry;
+} lisp_gc_reachable_iterator_t;
 
 /**
  * Initialize GC iterator.
@@ -60,4 +71,15 @@ int lisp_gc_iterator_is_valid(lisp_gc_iterator_t * itr);
  */
 int lisp_gc_next(struct lisp_gc_t * gc, lisp_gc_iterator_t * itr);
 
+/**
+ * Initialize GC reachable iterator.
+ */
+int lisp_init_gc_reachable_iterator(lisp_gc_reachable_iterator_t * itr);
+void lisp_free_gc_reachable_iterator(lisp_gc_reachable_iterator_t * itr);
+
+void lisp_gc_reachable_first(struct lisp_gc_t * gc,
+                             lisp_gc_reachable_iterator_t * itr);
+int lisp_gc_reachable_iterator_is_valid(lisp_gc_reachable_iterator_t * itr);
+int lisp_gc_reachable_next(struct lisp_gc_t * gc,
+                           lisp_gc_reachable_iterator_t * itr);
 #endif

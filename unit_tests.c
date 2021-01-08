@@ -6,8 +6,10 @@ void test_xmalloc(unit_context_t * ctx);
 void test_xstring(unit_context_t * ctx);
 void test_assertion(unit_context_t * ctx);
 void test_dl_list(unit_context_t * ctx);
+void test_hash_table(unit_context_t * ctx);
 
 /* core */
+void test_cell(unit_context_t * ctx);
 void test_gc(unit_context_t * ctx);
 void test_cons(unit_context_t * ctx);
 void test_array(unit_context_t * ctx);
@@ -21,7 +23,9 @@ int main(int argc, const char ** argv)
   test_xstring(ctx);
   test_test(ctx);
   test_dl_list(ctx);
+  test_hash_table(ctx);
 
+  test_cell(ctx);
   test_gc(ctx);
   test_cons(ctx);
   test_array(ctx);

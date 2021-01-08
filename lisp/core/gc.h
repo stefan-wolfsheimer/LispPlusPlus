@@ -13,6 +13,9 @@
 
 struct lisp_gc_iterator_t;
 
+/*@todo move to separate module */
+typedef unsigned short int lisp_type_id_t;
+
 /**
  * Color for 3-generation garbage collector
  */
@@ -54,8 +57,9 @@ typedef struct lisp_gc_color_map_t
  */
 typedef struct lisp_complex_object_t
 {
-  lisp_gc_collectible_list_t * lst;
+  lisp_gc_collectible_list_t * gc_list;
   size_t ref_count;
+  lisp_type_id_t type_id;
 } lisp_complex_object_t;
 
 typedef struct lisp_gc_t
@@ -99,13 +103,18 @@ typedef struct lisp_gc_stat_t
 
   /**
    * Number of allocated objects.
-   * The (num_allocated - num_reachable) is the number
+   * The (num_allocated - num_reachable - num_recyled) is the number
    * of unreachable objects.
    */
   size_t num_allocated;
 
   /**
-   * Void Conses that have been marked as unreachable.
+   * Number of recycled conses.
+   */
+  size_t num_recycled;
+
+  /**
+   * Void Conses that have not been used yet.
    */
   size_t num_void;
 
@@ -178,7 +187,7 @@ struct lisp_cons_t * lisp_gc_alloc_root_cons(lisp_gc_t * gc);
  *
  * @return pointer to object of size
  */
-void * lisp_gc_alloc_object(lisp_gc_t * gc, size_t size);
+void * lisp_gc_alloc_object(lisp_gc_t * gc, lisp_type_id_t tid, size_t size);
 
 /**
  * Allocate a root object
@@ -186,7 +195,7 @@ void * lisp_gc_alloc_object(lisp_gc_t * gc, size_t size);
  *
  * @return pointer to object of size
  */
-void * lisp_gc_alloc_root_object(lisp_gc_t * gc, size_t size);
+void * lisp_gc_alloc_root_object(lisp_gc_t * gc, lisp_type_id_t tid, size_t size);
 
 /**
  * free lisp_cons_t object allocated lisp_gc_alloc_cons.

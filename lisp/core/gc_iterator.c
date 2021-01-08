@@ -29,6 +29,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include "gc_iterator.h"
+#include "cell_iterator.h"
 #include "gc.h"
 #include "tid.h"
 #include "error.h"
@@ -74,6 +75,24 @@ int lisp_gc_iterator_is_valid(lisp_gc_iterator_t * itr)
   return (itr->current_index < LISP_GC_NUM_COLORS * 4);
 }
 
+static void _init_cell(lisp_gc_iterator_t * itr)
+{
+  if(itr->current_index < LISP_GC_NUM_COLORS * 2)
+  {
+    itr->cell.type_id = LISP_TID_CONS;
+    itr->cell.data.obj = (((char*) itr->current_item) +
+                          sizeof(lisp_dl_item_t));
+  }
+  else
+  {
+    lisp_complex_object_t * obj =
+      (lisp_complex_object_t *)
+      (((char*) itr->current_item) + sizeof(lisp_dl_item_t));
+    itr->cell.type_id = obj->type_id;
+    itr->cell.data.obj = (obj + 1);
+  }
+}
+
 void lisp_gc_first(lisp_gc_t * gc, lisp_gc_iterator_t * itr)
 {
   lisp_gc_collectible_list_t * lst;
@@ -86,11 +105,7 @@ void lisp_gc_first(lisp_gc_t * gc, lisp_gc_iterator_t * itr)
     if(!lisp_dl_list_empty(&lst->objects))
     {
       itr->current_item = lst->objects.first;
-      /* @todo other types if i >= LISP_GC_NUM_COLOR * 2*/
-      itr->cell.type_id = LISP_TID_CONS;
-      itr->cell.data.obj = (((char*) itr->current_item) +
-                            sizeof(lisp_dl_item_t) +
-                            sizeof(lisp_complex_object_t));
+      _init_cell(itr);
       return;
     }
   }
@@ -103,6 +118,7 @@ int lisp_gc_next(lisp_gc_t * gc, lisp_gc_iterator_t * itr)
     itr->current_item = itr->current_item->next;
     if(itr->current_item)
     {
+      _init_cell(itr);
       return 1;
     }
     else
@@ -117,6 +133,7 @@ int lisp_gc_next(lisp_gc_t * gc, lisp_gc_iterator_t * itr)
         if(!lisp_dl_list_empty(&lst->objects))
         {
           itr->current_item = lst->objects.first;
+          _init_cell(itr);
           return 1;
         }
       }
@@ -125,3 +142,93 @@ int lisp_gc_next(lisp_gc_t * gc, lisp_gc_iterator_t * itr)
   return 0;
 }
 
+/* reachable iterator */
+int lisp_init_gc_reachable_iterator(lisp_gc_reachable_iterator_t * itr)
+{
+  int ret = lisp_init_cell_hash_table(&itr->todo);
+  if(ret != LISP_OK)
+  {
+    return ret;
+  }
+  ret = lisp_init_cell_hash_table(&itr->root);
+  return ret;
+}
+
+void lisp_free_gc_reachable_iterator(lisp_gc_reachable_iterator_t * itr)
+{
+  lisp_free_cell_hash_table(&itr->todo);
+  lisp_free_cell_hash_table(&itr->root);
+}
+
+void lisp_gc_reachable_first(struct lisp_gc_t * gc,
+                             lisp_gc_reachable_iterator_t * itr)
+{
+  int i;
+  lisp_gc_collectible_list_t * lst;
+  lisp_dl_item_t * item;
+  lisp_cell_t cell;
+  itr->entry = NULL;
+  for(i = 0; i < 3; i++)
+  {
+    lst = _get_color_map_list(gc, i);
+    item = lst->objects.first;
+    while(item)
+    {
+      cell.type_id = LISP_TID_CONS;
+      cell.data.obj = (((char*) item) + sizeof(lisp_dl_item_t));
+      lisp_cell_hash_table_set(&itr->todo, &cell);
+      item = item->next;
+    }
+  }
+  /* @todo other objects */
+  for(i = 0; i < 3; i++)
+  {
+    lst = _get_color_map_list(gc, LISP_GC_NUM_COLORS * 2 + i);
+  }
+  itr->entry = HASH_TABLE_FIRST(&itr->todo);
+}
+
+int lisp_gc_reachable_iterator_is_valid(lisp_gc_reachable_iterator_t * itr)
+{
+  return (itr->entry != NULL);
+}
+
+int lisp_gc_reachable_next(struct lisp_gc_t * gc,
+                           lisp_gc_reachable_iterator_t * itr)
+{
+  if(itr->entry != NULL)
+  {
+    lisp_cell_iterator_t citr;
+    lisp_cell_t * cell;
+    cell = lisp_cell_hash_table_set(&itr->root,
+                                    HASH_TABLE_DATA(itr->entry, lisp_cell_t));
+    lisp_cell_hash_table_remove(&itr->todo,
+                                HASH_TABLE_DATA(itr->entry, lisp_cell_t));
+    for(lisp_first_child(cell, &citr);
+        lisp_cell_iterator_is_valid(&citr);
+        lisp_cell_next_child(&citr))
+    {
+      if(!lisp_cell_in_hash(&itr->todo, citr.child) &&
+         !lisp_cell_in_hash(&itr->root, citr.child))
+      {
+        if(LISP_IS_STORAGE_COMPLEX_TID(citr.child->type_id))
+        {
+          lisp_cell_hash_table_set(&itr->todo, citr.child);
+        }
+      }
+    }
+    itr->entry = HASH_TABLE_FIRST(&itr->todo);
+    if(itr->entry != NULL)
+    {
+      return 1;
+    }
+    else
+    {
+      return 0;
+    }
+  }
+  else
+  {
+    return 0;
+  }
+}

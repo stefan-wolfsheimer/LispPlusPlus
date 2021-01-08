@@ -4,4 +4,5 @@ add_library( TestUtil
   xstring.c
   test.c
   dl_list.c
+  hash_table.c
   )

@@ -35,6 +35,11 @@ either expressed or implied, of the FreeBSD Project.
 #include "tid.h"
 #include <assert.h>
 
+static int _array_destructor(void * ptr)
+{
+  return LISP_OK;
+}
+
 static int _array_first_child(lisp_cell_iterator_t * itr)
 {
   assert(lisp_is_array(itr->parent));
@@ -76,6 +81,7 @@ static int _array_next_child(lisp_cell_iterator_t * itr)
 
 int lisp_init_array_type(struct lisp_type_t * t)
 {
+  t->lisp_destructor_ptr = _array_destructor;
   t->lisp_cell_first_child_ptr = _array_first_child;
   t->lisp_cell_child_iterator_is_valid_ptr = _array_iterator_is_valid;
   t->lisp_cell_next_child_ptr = _array_next_child;

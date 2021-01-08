@@ -5,6 +5,8 @@
 #include "tid.h"
 #include <lisp/util/xmalloc.h>
 #include <lisp/core/cons.h>
+#include <lisp/util/hash_table.h>
+#include <lisp/util/murmur_hash3.h>
 
 #define DEFAULT_PAGE_SIZE 1024
 
@@ -112,9 +114,7 @@ lisp_complex_object_t* _lisp_as_complex_object(const void * cons_or_other_object
 
 inline static lisp_dl_item_t * _lisp_cons_as_dl_item(const lisp_cons_t * cons)
 {
-  return (lisp_dl_item_t*) (((char*)cons) -
-                            sizeof(lisp_complex_object_t) -
-                            sizeof(lisp_dl_item_t));
+  return (lisp_dl_item_t*) (((char*)cons) - sizeof(lisp_dl_item_t));
 }
 
 /*****************************************************************************
@@ -213,7 +213,6 @@ static lisp_cons_t * _lisp_gc_alloc_cons(lisp_gc_t * gc,
                                          size_t ref_count)
 {
   lisp_dl_item_t * item;
-  lisp_complex_object_t * obj;
   if(!lisp_dl_list_empty(&gc->recycled_conses))
   {
     item = gc->recycled_conses.first;
@@ -224,7 +223,6 @@ static lisp_cons_t * _lisp_gc_alloc_cons(lisp_gc_t * gc,
     if(gc->cons_pos >= gc->cons_page_size)
     {
       gc->current_cons_page = MALLOC((sizeof(lisp_dl_item_t) +
-                                      sizeof(lisp_complex_object_t) +
                                       sizeof(lisp_cons_t)) * gc->cons_page_size);
       gc->cons_pages = REALLOC(gc->cons_pages,
                                sizeof(void*) * (gc->num_cons_pages + 1));
@@ -239,18 +237,15 @@ static lisp_cons_t * _lisp_gc_alloc_cons(lisp_gc_t * gc,
                              (char*) gc->current_cons_page +
                              ((
                                sizeof(lisp_dl_item_t) +
-                               sizeof(lisp_complex_object_t) +
                                sizeof(lisp_cons_t)) *
                               gc->cons_pos++));
   }
   lisp_dl_list_append(&list->objects, item);
-  obj = (lisp_complex_object_t *)(((char*)item) + sizeof(lisp_dl_item_t));
-  obj->lst = list;
-  obj->ref_count = ref_count;
   lisp_cons_t * ret = (lisp_cons_t*)((
                                       (char*) item) +
-                                     sizeof(lisp_dl_item_t) +
-                                     sizeof(lisp_complex_object_t));
+                                     sizeof(lisp_dl_item_t));
+  ret->ref_count = ref_count;
+  ret->gc_list = list;
   ret->car.type_id = LISP_TID_NIL;
   ret->cdr.type_id = LISP_TID_NIL;
   return ret;
@@ -272,6 +267,7 @@ lisp_cons_t * lisp_gc_alloc_root_cons(lisp_gc_t * gc)
 
 static void * _lisp_gc_alloc_object(lisp_gc_t * gc,
                                     lisp_gc_collectible_list_t * list,
+                                    lisp_type_id_t tid,
                                     size_t size,
                                     size_t ref_count)
 {
@@ -282,32 +278,35 @@ static void * _lisp_gc_alloc_object(lisp_gc_t * gc,
                                   size);
   lisp_dl_list_append(&list->objects, item);
   obj = (lisp_complex_object_t *)(((char*)item) + sizeof(lisp_dl_item_t));
-  obj->lst = list;
+  obj->gc_list = list;
   obj->ref_count = ref_count;
+  obj->type_id = tid;
   return (((char*) item) +
           sizeof(lisp_dl_item_t) +
           sizeof(lisp_complex_object_t));
 }
 
-void * lisp_gc_alloc_object(lisp_gc_t * gc, size_t size)
+void * lisp_gc_alloc_object(lisp_gc_t * gc, lisp_type_id_t tid, size_t size)
 {
   return _lisp_gc_alloc_object(gc,
                                gc->object_color_map.white,
+                               tid,
                                size,
                                0u);
 }
 
-void * lisp_gc_alloc_root_object(lisp_gc_t * gc, size_t size)
+void * lisp_gc_alloc_root_object(lisp_gc_t * gc, lisp_type_id_t tid, size_t size)
 {
   return _lisp_gc_alloc_object(gc,
                                gc->object_color_map.white_root,
+                               tid,
                                size,
                                1u);
 }
 
 void lisp_gc_free_cons(lisp_gc_t * gc, lisp_cons_t * cons)
 {
-  lisp_dl_list_remove(&_lisp_as_complex_object(cons)->lst->objects,
+  lisp_dl_list_remove(&cons->gc_list->objects,
                       _lisp_cons_as_dl_item(cons));
   lisp_dl_list_append(&gc->recycled_conses,
                       _lisp_cons_as_dl_item(cons));
@@ -318,12 +317,12 @@ void lisp_gc_free_cons(lisp_gc_t * gc, lisp_cons_t * cons)
  ****************************************************************************/
 lisp_gc_color_t lisp_cons_get_color(const lisp_cons_t * cons)
 {
-  return _lisp_as_complex_object(cons)->lst->color;
+  return cons->gc_list->color;
 }
 
 short int lisp_cons_is_root(const lisp_cons_t * cons)
 {
-  return _lisp_as_complex_object(cons)->lst->is_root;
+  return cons->gc_list->is_root;
 }
 
 size_t lisp_gc_num_conses(lisp_gc_t * gc)
@@ -353,6 +352,9 @@ size_t lisp_gc_num_recycled_conses(lisp_gc_t * gc)
  ****************************************************************************/
 int lisp_gc_check(lisp_gc_t * gc)
 {
+  lisp_gc_stat_t stat;
+  lisp_gc_get_stats(gc, &stat);
+
   lisp_gc_iterator_t itr;
   lisp_cell_iterator_t citr;
   lisp_complex_object_t * obj;
@@ -373,10 +375,10 @@ int lisp_gc_check(lisp_gc_t * gc)
     {
       if(lisp_is_complex(citr.child))
       {
-        if(parent_obj->lst->color == LISP_GC_BLACK)
+        if(parent_obj->gc_list->color == LISP_GC_BLACK)
         {
           obj = _lisp_as_complex_object(citr.child->data.obj);
-          if(obj->lst->color == LISP_GC_WHITE)
+          if(obj->gc_list->color == LISP_GC_WHITE)
           {
             /* check if black has no white child */
             return LISP_INVALID;
@@ -426,6 +428,8 @@ void lisp_gc_dump(FILE * fp, lisp_gc_t * gc, int mode)
 void lisp_gc_get_stats(lisp_gc_t * gc,
                        lisp_gc_stat_t * stat)
 {
+  lisp_gc_reachable_iterator_t ritr;
+  lisp_init_gc_reachable_iterator(&ritr);
   stat->num_root =
     lisp_dl_list_size(&gc->cons_color_map.white_root->objects) +
     lisp_dl_list_size(&gc->cons_color_map.grey_root->objects) +
@@ -433,21 +437,30 @@ void lisp_gc_get_stats(lisp_gc_t * gc,
     lisp_dl_list_size(&gc->object_color_map.white_root->objects) +
     lisp_dl_list_size(&gc->object_color_map.grey_root->objects) +
     lisp_dl_list_size(&gc->object_color_map.black_root->objects);
-  stat->num_bulk =
+  stat->num_allocated =
+    stat->num_root +
     lisp_dl_list_size(&gc->cons_color_map.white->objects) +
     lisp_dl_list_size(&gc->cons_color_map.grey->objects) +
     lisp_dl_list_size(&gc->cons_color_map.black->objects) +
     lisp_dl_list_size(&gc->object_color_map.white->objects) +
     lisp_dl_list_size(&gc->object_color_map.grey->objects) +
     lisp_dl_list_size(&gc->object_color_map.black->objects);
-  stat->num_reachable = stat->num_bulk + stat->num_root;
+  stat->num_reachable = 0;
+  for(lisp_gc_reachable_first(gc, &ritr);
+      lisp_gc_reachable_iterator_is_valid(&ritr);
+      lisp_gc_reachable_next(gc, &ritr))
+  {
+    stat->num_reachable++;
+  }
+  stat->num_bulk = stat->num_reachable - stat->num_root;
+  stat->num_recycled = lisp_dl_list_size(&gc->recycled_conses);
+  stat->num_void = (gc->cons_page_size - gc->cons_pos);
   /*
     @todo implement
-    stat->num_allocated
-    size_t num_void
     size_t num_disposed
     size_t num_cycles
     size_t num_leaves
     size_t num_edges
   */
+  lisp_free_gc_reachable_iterator(&ritr);
 }

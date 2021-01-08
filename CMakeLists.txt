@@ -70,9 +70,8 @@ IF(CMAKE_BUILD_TYPE MATCHES Debug)
   target_link_libraries(unit_tests
     TestUtil
     TestCore
-    Util
     LispCore
-
+    Util
     )
 ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
 

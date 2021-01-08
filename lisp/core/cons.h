@@ -34,9 +34,13 @@ either expressed or implied, of the FreeBSD Project.
 #include "cell.h"
 
 struct lisp_type_t;
+struct lisp_gc_collectible_list_t;
 
 typedef struct lisp_cons_t
 {
+  struct lisp_gc_collectible_list_t * gc_list;
+  size_t ref_count;
+
   lisp_cell_t car;
   lisp_cell_t cdr;
 } lisp_cons_t;

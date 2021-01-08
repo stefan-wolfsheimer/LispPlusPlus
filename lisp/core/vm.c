@@ -72,6 +72,7 @@ int lisp_make_array(lisp_vm_t * vm, lisp_cell_t * cell, size_t n)
   size_t i;
   cell->type_id = LISP_TID_ARRAY;
   cell->data.obj = lisp_gc_alloc_root_object(&vm->gc,
+                                             LISP_TID_ARRAY,
                                              sizeof(lisp_array_t) +
                                              sizeof(lisp_cell_t) * n);
   ((lisp_array_t*)cell->data.obj)->size = n;
