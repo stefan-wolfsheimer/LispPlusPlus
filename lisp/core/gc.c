@@ -104,33 +104,8 @@ static int lisp_erase_list(lisp_gc_collectible_list_t * lst)
 }
 
 /*****************************************************************************
- lisp_cons_t cast functions
+ cast functions
  ****************************************************************************/
-#if 0
-//  struct lisp_gc_collectible_list_t * gc_list;
-size_t lisp_get_ref_count(lisp_cell_t * cell)
-{
-  if(LISP_IS_CONS_TID(cell->type_id))
-  {
-    return ((lisp_cons_t*)cell->data.obj)->ref_count;
-  }
-  else if(LISP_IS_STORAGE_COMPLEX_TID(cell->type_id))
-  {
-    return ((lisp_complex_object_t*)cell->data.obj)[-1].ref_count;
-  }
-  else
-  {
-    return 0;
-  }
-}
-#endif
-
-lisp_complex_object_t* _lisp_as_complex_object(const void * cons_or_other_object)
-{
-  return (lisp_complex_object_t*)(((char*)cons_or_other_object) -
-                                  sizeof(lisp_complex_object_t));
-}
-
 inline static lisp_dl_item_t * _lisp_cons_as_dl_item(const lisp_cons_t * cons)
 {
   return (lisp_dl_item_t*) (((char*)cons) - sizeof(lisp_dl_item_t));
@@ -161,6 +136,7 @@ int lisp_init_gc(lisp_gc_t * gc)
   gc->num_cons_pages = 0;
   gc->cons_pos = DEFAULT_PAGE_SIZE;
   gc->cons_page_size = DEFAULT_PAGE_SIZE;
+  gc->num_cycles = 0;
   return LISP_OK;
 }
 
@@ -437,7 +413,8 @@ void lisp_gc_get_stats(lisp_gc_t * gc,
   stat->error_black_has_white_child = 0;
   stat->num_leaves = 0;
   stat->num_edges = 0;
-
+  stat->num_leaves = 0;
+  stat->num_cycles = gc->num_cycles;
   stat->num_root =
     lisp_dl_list_size(&gc->cons_color_map.white_root->objects) +
     lisp_dl_list_size(&gc->cons_color_map.grey_root->objects) +
@@ -473,6 +450,10 @@ void lisp_gc_get_stats(lisp_gc_t * gc,
         }
         stat->num_edges++;
       }
+      else
+      {
+        stat->num_leaves++;
+      }
     }
   }
   stat->num_bulk = stat->num_reachable - stat->num_root;
@@ -481,9 +462,6 @@ void lisp_gc_get_stats(lisp_gc_t * gc,
   /*
     @todo implement
     size_t num_disposed
-    size_t num_cycles
-    size_t num_leaves
-    size_t num_edges
   */
   lisp_free_gc_reachable_iterator(&ritr);
 }

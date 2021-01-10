@@ -67,6 +67,8 @@ typedef struct lisp_gc_t
   size_t num_cons_pages;
   size_t cons_pos;
 
+  /* number of cycles */
+  size_t num_cycles;
 } lisp_gc_t;
 
 /**
