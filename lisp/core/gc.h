@@ -4,27 +4,16 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stddef.h>
+#include "gc_color.h"
 
 /* dump modes for garbage collector dump function */
 #define LISP_GC_DUMP_SILENT 0
 #define LISP_GC_DUMP_HUMAN 1
 
-#define LISP_GC_NUM_COLORS 3
-
 struct lisp_gc_iterator_t;
 
 /*@todo move to separate module */
 typedef unsigned short int lisp_type_id_t;
-
-/**
- * Color for 3-generation garbage collector
- */
-typedef enum lisp_gc_color_t
-{ 
-  LISP_GC_WHITE = 0,
-  LISP_GC_GREY  = 1,
-  LISP_GC_BLACK = 2
-} lisp_gc_color_t;
 
 /**
  * List of objects in garbage collector
@@ -140,6 +129,10 @@ typedef struct lisp_gc_stat_t
    */
   size_t num_edges;
 
+  /**
+   * Error flags
+   */
+  int error_black_has_white_child;
 } lisp_gc_stat_t;
 
 

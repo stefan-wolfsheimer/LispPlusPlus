@@ -31,6 +31,7 @@ either expressed or implied, of the FreeBSD Project.
 #ifndef __LISP_CELL_H__
 #define __LISP_CELL_H__
 #include <stddef.h>
+#include "gc_color.h"
 
 struct hash_table_t;
 
@@ -53,47 +54,65 @@ extern lisp_cell_t lisp_nil;
  *
  * @return true if cell has atomic storage class
  */
-int lisp_is_atomic(lisp_cell_t * cell);
+int lisp_is_atomic(const lisp_cell_t * cell);
 
 /**
  * Check for storage class of cell.
  *
  * @return true if cell has object storage class
  */
-int lisp_is_object(lisp_cell_t * cell);
+int lisp_is_object(const lisp_cell_t * cell);
 
 /**
  * Check for storage class of cell.
  *
  * @return true if cell has reference (imutable object) storage class
  */
-int lisp_is_reference(lisp_cell_t * cell);
+int lisp_is_reference(const lisp_cell_t * cell);
 
 /**
- * Checks if cells has storage class of complex object, e.g. lisp_cons_t
+ * Checks if cell has storage class of complex object, e.g. array
  *
  * @return true if cell has complex object storage class
  */
-int lisp_is_complex(lisp_cell_t * cell);
+int lisp_is_complex(const lisp_cell_t * cell);
 
 /**
  * Check if cell is cons
  *
  * @return true
  */
-int lisp_is_cons(lisp_cell_t * cell);
+int lisp_is_cons(const lisp_cell_t * cell);
+
+/**
+ * Checks if cell has storage class of complex object, e.g. array
+ *
+ * @return true if cell has complex object storage class or cons
+ */
+int lisp_is_complex_or_cons(const lisp_cell_t * cell);
 
 struct lisp_cons_t * lisp_as_cons(lisp_cell_t * cell);
 
-int lisp_is_array(lisp_cell_t * cell);
+int lisp_is_array(const lisp_cell_t * cell);
 struct lisp_array_t * lisp_as_array(lisp_cell_t * cell);
 
 /**
- * get reference count for objects and complex objects.
+ * get reference count for objects,
+ * conses and complex objects.
  */
-size_t lisp_get_ref_count(lisp_cell_t * cell);
+size_t lisp_get_ref_count(const lisp_cell_t * cell);
 
-int lisp_is_root_cell(lisp_cell_t * cell);
+/**
+ * Returns true if cell is atomic, object or reference.
+ * If cell is complex or cons, returns if object is in root set.
+ */
+int lisp_is_root_cell(const lisp_cell_t * cell);
+
+/**
+ * Return color of cell object if object is complex or cons.
+ * NO_COLOR otherwise.
+ */
+lisp_gc_color_t lisp_get_cell_color(const lisp_cell_t * cell);
 
 /** Hash table for cells */
 int lisp_init_cell_hash_table(struct hash_table_t * ht);

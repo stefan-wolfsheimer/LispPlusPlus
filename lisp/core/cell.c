@@ -11,34 +11,39 @@ lisp_cell_t lisp_nil =
  type_id : LISP_TID_NIL
 };
 
-int lisp_is_atomic(lisp_cell_t * cell)
+int lisp_is_atomic(const lisp_cell_t * cell)
 {
   return LISP_IS_STORAGE_ATOM_TID(cell->type_id);
 }
 
-int lisp_is_object(lisp_cell_t * cell)
+int lisp_is_object(const lisp_cell_t * cell)
 {
   return LISP_IS_STORAGE_OBJECT_TID(cell->type_id);
 }
 
-int lisp_is_reference(lisp_cell_t * cell)
+int lisp_is_reference(const lisp_cell_t * cell)
 {
   return LISP_IS_STORAGE_REFERENCE_TID(cell->type_id);
 }
 
-int lisp_is_complex(lisp_cell_t * cell)
+int lisp_is_complex(const lisp_cell_t * cell)
 {
   return LISP_IS_STORAGE_COMPLEX_TID(cell->type_id);
 }
 
-int lisp_is_cons(lisp_cell_t * cell)
+int lisp_is_cons(const lisp_cell_t * cell)
 {
-  return cell->type_id == LISP_TID_CONS;
+  return LISP_IS_STORAGE_CONS_TID(cell->type_id);
+}
+
+int lisp_is_complex_or_cons(const lisp_cell_t * cell)
+{
+  return LISP_IS_STORAGE_COMPLEX_OR_CONS(cell->type_id);
 }
 
 struct lisp_cons_t * lisp_as_cons(lisp_cell_t * cell)
 {
-  if(LISP_IS_CONS_TID(cell->type_id))
+  if(LISP_IS_STORAGE_CONS_TID(cell->type_id))
   {
     return (struct lisp_cons_t *)cell->data.obj;
   }
@@ -48,7 +53,7 @@ struct lisp_cons_t * lisp_as_cons(lisp_cell_t * cell)
   }
 }
 
-int lisp_is_array(lisp_cell_t * cell)
+int lisp_is_array(const lisp_cell_t * cell)
 {
   return cell->type_id == LISP_TID_ARRAY;
 }
@@ -63,12 +68,11 @@ struct lisp_array_t * lisp_as_array(lisp_cell_t * cell)
   {
     return NULL;
   }
-
 }
 
-size_t lisp_get_ref_count(lisp_cell_t * cell)
+size_t lisp_get_ref_count(const lisp_cell_t * cell)
 {
-  if(LISP_IS_CONS_TID(cell->type_id))
+  if(LISP_IS_STORAGE_CONS_TID(cell->type_id))
   {
     return ((lisp_cons_t*)cell->data.obj)->ref_count;
   }
@@ -82,9 +86,9 @@ size_t lisp_get_ref_count(lisp_cell_t * cell)
   }
 }
 
-int lisp_is_root_cell(lisp_cell_t * cell)
+int lisp_is_root_cell(const lisp_cell_t * cell)
 {
-  if(LISP_IS_CONS_TID(cell->type_id))
+  if(LISP_IS_STORAGE_CONS_TID(cell->type_id))
   {
     return ((lisp_cons_t*)cell->data.obj)->gc_list->is_root;
   }
@@ -95,6 +99,22 @@ int lisp_is_root_cell(lisp_cell_t * cell)
   else
   {
     return 1;
+  }
+}
+
+lisp_gc_color_t lisp_get_cell_color(const lisp_cell_t * cell)
+{
+  if(LISP_IS_STORAGE_CONS_TID(cell->type_id))
+  {
+    return ((lisp_cons_t*)cell->data.obj)->gc_list->color;
+  }
+  else if(LISP_IS_STORAGE_COMPLEX_TID(cell->type_id))
+  {
+    return ((lisp_complex_object_t*)cell->data.obj)[-1].gc_list->color;
+  }
+  else
+  {
+    return LISP_GC_NO_COLOR;
   }
 }
 
@@ -109,7 +129,7 @@ static int _lisp_cell_eq(const void * a, const void * b)
       /* two NIL are always equal*/
       return 1;
     }
-    if(LISP_IS_CONS_TID(__AS_CELL__(a)->type_id))
+    if(LISP_IS_STORAGE_COMPLEX_OR_CONS(__AS_CELL__(a)->type_id))
     {
       return __AS_CELL__(a)->data.obj == __AS_CELL__(b)->data.obj;
     }
@@ -148,7 +168,7 @@ static hash_code_t _lisp_cell_hash_function(const void * a)
     murmur_hash3_x86_32(data, 1, seed, &value);
     return value;
   }
-  else if(LISP_IS_CONS_TID(__AS_CELL__(a)->type_id))
+  else if(LISP_IS_STORAGE_COMPLEX_OR_CONS(__AS_CELL__(a)->type_id))
   {
     data[0] = __AS_CELL__(a)->type_id;
     _lisp_hash_init_data(data + 1,
@@ -172,7 +192,7 @@ static int _lisp_cell_hash_entry_constructor(void * target,
   lisp_cell_t * cell = (lisp_cell_t*)target;
   cell->type_id = __AS_CELL__(src)->type_id;
   if(LISP_IS_STORAGE_REFERENCE_TID(cell->type_id) ||
-     LISP_IS_STORAGE_COMPLEX_TID(cell->type_id))
+     LISP_IS_STORAGE_COMPLEX_OR_CONS(cell->type_id))
   {
     cell->data.obj = __AS_CELL__(src)->data.obj;
   }
@@ -213,7 +233,7 @@ lisp_cell_t * lisp_cell_hash_table_find_or_insert(hash_table_t * ht,
 lisp_cell_t * lisp_cell_hash_table_set(hash_table_t * ht,
                                        const lisp_cell_t * cell)
 {
-  return (lisp_cell_t*)hash_table_set(ht, cell, sizeof(cell));
+  return (lisp_cell_t*)hash_table_set(ht, cell, sizeof(lisp_cell_t));
 }
 
 int lisp_cell_hash_table_remove(struct hash_table_t * ht,

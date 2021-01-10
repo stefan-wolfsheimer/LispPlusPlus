@@ -54,6 +54,7 @@ typedef struct lisp_gc_reachable_iterator_t
   hash_table_t todo;
   hash_table_t root;
   hash_table_entry_t * entry;
+  lisp_cell_t cell;
 } lisp_gc_reachable_iterator_t;
 
 /**

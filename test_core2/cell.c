@@ -52,6 +52,7 @@ static void test_cell_hash_table(unit_test_t * tst)
   lisp_cell_t * item3;
   lisp_cell_t * item4;
   lisp_cell_t * item5;
+  lisp_cell_t * item6;
   hash_table_t ht;
   memcheck_begin();
 
@@ -59,34 +60,43 @@ static void test_cell_hash_table(unit_test_t * tst)
   input1.data.obj = &cons1;
   input2.type_id = LISP_TID_CONS;
   input2.data.obj = &cons2;
-  
-  ASSERT_LISP_OK(tst, lisp_init_cell_hash_table(&ht));
-  inserted = 0;
 
+  ASSERT_LISP_OK(tst, lisp_init_cell_hash_table(&ht));
+
+  inserted = 0;
   item1 = lisp_cell_hash_table_find_or_insert(&ht, &lisp_nil, &inserted);
   ASSERT(tst, inserted);
-  inserted = 0;
 
+  inserted = 0;
   item2 = lisp_cell_hash_table_find_or_insert(&ht, &lisp_nil, &inserted);
   ASSERT_EQ_PTR(tst, item1, item2);
   ASSERT_FALSE(tst, inserted);
 
-  item3 = lisp_cell_hash_table_find_or_insert(&ht, &input1, &inserted);
-  ASSERT(tst, lisp_is_cons(item3));
-  ASSERT_EQ_PTR(tst, item3->data.obj, &cons1);
-  ASSERT(tst, inserted);
-  
-  item4 = lisp_cell_hash_table_find_or_insert(&ht, &input2, &inserted);
+  inserted = 0;
+  item3 = lisp_cell_hash_table_find_or_insert(&ht, item1, &inserted);
+  ASSERT_EQ_PTR(tst, item1, item3);
+  ASSERT_EQ_PTR(tst, item2, item3);
+  ASSERT_FALSE(tst, inserted);
+
+  inserted = 0;
+  item4 = lisp_cell_hash_table_find_or_insert(&ht, &input1, &inserted);
   ASSERT(tst, lisp_is_cons(item4));
-  ASSERT_EQ_PTR(tst, item4->data.obj, &cons2);
+  ASSERT_EQ_PTR(tst, item4->data.obj, &cons1);
   ASSERT(tst, inserted);
 
+  inserted = 0;
   item5 = lisp_cell_hash_table_find_or_insert(&ht, &input2, &inserted);
   ASSERT(tst, lisp_is_cons(item5));
   ASSERT_EQ_PTR(tst, item5->data.obj, &cons2);
+  ASSERT(tst, inserted);
+
+  inserted = 0;
+  item6 = lisp_cell_hash_table_find_or_insert(&ht, &input2, &inserted);
+  ASSERT(tst, lisp_is_cons(item6));
+  ASSERT_EQ_PTR(tst, item6->data.obj, &cons2);
   ASSERT_FALSE(tst, inserted);
-  ASSERT_EQ_PTR(tst, item5, item4);
-  
+  ASSERT_EQ_PTR(tst, item6, item5);
+
   lisp_free_cell_hash_table(&ht);
   ASSERT_MEMCHECK(tst);
   memcheck_end();

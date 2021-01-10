@@ -106,6 +106,25 @@ static int lisp_erase_list(lisp_gc_collectible_list_t * lst)
 /*****************************************************************************
  lisp_cons_t cast functions
  ****************************************************************************/
+#if 0
+//  struct lisp_gc_collectible_list_t * gc_list;
+size_t lisp_get_ref_count(lisp_cell_t * cell)
+{
+  if(LISP_IS_CONS_TID(cell->type_id))
+  {
+    return ((lisp_cons_t*)cell->data.obj)->ref_count;
+  }
+  else if(LISP_IS_STORAGE_COMPLEX_TID(cell->type_id))
+  {
+    return ((lisp_complex_object_t*)cell->data.obj)[-1].ref_count;
+  }
+  else
+  {
+    return 0;
+  }
+}
+#endif
+
 lisp_complex_object_t* _lisp_as_complex_object(const void * cons_or_other_object)
 {
   return (lisp_complex_object_t*)(((char*)cons_or_other_object) -
@@ -352,14 +371,15 @@ size_t lisp_gc_num_recycled_conses(lisp_gc_t * gc)
  ****************************************************************************/
 int lisp_gc_check(lisp_gc_t * gc)
 {
+  /* @todo more checks */
   lisp_gc_stat_t stat;
-  lisp_gc_get_stats(gc, &stat);
-
   lisp_gc_iterator_t itr;
-  lisp_cell_iterator_t citr;
-  lisp_complex_object_t * obj;
-  lisp_complex_object_t * parent_obj;
   size_t num_conses = 0;
+  lisp_gc_get_stats(gc, &stat);
+  if(stat.error_black_has_white_child)
+  {
+    return LISP_INVALID;
+  }
   for(lisp_gc_first(gc, &itr);
       lisp_gc_iterator_is_valid(&itr);
       lisp_gc_next(gc, &itr))
@@ -367,24 +387,6 @@ int lisp_gc_check(lisp_gc_t * gc)
     if(lisp_is_cons(&itr.cell))
     {
       num_conses++;
-    }
-    parent_obj = _lisp_as_complex_object(itr.cell.data.obj);
-    for(lisp_first_child(&itr.cell, &citr);
-        lisp_cell_iterator_is_valid(&citr);
-        lisp_cell_next_child(&citr))
-    {
-      if(lisp_is_complex(citr.child))
-      {
-        if(parent_obj->gc_list->color == LISP_GC_BLACK)
-        {
-          obj = _lisp_as_complex_object(citr.child->data.obj);
-          if(obj->gc_list->color == LISP_GC_WHITE)
-          {
-            /* check if black has no white child */
-            return LISP_INVALID;
-          }
-        }
-      }
     }
   }
   if(lisp_gc_num_allocated_conses(gc) !=
@@ -429,7 +431,13 @@ void lisp_gc_get_stats(lisp_gc_t * gc,
                        lisp_gc_stat_t * stat)
 {
   lisp_gc_reachable_iterator_t ritr;
+  lisp_cell_iterator_t citr;
+  lisp_gc_color_t parent_color;
   lisp_init_gc_reachable_iterator(&ritr);
+  stat->error_black_has_white_child = 0;
+  stat->num_leaves = 0;
+  stat->num_edges = 0;
+
   stat->num_root =
     lisp_dl_list_size(&gc->cons_color_map.white_root->objects) +
     lisp_dl_list_size(&gc->cons_color_map.grey_root->objects) +
@@ -451,6 +459,21 @@ void lisp_gc_get_stats(lisp_gc_t * gc,
       lisp_gc_reachable_next(gc, &ritr))
   {
     stat->num_reachable++;
+    parent_color = lisp_get_cell_color(&ritr.cell);
+    for(lisp_first_child(&ritr.cell, &citr);
+        lisp_cell_iterator_is_valid(&citr);
+        lisp_cell_next_child(&citr))
+    {
+      if(lisp_is_complex_or_cons(citr.child))
+      {
+        if(parent_color == LISP_GC_BLACK &&
+           lisp_get_cell_color(citr.child) == LISP_GC_WHITE)
+        {
+          stat->error_black_has_white_child = 1;
+        }
+        stat->num_edges++;
+      }
+    }
   }
   stat->num_bulk = stat->num_reachable - stat->num_root;
   stat->num_recycled = lisp_dl_list_size(&gc->recycled_conses);

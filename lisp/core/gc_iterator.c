@@ -145,6 +145,7 @@ int lisp_gc_next(lisp_gc_t * gc, lisp_gc_iterator_t * itr)
 /* reachable iterator */
 int lisp_init_gc_reachable_iterator(lisp_gc_reachable_iterator_t * itr)
 {
+  itr->cell = lisp_nil;
   int ret = lisp_init_cell_hash_table(&itr->todo);
   if(ret != LISP_OK)
   {
@@ -186,6 +187,14 @@ void lisp_gc_reachable_first(struct lisp_gc_t * gc,
     lst = _get_color_map_list(gc, LISP_GC_NUM_COLORS * 2 + i);
   }
   itr->entry = HASH_TABLE_FIRST(&itr->todo);
+  if(itr->entry != NULL)
+  {
+    itr->cell = *HASH_TABLE_DATA(itr->entry, lisp_cell_t);
+  }
+  else
+  {
+    itr->cell = lisp_nil;
+  }
 }
 
 int lisp_gc_reachable_iterator_is_valid(lisp_gc_reachable_iterator_t * itr)
@@ -220,15 +229,18 @@ int lisp_gc_reachable_next(struct lisp_gc_t * gc,
     itr->entry = HASH_TABLE_FIRST(&itr->todo);
     if(itr->entry != NULL)
     {
+      itr->cell = *HASH_TABLE_DATA(itr->entry, lisp_cell_t);
       return 1;
     }
     else
     {
+      itr->cell = lisp_nil;
       return 0;
     }
   }
   else
   {
+    itr->cell = lisp_nil;
     return 0;
   }
 }
