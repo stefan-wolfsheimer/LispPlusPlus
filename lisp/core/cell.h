@@ -114,18 +114,4 @@ int lisp_is_root_cell(const lisp_cell_t * cell);
  */
 lisp_gc_color_t lisp_get_cell_color(const lisp_cell_t * cell);
 
-/** Hash table for cells */
-int lisp_init_cell_hash_table(struct hash_table_t * ht);
-void lisp_free_cell_hash_table(struct hash_table_t * ht);
-
-lisp_cell_t * lisp_cell_hash_table_find_or_insert(struct hash_table_t * ht,
-                                                  const lisp_cell_t * cell,
-                                                  int * inserted);
-lisp_cell_t * lisp_cell_hash_table_set(struct hash_table_t * ht,
-                                       const lisp_cell_t * cell);
-int lisp_cell_hash_table_remove(struct hash_table_t * ht,
-                                const lisp_cell_t * cell);
-int lisp_cell_in_hash(struct hash_table_t * ht,
-                      const lisp_cell_t * cell);
-
 #endif

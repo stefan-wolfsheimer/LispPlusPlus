@@ -32,6 +32,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <lisp/util/xmalloc.h>
 #include <lisp/util/hash_table.h>
 #include <lisp/core/cell.h>
+#include <lisp/core/cell_hash_table.h>
 #include <lisp/core/cons.h>
 #include <lisp/core/error.h>
 #include <lisp/core/tid.h>

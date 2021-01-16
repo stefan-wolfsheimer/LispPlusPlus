@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #include "gc_iterator.h"
 #include "cell_iterator.h"
+#include "cell_hash_table.h"
 #include "gc.h"
 #include "tid.h"
 #include "error.h"
