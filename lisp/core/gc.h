@@ -223,14 +223,6 @@ short int lisp_gc_cons_step(lisp_gc_t * gc);
  */
 short int lisp_gc_object_step(lisp_gc_t * gc);
 
-/*****************************************************************************
- Garbage collector operation
- ****************************************************************************/
-/**
- * If cons is in white list move it to grey list
- */
-void lisp_gc_grey_cons(struct lisp_cons_t * cons);
-
 /****************************************************************************
  lisp_cons_t properties and GC statistics
  ****************************************************************************/

@@ -57,6 +57,28 @@ int lisp_cons_set_car(lisp_cons_t * cons,
 int lisp_cons_set_cdr(lisp_cons_t * cons,
                       lisp_cell_t * cdr);
 
+/**
+ * Move cons from root to bulk set
+ */
+void lisp_cons_unset(lisp_cons_t * cons);
+
+/**
+ * @todo move to cons module
+ * Get the color of the cons in the 3 generation garbage collector.
+ */
+lisp_gc_color_t lisp_cons_get_color(const struct lisp_cons_t * cons);
+
+/**
+ * @todo move to cons module
+ * Return true value if cons is in the root set
+ */
+short int lisp_cons_is_root(const struct lisp_cons_t * cons);
+
+/**
+ * If cons is in white list move it to grey list
+ */
+void lisp_cons_grey(lisp_cons_t * cons);
+
 int lisp_init_cons_type(struct lisp_type_t * t);
 
 #endif

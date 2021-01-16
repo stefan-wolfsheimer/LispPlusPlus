@@ -233,7 +233,7 @@ static void test_gc_alloc_root_cons(unit_test_t * tst)
   memcheck_end();
 }
 
-static void test_gc_cons_collection(unit_test_t * tst)
+static void test_vm_make_cons_of_conses(unit_test_t * tst)
 {
   lisp_vm_t vm;
   lisp_cell_t root1;
@@ -281,6 +281,18 @@ static void test_gc_cons_collection(unit_test_t * tst)
   ASSERT(tst, lisp_get_cell_color(&child2) == LISP_GC_GREY);
   ASSERT_EQ_U(tst, lisp_get_ref_count(&root1), 1u);
   ASSERT_LISP_CHECK_GC(tst, &vm.gc);
+  ASSERT(tst, lisp_get_cell_color(&child2) == LISP_GC_GREY);
+
+  /* unset child1, child2 */
+  ASSERT_LISP_OK(tst, lisp_unset(&child1));
+  ASSERT_LISP_OK(tst, lisp_unset(&child2));
+  ASSERT_EQ_U(tst, lisp_get_ref_count(&child1), 0u);
+  ASSERT_EQ_U(tst, lisp_get_ref_count(&child2), 0u);
+  ASSERT_FALSE(tst, lisp_is_root_cell(&child1));
+  ASSERT_FALSE(tst, lisp_is_root_cell(&child2));
+  ASSERT_LISP_CHECK_GC(tst, &vm.gc);
+
+  /* @todo gc statistics */
 
   ASSERT_LISP_OK(tst, lisp_free_vm(&vm));
   ASSERT_MEMCHECK(tst);
@@ -293,6 +305,6 @@ void test_gc(unit_context_t * ctx)
    unit_suite_t * suite = unit_create_suite(ctx, "gc");
    TEST(suite, test_gc_alloc_cons);
    TEST(suite, test_gc_alloc_root_cons);
-   TEST(suite, test_gc_cons_collection);
+   TEST(suite, test_vm_make_cons_of_conses);
 }
 

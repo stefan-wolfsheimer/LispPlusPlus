@@ -2,7 +2,6 @@
 #include "error.h"
 #include "cell.h"
 #include "tid.h"
-
 #include "cons.h"
 #include "array.h"
 
@@ -30,7 +29,7 @@ static int _lisp_make_cons_cell(lisp_vm_t * vm,
     else if(LISP_IS_STORAGE_CONS_TID(source->type_id))
     {
       /* ensure that child is not white. */
-      lisp_gc_grey_cons((lisp_cons_t*)source->data.obj);
+      lisp_cons_grey((lisp_cons_t*)source->data.obj);
       target->type_id = source->type_id;
       target->data = source->data;
       return LISP_OK;

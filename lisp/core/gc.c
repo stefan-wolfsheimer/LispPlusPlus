@@ -330,18 +330,6 @@ static inline short int _lisp_gc_object_step(lisp_gc_t * gc)
   return 0;
 }
 
-void lisp_gc_grey_cons(struct lisp_cons_t * cons)
-{
-  if(cons->gc_list->grey_elements != NULL)
-  {
-    lisp_dl_list_remove(&cons->gc_list->objects,
-                        _lisp_cons_as_dl_item(cons));
-    cons->gc_list = cons->gc_list->grey_elements;
-    lisp_dl_list_append(&cons->gc_list->objects,
-                        _lisp_cons_as_dl_item(cons));
-  }
-}
-
 void lisp_gc_step(lisp_gc_t * gc)
 {
   short int swapable = 1;
@@ -366,21 +354,9 @@ short int lisp_gc_object_step(lisp_gc_t * gc)
   return _lisp_gc_object_step(gc);
 }
 
-
-
 /****************************************************************************
  lisp_cons_t properties and GC statistics
  ****************************************************************************/
-lisp_gc_color_t lisp_cons_get_color(const lisp_cons_t * cons)
-{
-  return cons->gc_list->color;
-}
-
-short int lisp_cons_is_root(const lisp_cons_t * cons)
-{
-  return cons->gc_list->is_root;
-}
-
 size_t lisp_gc_num_conses(lisp_gc_t * gc)
 {
   return lisp_gc_num_allocated_conses(gc) - lisp_gc_num_recycled_conses(gc);

@@ -114,4 +114,9 @@ int lisp_is_root_cell(const lisp_cell_t * cell);
  */
 lisp_gc_color_t lisp_get_cell_color(const lisp_cell_t * cell);
 
+/**
+ * Reset to nil.
+ */
+int lisp_unset(lisp_cell_t * cell);
+
 #endif
