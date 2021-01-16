@@ -276,7 +276,7 @@ static void test_gc_cons_collection(unit_test_t * tst)
                                 &child2));
   ASSERT(tst, lisp_is_cons(&root1));
   ASSERT(tst, lisp_is_root_cell(&root1));
-  ASSERT(tst, lisp_get_cell_color(&root1) ==  LISP_GC_WHITE);
+  ASSERT(tst, lisp_get_cell_color(&root1) == LISP_GC_WHITE);
   ASSERT(tst, lisp_get_cell_color(&child1) == LISP_GC_GREY);
   ASSERT(tst, lisp_get_cell_color(&child2) == LISP_GC_GREY);
   ASSERT_EQ_U(tst, lisp_get_ref_count(&root1), 1u);
