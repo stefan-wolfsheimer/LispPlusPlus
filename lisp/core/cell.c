@@ -33,6 +33,7 @@ int lisp_is_complex(const lisp_cell_t * cell)
 
 int lisp_is_cons(const lisp_cell_t * cell)
 {
+  /* @todo distinguish between cons and cons-like type */
   return LISP_IS_STORAGE_CONS_TID(cell->type_id);
 }
 

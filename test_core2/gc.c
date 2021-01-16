@@ -31,6 +31,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <lisp/util/unit_test.h>
 #include <lisp/util/xmalloc.h>
 #include <lisp/core/gc.h>
+#include <lisp/core/vm.h>
 #include <lisp/core/cons.h>
 #include <lisp/core/error.h>
 
@@ -57,6 +58,7 @@ static void test_gc_alloc_cons(unit_test_t * tst)
   lisp_gc_t gc;
   memcheck_begin();
   ASSERT_LISP_OK(tst, lisp_init_gc(&gc));
+  lisp_gc_set_steps(&gc, 0);
   ASSERT_LISP_CHECK_GC(tst, &gc);
   ASSERT_LISP_OK(tst, lisp_gc_set_cons_page_size(&gc, 4));
   ASSERT_EQ_I(tst, gc.num_cons_pages, 0u);
@@ -146,6 +148,7 @@ static void test_gc_alloc_root_cons(unit_test_t * tst)
   lisp_gc_t gc;
   memcheck_begin();
   ASSERT_LISP_OK(tst, lisp_init_gc(&gc));
+  lisp_gc_set_steps(&gc, 0);
   ASSERT_LISP_CHECK_GC(tst, &gc);
   ASSERT_LISP_OK(tst, lisp_gc_set_cons_page_size(&gc, 4));
   ASSERT_EQ_I(tst, gc.num_cons_pages, 0u);
@@ -230,11 +233,66 @@ static void test_gc_alloc_root_cons(unit_test_t * tst)
   memcheck_end();
 }
 
+static void test_gc_cons_collection(unit_test_t * tst)
+{
+  lisp_vm_t vm;
+  lisp_cell_t root1;
+  lisp_cell_t child1;
+  lisp_cell_t child2;
+
+  memcheck_begin();
+  ASSERT_LISP_OK(tst, lisp_init_vm(&vm));
+  lisp_gc_set_steps(&vm.gc, 0);
+
+  /* create first child */
+  ASSERT_LISP_OK(tst,
+                 lisp_make_cons(&vm,
+                                &child1,
+                                &lisp_nil,
+                                &lisp_nil));
+  ASSERT(tst, lisp_is_cons(&child1));
+  ASSERT(tst, lisp_is_root_cell(&child1));
+  ASSERT(tst, lisp_get_cell_color(&child1) == LISP_GC_WHITE);
+  ASSERT_EQ_U(tst, lisp_get_ref_count(&child1), 1u);
+  ASSERT_LISP_CHECK_GC(tst, &vm.gc);
+
+  /* create second child */
+  ASSERT_LISP_OK(tst,
+                 lisp_make_cons(&vm,
+                                &child2,
+                                &lisp_nil,
+                                &lisp_nil));
+  ASSERT(tst, lisp_is_cons(&child2));
+  ASSERT(tst, lisp_is_root_cell(&child2));
+  ASSERT(tst, lisp_get_cell_color(&child2) == LISP_GC_WHITE);
+  ASSERT_EQ_U(tst, lisp_get_ref_count(&child2), 1u);
+  ASSERT_LISP_CHECK_GC(tst, &vm.gc);
+
+  /* create cons(child1, child2)  */
+  ASSERT_LISP_OK(tst,
+                 lisp_make_cons(&vm,
+                                &root1,
+                                &child1,
+                                &child2));
+  ASSERT(tst, lisp_is_cons(&root1));
+  ASSERT(tst, lisp_is_root_cell(&root1));
+  ASSERT(tst, lisp_get_cell_color(&root1) ==  LISP_GC_WHITE);
+  ASSERT(tst, lisp_get_cell_color(&child1) == LISP_GC_GREY);
+  ASSERT(tst, lisp_get_cell_color(&child2) == LISP_GC_GREY);
+  ASSERT_EQ_U(tst, lisp_get_ref_count(&root1), 1u);
+  ASSERT_LISP_CHECK_GC(tst, &vm.gc);
+
+  ASSERT_LISP_OK(tst, lisp_free_vm(&vm));
+  ASSERT_MEMCHECK(tst);
+  memcheck_end();
+}
+
 
 void test_gc(unit_context_t * ctx)
 {
    unit_suite_t * suite = unit_create_suite(ctx, "gc");
    TEST(suite, test_gc_alloc_cons);
    TEST(suite, test_gc_alloc_root_cons);
+   TEST(suite, test_gc_cons_collection);
 }
 

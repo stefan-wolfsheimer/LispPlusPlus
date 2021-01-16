@@ -34,6 +34,18 @@ either expressed or implied, of the FreeBSD Project.
 #include "cell_iterator.h"
 #include <assert.h>
 
+int lisp_cons_set_car(lisp_cons_t * cons,
+                      lisp_cell_t * car)
+{
+  return LISP_NOT_IMPLEMENTED;
+}
+
+int lisp_cons_set_cdr(lisp_cons_t * cons,
+                      lisp_cell_t * cdr)
+{
+  return LISP_NOT_IMPLEMENTED;
+}
+
 static int _cons_first_child(lisp_cell_iterator_t * itr)
 {
   assert(lisp_is_cons(itr->parent));

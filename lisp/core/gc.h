@@ -69,6 +69,7 @@ typedef struct lisp_gc_t
 
   /* number of cycles */
   size_t num_cycles;
+  size_t num_steps;
 } lisp_gc_t;
 
 /**
@@ -151,6 +152,12 @@ int lisp_init_gc(lisp_gc_t * gc);
  */
 int lisp_free_gc(lisp_gc_t * gc);
 
+/**
+ * Defines the number of GC steps per allocation.
+ * @return old value
+ */
+size_t lisp_gc_set_steps(lisp_gc_t * gc, size_t n);
+
 /*****************************************************************************
  lisp_cons_t memory management functions
  ****************************************************************************/
@@ -200,15 +207,41 @@ void * lisp_gc_alloc_root_object(lisp_gc_t * gc, lisp_type_id_t tid, size_t size
  */
 void lisp_gc_free_cons(lisp_gc_t * gc, struct lisp_cons_t * cons);
 
+/*****************************************************************************
+ Garbage collector operation
+ ****************************************************************************/
+/**
+ * @todo implement function
+ */
+void lisp_gc_step(lisp_gc_t * gc);
+/**
+ * @todo implement function
+ */
+short int lisp_gc_cons_step(lisp_gc_t * gc);
+/**
+ * @todo implement function
+ */
+short int lisp_gc_object_step(lisp_gc_t * gc);
+
+/*****************************************************************************
+ Garbage collector operation
+ ****************************************************************************/
+/**
+ * If cons is in white list move it to grey list
+ */
+void lisp_gc_grey_cons(struct lisp_cons_t * cons);
+
 /****************************************************************************
  lisp_cons_t properties and GC statistics
  ****************************************************************************/
 /**
+ * @todo move to cons module
  * Get the color of the cons in the 3 generation garbage collector.
  */
 lisp_gc_color_t lisp_cons_get_color(const struct lisp_cons_t * cons);
 
 /**
+ * @todo move to cons module
  * Return true value if cons is in the root set
  */
 short int lisp_cons_is_root(const struct lisp_cons_t * cons);

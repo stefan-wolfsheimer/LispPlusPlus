@@ -137,6 +137,7 @@ int lisp_init_gc(lisp_gc_t * gc)
   gc->cons_pos = DEFAULT_PAGE_SIZE;
   gc->cons_page_size = DEFAULT_PAGE_SIZE;
   gc->num_cycles = 0;
+  gc->num_steps = 1;
   return LISP_OK;
 }
 
@@ -183,6 +184,13 @@ int lisp_free_gc(lisp_gc_t * gc)
     return ret;
   }
   ret = lisp_free_color_map(&gc->object_color_map);
+  return ret;
+}
+
+size_t lisp_gc_set_steps(lisp_gc_t * gc, size_t n)
+{
+  size_t ret = gc->num_steps;
+  gc->num_steps = n;
   return ret;
 }
 
@@ -306,6 +314,59 @@ void lisp_gc_free_cons(lisp_gc_t * gc, lisp_cons_t * cons)
   lisp_dl_list_append(&gc->recycled_conses,
                       _lisp_cons_as_dl_item(cons));
 }
+
+/*****************************************************************************
+ Garbage collector operation
+ ****************************************************************************/
+static inline short int _lisp_gc_cons_step(lisp_gc_t * gc)
+{
+  /* @todo implement function */
+  return 0;
+}
+
+static inline short int _lisp_gc_object_step(lisp_gc_t * gc)
+{
+  /* @todo implement function */
+  return 0;
+}
+
+void lisp_gc_grey_cons(struct lisp_cons_t * cons)
+{
+  if(cons->gc_list->grey_elements != NULL)
+  {
+    lisp_dl_list_remove(&cons->gc_list->objects,
+                        _lisp_cons_as_dl_item(cons));
+    cons->gc_list = cons->gc_list->grey_elements;
+    lisp_dl_list_append(&cons->gc_list->objects,
+                        _lisp_cons_as_dl_item(cons));
+  }
+}
+
+void lisp_gc_step(lisp_gc_t * gc)
+{
+  short int swapable = 1;
+  swapable &= _lisp_gc_cons_step(gc);
+  swapable &= _lisp_gc_object_step(gc);
+  if(swapable)
+  {
+    gc->num_cycles++;
+    /*
+      @todo implement swap
+    */
+  }
+}
+
+short int lisp_gc_cons_step(lisp_gc_t * gc)
+{
+  return _lisp_gc_cons_step(gc);
+}
+
+short int lisp_gc_object_step(lisp_gc_t * gc)
+{
+  return _lisp_gc_object_step(gc);
+}
+
+
 
 /****************************************************************************
  lisp_cons_t properties and GC statistics

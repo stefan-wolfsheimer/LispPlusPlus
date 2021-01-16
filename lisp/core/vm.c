@@ -27,8 +27,17 @@ static int _lisp_make_cons_cell(lisp_vm_t * vm,
       target->type_id = source->type_id;
       target->data = source->data;
     }
+    else if(LISP_IS_STORAGE_CONS_TID(source->type_id))
+    {
+      /* ensure that child is not white. */
+      lisp_gc_grey_cons((lisp_cons_t*)source->data.obj);
+      target->type_id = source->type_id;
+      target->data = source->data;
+      return LISP_OK;
+    }
     else
     {
+      /*@todo implement other types */
       return LISP_NOT_IMPLEMENTED;
     }
   }

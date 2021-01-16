@@ -45,6 +45,18 @@ typedef struct lisp_cons_t
   lisp_cell_t cdr;
 } lisp_cons_t;
 
+/**
+ * Set the car cell of the cons
+ */
+int lisp_cons_set_car(lisp_cons_t * cons,
+                      lisp_cell_t * car);
+
+/**
+ * Set the cdr cell of the cons
+ */
+int lisp_cons_set_cdr(lisp_cons_t * cons,
+                      lisp_cell_t * cdr);
+
 int lisp_init_cons_type(struct lisp_type_t * t);
 
 #endif
