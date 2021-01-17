@@ -32,11 +32,9 @@ either expressed or implied, of the FreeBSD Project.
 #define __LISP_CELL_H__
 #include <stddef.h>
 #include "gc_color.h"
+#include "typedefs.h"
 
 struct hash_table_t;
-
-/*@todo move to separate module */
-typedef unsigned short int lisp_type_id_t;
 
 typedef struct lisp_cell_t
 {

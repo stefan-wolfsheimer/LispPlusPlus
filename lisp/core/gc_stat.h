@@ -1,5 +1,5 @@
 /******************************************************************************
-Copyright (c) 2020, Stefan Wolfsheimer
+Copyright (c) 2021, Stefan Wolfsheimer
 
 All rights reserved.
 
@@ -28,55 +28,73 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#ifndef __LIPS_CONS_H__
-#define __LIPS_CONS_H__
-#include <stddef.h>
-#include "cell.h"
+#ifndef __LISP_GC_STAT_H__
+#define __LISP_GC_STAT_H__
 
-struct lisp_type_t;
-struct lisp_gc_collectible_list_t;
-
-typedef struct lisp_cons_t
+/**
+ * Garbage collector statistics
+ */
+typedef struct lisp_gc_stat_t
 {
-  struct lisp_gc_collectible_list_t * gc_list;
-  size_t ref_count;
+  /**
+   * Number of root objects (directly reachable)
+   */
+  size_t num_root;
 
-  lisp_cell_t car;
-  lisp_cell_t cdr;
-} lisp_cons_t;
+  /**
+   * Number of bulk objects (reachable from root)
+   */
+  size_t num_bulk;
 
-/**
- * Set the car cell of the cons
- */
-int lisp_cons_set_car(lisp_cons_t * cons,
-                      lisp_cell_t * car);
+  /**
+   * Total number of objects.
+   * num_reachable = num_root + num_bulk;
+   */
+  size_t num_reachable;
 
-/**
- * Set the cdr cell of the cons
- */
-int lisp_cons_set_cdr(lisp_cons_t * cons,
-                      lisp_cell_t * cdr);
+  /**
+   * Number of allocated objects.
+   * The (num_allocated - num_reachable - num_recyled) is the number
+   * of unreachable objects.
+   */
+  size_t num_allocated;
 
-/**
- * Move cons from root to bulk set
- */
-void lisp_cons_unset(lisp_cons_t * cons);
+  /**
+   * Number of recycled conses.
+   */
+  size_t num_recycled;
 
-/**
- * Get the color of the cons in the 3 generation garbage collector.
- */
-lisp_gc_color_t lisp_cons_get_color(const lisp_cons_t * cons);
+  /**
+   * Void Conses that have not been used yet.
+   */
+  size_t num_void;
 
-/**
- * Return true value if cons is in the root set
- */
-short int lisp_cons_is_root(const lisp_cons_t * cons);
+  /**
+   * Void Conses that have been marked as unreachable.
+   */
+  size_t num_disposed;
 
-/**
- * If cons is in white list move it to grey list
- */
-void lisp_cons_grey(lisp_cons_t * cons);
+  /**
+   * Number of full garbage collector cycles
+   */
+  size_t num_cycles;
 
-int lisp_init_cons_type(struct lisp_type_t * t);
+
+  /**
+   * Number of leave nodes of the reachibility graph.
+   * That is the number of child objects that are not a complex object
+   */
+  size_t num_leaves;
+
+  /**
+   * Number of edges of the dependency graph.
+   */
+  size_t num_edges;
+
+  /**
+   * Error flags
+   */
+  int error_black_has_white_child;
+} lisp_gc_stat_t;
 
 #endif

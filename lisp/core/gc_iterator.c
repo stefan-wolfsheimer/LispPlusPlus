@@ -28,12 +28,13 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#include "gc_iterator.h"
-#include "cell_iterator.h"
-#include "cell_hash_table.h"
 #include "gc.h"
 #include "tid.h"
 #include "error.h"
+#include "gc_iterator.h"
+#include "cell_iterator.h"
+#include "cell_hash_table.h"
+#include "complex_object.h"
 
 lisp_gc_collectible_list_t * _get_color_map_list(lisp_gc_t * gc, int index)
 {

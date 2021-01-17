@@ -28,55 +28,35 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#ifndef __LIPS_CONS_H__
-#define __LIPS_CONS_H__
-#include <stddef.h>
-#include "cell.h"
+#ifndef __LISP_GC_COLOR_MAP_H__
+#define __LISP_GC_COLOR_MAP_H__
+#include <lisp/util/dl_list.h>
+#include "gc_color.h"
 
-struct lisp_type_t;
-struct lisp_gc_collectible_list_t;
-
-typedef struct lisp_cons_t
+/**
+ * List of objects in garbage collector
+ * generation.
+ */
+typedef struct lisp_gc_collectible_list_t
 {
-  struct lisp_gc_collectible_list_t * gc_list;
-  size_t ref_count;
+  lisp_dl_list_t objects;
+  lisp_gc_color_t color;
+  short int is_root;
+  struct lisp_gc_collectible_list_t * other_elements;
+  struct lisp_gc_collectible_list_t * grey_elements;
+  struct lisp_gc_collectible_list_t * to_elements;
+} lisp_gc_collectible_list_t;
 
-  lisp_cell_t car;
-  lisp_cell_t cdr;
-} lisp_cons_t;
+typedef struct lisp_gc_color_map_t
+{
+  lisp_gc_collectible_list_t * white;
+  lisp_gc_collectible_list_t * grey;
+  lisp_gc_collectible_list_t * black;
 
-/**
- * Set the car cell of the cons
- */
-int lisp_cons_set_car(lisp_cons_t * cons,
-                      lisp_cell_t * car);
+  lisp_gc_collectible_list_t * white_root;
+  lisp_gc_collectible_list_t * grey_root;
+  lisp_gc_collectible_list_t * black_root;
 
-/**
- * Set the cdr cell of the cons
- */
-int lisp_cons_set_cdr(lisp_cons_t * cons,
-                      lisp_cell_t * cdr);
-
-/**
- * Move cons from root to bulk set
- */
-void lisp_cons_unset(lisp_cons_t * cons);
-
-/**
- * Get the color of the cons in the 3 generation garbage collector.
- */
-lisp_gc_color_t lisp_cons_get_color(const lisp_cons_t * cons);
-
-/**
- * Return true value if cons is in the root set
- */
-short int lisp_cons_is_root(const lisp_cons_t * cons);
-
-/**
- * If cons is in white list move it to grey list
- */
-void lisp_cons_grey(lisp_cons_t * cons);
-
-int lisp_init_cons_type(struct lisp_type_t * t);
+} lisp_gc_color_map_t;
 
 #endif

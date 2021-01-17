@@ -1,12 +1,15 @@
-#include "gc.h"
-#include "gc_iterator.h"
-#include "cell_iterator.h"
-#include "error.h"
-#include "tid.h"
 #include <lisp/util/xmalloc.h>
 #include <lisp/core/cons.h>
 #include <lisp/util/hash_table.h>
 #include <lisp/util/murmur_hash3.h>
+#include "gc.h"
+#include "gc_iterator.h"
+#include "gc_stat.h"
+#include "cell_iterator.h"
+#include "error.h"
+#include "tid.h"
+#include "complex_object.h"
+
 
 #define DEFAULT_PAGE_SIZE 1024
 

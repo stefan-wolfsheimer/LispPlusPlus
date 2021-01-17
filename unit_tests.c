@@ -10,7 +10,7 @@ void test_hash_table(unit_context_t * ctx);
 
 /* core */
 void test_cell(unit_context_t * ctx);
-void test_gc(unit_context_t * ctx);
+void test_vm(unit_context_t * ctx);
 void test_cons(unit_context_t * ctx);
 void test_array(unit_context_t * ctx);
 
@@ -26,7 +26,7 @@ int main(int argc, const char ** argv)
   test_hash_table(ctx);
 
   test_cell(ctx);
-  test_gc(ctx);
+  test_vm(ctx);
   test_cons(ctx);
   test_array(ctx);
 
