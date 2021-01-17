@@ -31,20 +31,26 @@ int lisp_is_complex(const lisp_cell_t * cell)
   return LISP_IS_STORAGE_COMPLEX_TID(cell->type_id);
 }
 
-int lisp_is_cons(const lisp_cell_t * cell)
+struct lisp_complex_object_t * lisp_as_complex_object(const lisp_cell_t * cell)
 {
-  /* @todo distinguish between cons and cons-like type */
-  return LISP_IS_STORAGE_CONS_TID(cell->type_id);
+  if(LISP_IS_STORAGE_COMPLEX_TID(cell->type_id))
+  {
+    return (struct lisp_complex_object_t *)cell->data.obj;
+  }
+  else
+  {
+    return NULL;
+  }
 }
 
-int lisp_is_complex_or_cons(const lisp_cell_t * cell)
+int lisp_is_cons(const lisp_cell_t * cell)
 {
-  return LISP_IS_STORAGE_COMPLEX_OR_CONS(cell->type_id);
+  return LISP_IS_STORAGE_CONS_TID(cell->type_id);
 }
 
 struct lisp_cons_t * lisp_as_cons(lisp_cell_t * cell)
 {
-  if(LISP_IS_STORAGE_CONS_TID(cell->type_id))
+  if(LISP_IS_CONS_TID(cell->type_id))
   {
     return (struct lisp_cons_t *)cell->data.obj;
   }

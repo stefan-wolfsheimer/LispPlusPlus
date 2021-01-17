@@ -397,7 +397,7 @@ int lisp_gc_check(lisp_gc_t * gc)
       lisp_gc_iterator_is_valid(&itr);
       lisp_gc_next(gc, &itr))
   {
-    if(lisp_is_cons(&itr.cell))
+    if(LISP_IS_STORAGE_CONS_TID(itr.cell.type_id))
     {
       num_conses++;
     }
@@ -418,7 +418,7 @@ static void _lisp_gc_dump_humamn(FILE * fp, lisp_gc_t * gc)
       lisp_gc_iterator_is_valid(&itr);
       lisp_gc_next(gc, &itr))
   {
-    if(lisp_is_cons(&itr.cell))
+    if(LISP_IS_STORAGE_CONS_TID(itr.cell.type_id))
     {
       num_conses++;
     }
@@ -478,7 +478,7 @@ void lisp_gc_get_stats(lisp_gc_t * gc,
         lisp_cell_iterator_is_valid(&citr);
         lisp_cell_next_child(&citr))
     {
-      if(lisp_is_complex_or_cons(citr.child))
+      if(LISP_IS_STORAGE_COMPLEX_OR_CONS(citr.child->type_id))
       {
         if(parent_color == LISP_GC_BLACK &&
            lisp_get_cell_color(citr.child) == LISP_GC_WHITE)

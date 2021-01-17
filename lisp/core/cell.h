@@ -76,6 +76,7 @@ int lisp_is_reference(const lisp_cell_t * cell);
  * @return true if cell has complex object storage class
  */
 int lisp_is_complex(const lisp_cell_t * cell);
+struct lisp_complex_object_t * lisp_as_complex_object(const lisp_cell_t * cell);
 
 /**
  * Check if cell is cons
@@ -83,14 +84,6 @@ int lisp_is_complex(const lisp_cell_t * cell);
  * @return true
  */
 int lisp_is_cons(const lisp_cell_t * cell);
-
-/**
- * Checks if cell has storage class of complex object, e.g. array
- *
- * @return true if cell has complex object storage class or cons
- */
-int lisp_is_complex_or_cons(const lisp_cell_t * cell);
-
 struct lisp_cons_t * lisp_as_cons(lisp_cell_t * cell);
 
 int lisp_is_array(const lisp_cell_t * cell);
