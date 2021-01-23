@@ -63,16 +63,6 @@ int lisp_cons_set_cdr(lisp_cons_t * cons,
 void lisp_cons_unset(lisp_cons_t * cons);
 
 /**
- * Get the color of the cons in the 3 generation garbage collector.
- */
-lisp_gc_color_t lisp_cons_get_color(const lisp_cons_t * cons);
-
-/**
- * Return true value if cons is in the root set
- */
-short int lisp_cons_is_root(const lisp_cons_t * cons);
-
-/**
  * If cons is in white list move it to grey list
  */
 void lisp_cons_grey(lisp_cons_t * cons);

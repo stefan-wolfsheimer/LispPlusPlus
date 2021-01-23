@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #ifndef __LISP_GC_STAT_H__
 #define __LISP_GC_STAT_H__
+#include <stdio.h>
 
 /**
  * Garbage collector statistics
@@ -92,9 +93,26 @@ typedef struct lisp_gc_stat_t
   size_t num_edges;
 
   /**
+   * Number of cons pages
+   */
+  size_t num_cons_pages;
+
+  /**
    * Error flags
    */
   int error_black_has_white_child;
 } lisp_gc_stat_t;
+
+
+void lisp_init_gc_stat(lisp_gc_stat_t * stat);
+int lisp_gc_stat_eq(lisp_gc_stat_t * stat1,
+                    lisp_gc_stat_t * stat2);
+
+void lisp_gc_stat_print(FILE * fp,
+                        lisp_gc_stat_t * stat);
+
+void lisp_gc_stat_print2(FILE * fp,
+                         lisp_gc_stat_t * stat1,
+                         lisp_gc_stat_t * stat2);
 
 #endif

@@ -59,4 +59,7 @@ typedef struct lisp_gc_color_map_t
 
 } lisp_gc_color_map_t;
 
+int lisp_init_color_map(lisp_gc_color_map_t * map);
+int lisp_free_color_map(lisp_gc_color_map_t * map);
+
 #endif

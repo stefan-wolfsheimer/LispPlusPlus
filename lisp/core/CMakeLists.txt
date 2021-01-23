@@ -3,8 +3,9 @@ add_library( LispCore
   cell.c
   cell_iterator.c
   cell_hash_table.c
-  gc.c
   gc_iterator.c
+  gc_stat.c
+  gc_color_map.c
   vm.c
   cons.c
   array.c

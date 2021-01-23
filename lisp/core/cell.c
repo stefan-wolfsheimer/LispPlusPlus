@@ -3,8 +3,8 @@
 #include "error.h"
 #include "cell.h"
 #include "tid.h"
-#include "gc.h"
 #include "cons.h"
+#include "gc_color_map.h"
 #include "complex_object.h"
 
 lisp_cell_t lisp_nil =

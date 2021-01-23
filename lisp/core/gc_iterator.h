@@ -33,7 +33,7 @@ either expressed or implied, of the FreeBSD Project.
 #include "cell.h"
 #include <lisp/util/hash_table.h>
 struct lisp_dl_item_t;
-struct lisp_gc_t;
+struct lisp_vm_t;
 
 /**
  * Iterator for all complex objects in garbage collector.
@@ -60,7 +60,7 @@ typedef struct lisp_gc_reachable_iterator_t
 /**
  * Initialize GC iterator.
  */
-void lisp_gc_first(struct lisp_gc_t * gc, lisp_gc_iterator_t * itr);
+void lisp_gc_first(struct lisp_vm_t * vm, lisp_gc_iterator_t * itr);
 
 /**
  * @return true if iterator is valid
@@ -70,7 +70,7 @@ int lisp_gc_iterator_is_valid(lisp_gc_iterator_t * itr);
 /**
  * Iterate to the next object in garbage collector
  */
-int lisp_gc_next(struct lisp_gc_t * gc, lisp_gc_iterator_t * itr);
+int lisp_gc_next(struct lisp_vm_t * vm, lisp_gc_iterator_t * itr);
 
 /**
  * Initialize GC reachable iterator.
@@ -78,9 +78,9 @@ int lisp_gc_next(struct lisp_gc_t * gc, lisp_gc_iterator_t * itr);
 int lisp_init_gc_reachable_iterator(lisp_gc_reachable_iterator_t * itr);
 void lisp_free_gc_reachable_iterator(lisp_gc_reachable_iterator_t * itr);
 
-void lisp_gc_reachable_first(struct lisp_gc_t * gc,
+void lisp_gc_reachable_first(struct lisp_vm_t * vm,
                              lisp_gc_reachable_iterator_t * itr);
 int lisp_gc_reachable_iterator_is_valid(lisp_gc_reachable_iterator_t * itr);
-int lisp_gc_reachable_next(struct lisp_gc_t * gc,
+int lisp_gc_reachable_next(struct lisp_vm_t * vm,
                            lisp_gc_reachable_iterator_t * itr);
 #endif

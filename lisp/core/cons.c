@@ -34,7 +34,7 @@ either expressed or implied, of the FreeBSD Project.
 #include "cons.h"
 #include "tid.h"
 #include "cell_iterator.h"
-#include "gc.h"
+#include "gc_color_map.h"
 
 int lisp_cons_set_car(lisp_cons_t * cons,
                       lisp_cell_t * car)
@@ -79,6 +79,7 @@ inline static lisp_dl_item_t * _lisp_cons_as_dl_item(const lisp_cons_t * cons)
   return (lisp_dl_item_t*) (((char*)cons) - sizeof(lisp_dl_item_t));
 }
 
+/* @todo move as static function in cell */
 void lisp_cons_unset(lisp_cons_t * cons)
 {
   assert(cons->ref_count > 0);
@@ -90,16 +91,6 @@ void lisp_cons_unset(lisp_cons_t * cons)
     lisp_dl_list_append(&cons->gc_list->objects,
                         _lisp_cons_as_dl_item(cons));
   }
-}
-
-lisp_gc_color_t lisp_cons_get_color(const lisp_cons_t * cons)
-{
-  return cons->gc_list->color;
-}
-
-short int lisp_cons_is_root(const lisp_cons_t * cons)
-{
-  return cons->gc_list->is_root;
 }
 
 void lisp_cons_grey(lisp_cons_t * cons)

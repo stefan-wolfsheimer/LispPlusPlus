@@ -28,7 +28,7 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
-#include "gc.h"
+#include "vm.h"
 #include "tid.h"
 #include "error.h"
 #include "gc_iterator.h"
@@ -36,16 +36,16 @@ either expressed or implied, of the FreeBSD Project.
 #include "cell_hash_table.h"
 #include "complex_object.h"
 
-lisp_gc_collectible_list_t * _get_color_map_list(lisp_gc_t * gc, int index)
+lisp_gc_collectible_list_t * _get_color_map_list(lisp_vm_t * vm, int index)
 {
   lisp_gc_color_map_t * gc_map;
   if(index < LISP_GC_NUM_COLORS * 2)
   {
-    gc_map = &gc->cons_color_map;
+    gc_map = &vm->cons_color_map;
   }
   else
   {
-    gc_map = &gc->object_color_map;
+    gc_map = &vm->object_color_map;
     index-= LISP_GC_NUM_COLORS * 2;
   }
   switch(index)
@@ -95,7 +95,7 @@ static void _init_cell(lisp_gc_iterator_t * itr)
   }
 }
 
-void lisp_gc_first(lisp_gc_t * gc, lisp_gc_iterator_t * itr)
+void lisp_gc_first(lisp_vm_t * vm, lisp_gc_iterator_t * itr)
 {
   lisp_gc_collectible_list_t * lst;
   itr->current_item = NULL;
@@ -103,7 +103,7 @@ void lisp_gc_first(lisp_gc_t * gc, lisp_gc_iterator_t * itr)
       itr->current_index < LISP_GC_NUM_COLORS * 4;
       itr->current_index++)
   {
-    lst = _get_color_map_list(gc, itr->current_index);
+    lst = _get_color_map_list(vm, itr->current_index);
     if(!lisp_dl_list_empty(&lst->objects))
     {
       itr->current_item = lst->objects.first;
@@ -113,7 +113,7 @@ void lisp_gc_first(lisp_gc_t * gc, lisp_gc_iterator_t * itr)
   }
 }
 
-int lisp_gc_next(lisp_gc_t * gc, lisp_gc_iterator_t * itr)
+int lisp_gc_next(lisp_vm_t * vm, lisp_gc_iterator_t * itr)
 {
   if(lisp_gc_iterator_is_valid(itr))
   {
@@ -131,7 +131,7 @@ int lisp_gc_next(lisp_gc_t * gc, lisp_gc_iterator_t * itr)
           itr->current_index < LISP_GC_NUM_COLORS * 4;
           itr->current_index++)
       {
-        lst = _get_color_map_list(gc, itr->current_index);
+        lst = _get_color_map_list(vm, itr->current_index);
         if(!lisp_dl_list_empty(&lst->objects))
         {
           itr->current_item = lst->objects.first;
@@ -163,7 +163,7 @@ void lisp_free_gc_reachable_iterator(lisp_gc_reachable_iterator_t * itr)
   lisp_free_cell_hash_table(&itr->root);
 }
 
-void lisp_gc_reachable_first(struct lisp_gc_t * gc,
+void lisp_gc_reachable_first(struct lisp_vm_t * vm,
                              lisp_gc_reachable_iterator_t * itr)
 {
   int i;
@@ -173,7 +173,7 @@ void lisp_gc_reachable_first(struct lisp_gc_t * gc,
   itr->entry = NULL;
   for(i = 0; i < 3; i++)
   {
-    lst = _get_color_map_list(gc, i);
+    lst = _get_color_map_list(vm, i);
     item = lst->objects.first;
     while(item)
     {
@@ -186,7 +186,7 @@ void lisp_gc_reachable_first(struct lisp_gc_t * gc,
   /* @todo other objects */
   for(i = 0; i < 3; i++)
   {
-    lst = _get_color_map_list(gc, LISP_GC_NUM_COLORS * 2 + i);
+    lst = _get_color_map_list(vm, LISP_GC_NUM_COLORS * 2 + i);
   }
   itr->entry = HASH_TABLE_FIRST(&itr->todo);
   if(itr->entry != NULL)
@@ -204,7 +204,7 @@ int lisp_gc_reachable_iterator_is_valid(lisp_gc_reachable_iterator_t * itr)
   return (itr->entry != NULL);
 }
 
-int lisp_gc_reachable_next(struct lisp_gc_t * gc,
+int lisp_gc_reachable_next(struct lisp_vm_t * vm,
                            lisp_gc_reachable_iterator_t * itr)
 {
   if(itr->entry != NULL)
@@ -222,7 +222,7 @@ int lisp_gc_reachable_next(struct lisp_gc_t * gc,
       if(!lisp_cell_in_hash(&itr->todo, citr.child) &&
          !lisp_cell_in_hash(&itr->root, citr.child))
       {
-        if(LISP_IS_STORAGE_COMPLEX_TID(citr.child->type_id))
+        if(LISP_IS_STORAGE_COMPLEX_OR_CONS(citr.child->type_id))
         {
           lisp_cell_hash_table_set(&itr->todo, citr.child);
         }
