@@ -75,6 +75,16 @@ static inline void lisp_dl_list_append(lisp_dl_list_t * ll,
                                        lisp_dl_item_t * item);
 
 /**
+ * Move elements of one list and append them to another.
+ * The source is being emptied.
+ *
+ * \param ll
+ * \param source
+ */
+static inline void lisp_dl_list_move_list(lisp_dl_list_t * ll,
+                                          lisp_dl_list_t * source);
+
+/**
  * Prepend an item at the begin of a double-linked list
  */
 static inline void lisp_dl_list_prepend(lisp_dl_list_t * ll,
@@ -143,6 +153,28 @@ static inline void lisp_dl_list_append(lisp_dl_list_t * ll,
     ll->last = item;
   }
 }
+
+static inline void lisp_dl_list_move_list(lisp_dl_list_t * ll,
+                                          lisp_dl_list_t * source)
+{
+  if(ll->first == NULL)
+  {
+    assert(ll->last == NULL);
+    ll->first = source->first;
+    ll->last = source->last;
+    source->first = NULL;
+    source->last = NULL;
+  }
+  else if(source->first != NULL)
+  {
+    ll->last->next = source->first;
+    source->first->prev = ll->last;
+    ll->last = source->last;
+    source->first = NULL;
+    source->last = NULL;
+  }
+}
+
 
 static inline void lisp_dl_list_prepend(lisp_dl_list_t * ll,
                                         lisp_dl_item_t * item)
