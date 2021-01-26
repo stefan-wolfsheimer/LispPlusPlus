@@ -517,8 +517,10 @@ static int _lisp_make_cons_cell(lisp_vm_t * vm,
       return LISP_OK;
       break;
     case LISP_STORAGE_COW_OBJECT:
+      return LISP_NOT_IMPLEMENTED;
       break;
     case LISP_STORAGE_OBJECT:
+      return LISP_NOT_IMPLEMENTED;
       break;
     case LISP_STORAGE_CONS:
       /* ensure that child is not white. */
@@ -527,6 +529,7 @@ static int _lisp_make_cons_cell(lisp_vm_t * vm,
       target->data = source->data;
       return LISP_OK;
     case LISP_STORAGE_COMPLEX:
+      return LISP_NOT_IMPLEMENTED;
       break;
     }
     /*@todo implement other types */
