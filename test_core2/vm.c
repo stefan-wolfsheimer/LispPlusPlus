@@ -31,50 +31,13 @@ either expressed or implied, of the FreeBSD Project.
 #include <lisp/util/unit_test.h>
 #include <lisp/util/xmalloc.h>
 #include <lisp/core/vm.h>
-#include <lisp/core/gc_stat.h>
 #include <lisp/core/cons.h>
 #include <lisp/core/error.h>
-
-/* @todo move to general include file */
-#define LISP_GC_DUMP_TEST LISP_GC_DUMP_HUMAN
-/* LISP_GC_DUMP_SILENT 0
-   LISP_GC_DUMP_HUMAN 1
-*/
-
-#define ASSERT_LISP_OK(__TST__, __EXPR__) \
- ASSERT_EQ_I(__TST__, __EXPR__, LISP_OK);
-
-
-#define ASSERT_LISP_CHECK_GC(__TST__, __VM__)                           \
-  if(!CHECK_EQ_I((__TST__), lisp_vm_gc_check((__VM__)), LISP_OK))       \
-  {                                                                     \
-    lisp_vm_gc_dump(stdout, (__VM__), LISP_GC_DUMP_TEST);               \
-    return ;                                                            \
-  }
-
-#define ASSERT_LISP_CHECK_GC_STATS(__TST__, __VM__, __REQ__)            \
-{                                                                       \
-   lisp_gc_stat_t _stat_;                                               \
-   int _stat_ok_ = 1;                                                   \
-   lisp_vm_gc_get_stats((__VM__), &_stat_);                             \
-   if(!CHECK((__TST__), lisp_gc_stat_eq(&_stat_, (__REQ__))))           \
-   {                                                                    \
-     lisp_gc_stat_print2(stdout, &_stat_, (__REQ__));                   \
-     _stat_ok_ = 0;                                                     \
-   }                                                                    \
-   if(!CHECK_EQ_I((__TST__), lisp_vm_gc_check((__VM__)), LISP_OK))      \
-   {                                                                    \
-     lisp_vm_gc_dump(stdout, (__VM__), LISP_GC_DUMP_TEST);              \
-     _stat_ok_ = 0;                                                     \
-   }                                                                    \
-   if(!_stat_ok_)                                                       \
-   {                                                                    \
-     return;                                                            \
-   }                                                                    \
- }
+#include "common.h"
 
 static void test_vm_alloc_root_cons(unit_test_t * tst)
 {
+  /* @todo move to cons module s*/
   lisp_vm_t vm;
   lisp_gc_stat_t ref_stat;
   lisp_cell_t cell1;
@@ -179,13 +142,16 @@ static void test_vm_alloc_root_cons(unit_test_t * tst)
 
   /* cycle GC */
   ASSERT_LISP_OK(tst, lisp_vm_gc_full_cycle(&vm));
-
   ref_stat.num_cycles = 1;
   ref_stat.num_root = 2;
   ref_stat.num_reachable = 2;
   ref_stat.num_allocated = 2;
   ref_stat.num_leaves = 4;
   ref_stat.num_void = 3;
+  ref_stat.num_disposed = 3;
+  ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
+  ASSERT_LISP_OK(tst, lisp_vm_recycle_all_conses(&vm));
+  ref_stat.num_disposed = 0;
   ref_stat.num_recycled = 3;
   ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
   ASSERT_EQ_I(tst, vm.cons_pos, 1u);
@@ -195,6 +161,8 @@ static void test_vm_alloc_root_cons(unit_test_t * tst)
   ASSERT_EQ_I(tst, lisp_get_cell_color(&cell1), LISP_GC_WHITE);
   ASSERT(tst, lisp_is_root_cell(&cell1));
   ASSERT_EQ_I(tst, vm.cons_pos, 1u);
+  ASSERT_LISP_OK(tst, lisp_vm_recycle_all_conses(&vm));
+
   ref_stat.num_root = 3;
   ref_stat.num_reachable = 3;
   ref_stat.num_allocated = 3;
@@ -252,6 +220,7 @@ static void test_vm_alloc_root_cons(unit_test_t * tst)
 
 static void test_vm_make_cons_of_conses(unit_test_t * tst)
 {
+  /* @todo move to cons module s*/
   lisp_gc_stat_t ref_stat;
   lisp_vm_t vm;
   lisp_cell_t root1;
@@ -343,7 +312,6 @@ static void test_vm_make_cons_of_conses(unit_test_t * tst)
   ASSERT_MEMCHECK(tst);
   memcheck_end();
 }
-
 
 void test_vm(unit_context_t * ctx)
 {

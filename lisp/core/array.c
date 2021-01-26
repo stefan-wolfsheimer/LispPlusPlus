@@ -28,6 +28,8 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
+#include <lisp/util/xmalloc.h>
+#include "vm.h"
 #include "array.h"
 #include "cell.h"
 #include "cell_iterator.h"
@@ -35,16 +37,41 @@ either expressed or implied, of the FreeBSD Project.
 #include "tid.h"
 #include <assert.h>
 
+int lisp_make_array(struct lisp_vm_t * vm,
+                    struct lisp_cell_t * cell,
+                    size_t n)
+{
+  lisp_cell_t * cells;
+  size_t i;
+  cell->type_id = LISP_TID_ARRAY;
+  cell->data.obj = lisp_vm_alloc_root_complex_object(vm,
+                                                     LISP_TID_ARRAY,
+                                                     sizeof(lisp_array_t));
+  if(!cell->data.obj)
+  {
+    return LISP_BAD_ALLOC;
+  }
+  cells = MALLOC(sizeof(lisp_cell_t) * n);
+  ((lisp_array_t*)cell->data.obj)->size = n;
+  ((lisp_array_t*)cell->data.obj)->data = cells;
+  for(i=0; i < n; i++)
+  {
+    cells[i].type_id = LISP_TID_NIL;
+  }
+  return LISP_OK;
+}
+
+/* typdefinition functions */
 static int _array_destructor(void * ptr)
 {
+  FREE(((lisp_array_t*)ptr)->data);
   return LISP_OK;
 }
 
 static int _array_first_child(lisp_cell_iterator_t * itr)
 {
   assert(lisp_is_array(itr->parent));
-  lisp_array_t* arr = lisp_as_array(itr->parent);
-  lisp_cell_t* data = (lisp_cell_t*) &arr[1];
+  lisp_array_t * arr = lisp_as_array(itr->parent);
   itr->index = 0;
   if(arr->size == 0)
   {
@@ -52,7 +79,7 @@ static int _array_first_child(lisp_cell_iterator_t * itr)
   }
   else
   {
-    itr->child = data;
+    itr->child = arr->data;
   }
   return LISP_OK;
 }
@@ -66,11 +93,10 @@ static int _array_next_child(lisp_cell_iterator_t * itr)
 {
   assert(lisp_is_array(itr->parent));
   lisp_array_t* arr = lisp_as_array(itr->parent);
-  lisp_cell_t* data = (lisp_cell_t*) &arr[1];
   itr->index++;
   if(itr->index < arr->size)
   {
-    itr->child = data + itr->index;
+    itr->child = arr->data + itr->index;
   }
   else
   {
@@ -86,5 +112,4 @@ int lisp_init_array_type(struct lisp_type_t * t)
   t->lisp_cell_child_iterator_is_valid_ptr = _array_iterator_is_valid;
   t->lisp_cell_next_child_ptr = _array_next_child;
   return LISP_OK;
-
 }

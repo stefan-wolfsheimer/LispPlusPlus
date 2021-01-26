@@ -31,13 +31,22 @@ either expressed or implied, of the FreeBSD Project.
 #ifndef __LIPS_ARRAY_H__
 #define __LIPS_ARRAY_H__
 #include <stddef.h>
+struct lisp_vm_t;
 struct lisp_cell_t;
 struct lisp_type_t;
 
 typedef struct lisp_array_t
 {
+  struct lisp_cell_t * data;
   size_t size;
 } lisp_array_t;
+
+/**
+ * Create an array as root.
+ */
+int lisp_make_array(struct lisp_vm_t * vm,
+                    struct lisp_cell_t * cell,
+                    size_t n);
 
 int lisp_init_array_type(struct lisp_type_t * t);
 

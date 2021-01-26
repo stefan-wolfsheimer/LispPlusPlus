@@ -58,11 +58,6 @@ int lisp_cons_set_cdr(lisp_cons_t * cons,
                       lisp_cell_t * cdr);
 
 /**
- * Move cons from root to bulk set
- */
-void lisp_cons_unset(lisp_cons_t * cons);
-
-/**
  * If cons is in white list move it to grey list
  */
 void lisp_cons_grey(lisp_cons_t * cons);

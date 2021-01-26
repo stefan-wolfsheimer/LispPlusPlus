@@ -78,6 +78,9 @@ int lisp_init_vm(lisp_vm_t * vm)
   /* cons pages */
   vm->cons_pages = NULL;
   lisp_init_dl_list(&vm->recycled_conses);
+  lisp_init_dl_list(&vm->disposed_objects);
+  lisp_init_dl_list(&vm->disposed_conses);
+
   vm->num_cons_pages = 0;
   vm->cons_pos = DEFAULT_PAGE_SIZE;
   vm->cons_page_size = DEFAULT_PAGE_SIZE;
@@ -90,8 +93,23 @@ int lisp_init_vm(lisp_vm_t * vm)
 
 int lisp_free_vm(lisp_vm_t * vm)
 {
-  int ret = lisp_free_color_map(&vm->cons_color_map);
+  int ret;
   size_t i;
+  ret = lisp_vm_gc_full_cycle(vm);
+  if(ret != LISP_OK)
+  {
+    return ret;
+  }
+  ret = lisp_vm_recycle_all(vm);
+  if(ret != LISP_OK)
+  {
+    return ret;
+  }
+  ret = lisp_free_color_map(&vm->cons_color_map);
+  if(ret != LISP_OK)
+  {
+    return ret;
+  }
   for(i = 0; i < vm->num_cons_pages; i++)
   {
     FREE(vm->cons_pages[i]);
@@ -177,8 +195,30 @@ inline static lisp_complex_object_t * _lisp_dl_as_complex_object(const lisp_dl_i
 }
 
 /****************************************************************************
- lisp_vm_t garbage collector operation
+ lisp_vm_t allocator garbage collector operation
  ****************************************************************************/
+void * lisp_vm_alloc_root_complex_object(lisp_vm_t * vm,
+                                         lisp_type_id_t tid,
+                                         size_t size)
+{
+  lisp_dl_item_t * item;
+  lisp_complex_object_t * obj;
+  lisp_gc_collectible_list_t * list;
+  assert(LISP_IS_STORAGE_COMPLEX_TID(tid));
+  list = vm->object_color_map.white_root;
+  item = (lisp_dl_item_t*) MALLOC(sizeof(lisp_dl_item_t) +
+                                  sizeof(lisp_complex_object_t) +
+                                  size);
+  lisp_dl_list_append(&list->objects, item);
+  obj = (lisp_complex_object_t *)(((char*)item) + sizeof(lisp_dl_item_t));
+  obj->gc_list = list;
+  obj->ref_count = 1u;
+  obj->type_id = tid;
+  return (((char*) item) +
+          sizeof(lisp_dl_item_t) +
+          sizeof(lisp_complex_object_t));
+}
+
 inline static void _move_cons_list(lisp_gc_collectible_list_t * target,
                                    lisp_gc_collectible_list_t * source)
 {
@@ -227,6 +267,30 @@ inline static void _move_object_list(lisp_gc_collectible_list_t * target,
   lisp_dl_list_move_list(&target->objects, &source->objects);
 }
 
+inline static void _move_objects(lisp_gc_collectible_list_t * target,
+                                 lisp_dl_list_t * recycled_conses,
+                                 lisp_dl_item_t * item,
+                                 hash_table_t * ht)
+{
+  lisp_cell_t cell;
+  lisp_dl_item_t * next;
+  while(item != NULL)
+  {
+    next = item->next;
+    cell.type_id = LISP_TID_CONS;
+    cell.data.obj = _lisp_dl_as_cons(item);
+    if(hash_table_find(ht, &cell) == NULL)
+    {
+      lisp_dl_list_append(recycled_conses, item);
+    }
+    else
+    {
+      lisp_dl_list_append(&target->objects, item);
+    }
+    item = next;
+  }
+}
+
 int lisp_vm_gc_full_cycle(lisp_vm_t * vm)
 {
   lisp_gc_reachable_iterator_t ritr;
@@ -243,22 +307,22 @@ int lisp_vm_gc_full_cycle(lisp_vm_t * vm)
                   vm->cons_color_map.grey_root);
   _move_cons_list(vm->cons_color_map.white_root,
                   vm->cons_color_map.black_root);
+
   item = vm->cons_color_map.white->objects.first;
   vm->cons_color_map.white->objects.first = NULL;
   vm->cons_color_map.white->objects.last = NULL;
-
   _move_conses(vm->cons_color_map.white,
-               &vm->recycled_conses,
+               &vm->disposed_conses,
                item,
                &ritr.root);
   _move_conses(vm->cons_color_map.white,
-               &vm->recycled_conses,
+               &vm->disposed_conses,
                vm->cons_color_map.grey->objects.first,
                &ritr.root);
   vm->cons_color_map.grey->objects.first = NULL;
   vm->cons_color_map.grey->objects.last = NULL;
   _move_conses(vm->cons_color_map.white,
-               &vm->recycled_conses,
+               &vm->disposed_conses,
                vm->cons_color_map.black->objects.first,
                &ritr.root);
   vm->cons_color_map.black->objects.first = NULL;
@@ -269,11 +333,92 @@ int lisp_vm_gc_full_cycle(lisp_vm_t * vm)
                     vm->object_color_map.grey_root);
   _move_object_list(vm->object_color_map.white_root,
                     vm->object_color_map.black_root);
+  item = vm->object_color_map.white->objects.first;
+  vm->object_color_map.white->objects.first = NULL;
+  vm->object_color_map.white->objects.last = NULL;
+  _move_objects(vm->object_color_map.white,
+                &vm->disposed_objects,
+                item,
+                &ritr.root);
+  _move_objects(vm->object_color_map.white,
+                &vm->disposed_objects,
+                vm->object_color_map.grey->objects.first,
+                &ritr.root);
+  vm->object_color_map.grey->objects.first = NULL;
+  vm->object_color_map.grey->objects.last = NULL;
+  _move_objects(vm->object_color_map.white,
+                &vm->disposed_objects,
+                vm->object_color_map.black->objects.first,
+                &ritr.root);
+  vm->object_color_map.black->objects.first = NULL;
+  vm->object_color_map.black->objects.last = NULL;
+
   lisp_free_gc_reachable_iterator(&ritr);
   vm->num_cycles++;
   return LISP_OK;
 }
 
+int lisp_vm_recycle_all_conses(lisp_vm_t * vm)
+{
+  lisp_dl_item_t * item;
+  for(item = vm->disposed_conses.first;
+      item != NULL;
+      item = item->next)
+  {
+    /* @todo unset car & cdr */
+    /* _unset_cell(&_lisp_dl_as_cons(item)->car); */
+    /* _unset_cell(&_lisp_dl_as_cons(item)->cdr); */
+  }
+  lisp_dl_list_move_list(&vm->recycled_conses,
+                         &vm->disposed_conses);
+  return LISP_OK;
+}
+
+int lisp_vm_recycle_all_objects(lisp_vm_t * vm)
+{
+  lisp_dl_item_t * item;
+  lisp_dl_item_t * next;
+  lisp_cell_iterator_t citr;
+  lisp_cell_t cell;
+  lisp_type_t * type;
+  lisp_complex_object_t * obj;
+  item = vm->disposed_objects.first;
+  while(item)
+  {
+    obj = _lisp_dl_as_complex_object(item);
+    assert(obj->ref_count == 0);
+    assert(LISP_IS_STORAGE_COMPLEX_TID(obj->type_id));
+    assert(obj->type_id < LISP_NUM_TYPES);
+    cell.type_id = obj->type_id;
+    cell.data.obj = obj + 1;
+    for(lisp_first_child(&cell, &citr);
+        lisp_cell_iterator_is_valid(&citr);
+        lisp_cell_next_child(&citr))
+    {
+      /* @todo unset car & cdr */
+      /* _unset_cell(&citr.cell); */
+    }
+    next = item->next;
+    type = &lisp_static_types[_lisp_dl_as_complex_object(item)->type_id];
+    if(type->lisp_destructor_ptr)
+    {
+      type->lisp_destructor_ptr(cell.data.obj);
+    }
+    FREE(item);
+    item = next;
+  }
+  return LISP_OK;
+}
+
+int lisp_vm_recycle_all(lisp_vm_t * vm)
+{
+  int ret = lisp_vm_recycle_all_conses(vm);
+  if(ret != LISP_OK)
+  {
+    return ret;
+  }
+  return lisp_vm_recycle_all_objects(vm);
+}
 
 static inline short int _lisp_vm_gc_cons_step(lisp_vm_t * vm)
 {
@@ -389,27 +534,6 @@ static int _lisp_make_cons_cell(lisp_vm_t * vm,
   return LISP_OK;
 }
 
-static void * _lisp_gc_alloc_object(lisp_vm_t * vm,
-                                    lisp_gc_collectible_list_t * list,
-                                    lisp_type_id_t tid,
-                                    size_t size,
-                                    size_t ref_count)
-{
-  lisp_dl_item_t * item;
-  lisp_complex_object_t * obj;
-  item = (lisp_dl_item_t*) MALLOC(sizeof(lisp_dl_item_t) +
-                                  sizeof(lisp_complex_object_t) +
-                                  size);
-  lisp_dl_list_append(&list->objects, item);
-  obj = (lisp_complex_object_t *)(((char*)item) + sizeof(lisp_dl_item_t));
-  obj->gc_list = list;
-  obj->ref_count = ref_count;
-  obj->type_id = tid;
-  return (((char*) item) +
-          sizeof(lisp_dl_item_t) +
-          sizeof(lisp_complex_object_t));
-}
-
 int lisp_make_cons(lisp_vm_t * vm,
                    lisp_cell_t * cell,
                    const lisp_cell_t * car,
@@ -438,29 +562,6 @@ int lisp_make_cons(lisp_vm_t * vm,
   {
     return ret;
   }
-}
-
-int lisp_make_array(lisp_vm_t * vm, lisp_cell_t * cell, size_t n)
-{
-  lisp_cell_t * cells;
-  size_t i;
-  cell->type_id = LISP_TID_ARRAY;
-  cell->data.obj = _lisp_gc_alloc_object(vm,
-                                         vm->object_color_map.white_root,
-                                         LISP_TID_ARRAY,
-                                         sizeof(lisp_array_t) + sizeof(lisp_cell_t) * n,
-                                         1u);
-  ((lisp_array_t*)cell->data.obj)->size = n;
-  if(!cell->data.obj)
-  {
-    return LISP_BAD_ALLOC;
-  }
-  cells = (lisp_cell_t*)&(((lisp_array_t*)cell->data.obj)[1]);
-  for(i=0; i < n; i++)
-  {
-    cells[i].type_id = LISP_TID_NIL;
-  }
-  return LISP_OK;
 }
 
 /****************************************************************************
@@ -512,7 +613,9 @@ int lisp_vm_gc_check(lisp_vm_t * vm)
     num_allocated_conses = (vm->num_cons_pages - 1) * vm->cons_page_size + vm->cons_pos;
   }
   if(num_allocated_conses !=
-     (num_conses + lisp_dl_list_size(&vm->recycled_conses)))
+     (num_conses +
+      lisp_dl_list_size(&vm->recycled_conses) +
+      lisp_dl_list_size(&vm->disposed_conses)))
   {
     return LISP_INVALID;
   }
@@ -583,9 +686,8 @@ void lisp_vm_gc_get_stats(lisp_vm_t * vm,
   stat->num_bulk = stat->num_reachable - stat->num_root;
   stat->num_recycled = lisp_dl_list_size(&vm->recycled_conses);
   stat->num_void = (vm->cons_page_size - vm->cons_pos);
-  /*
-    @todo implement
-    size_t num_disposed
-  */
+  stat->num_disposed =
+    lisp_dl_list_size(&vm->disposed_conses) +
+    lisp_dl_list_size(&vm->disposed_objects);
   lisp_free_gc_reachable_iterator(&ritr);
 }

@@ -35,8 +35,21 @@ either expressed or implied, of the FreeBSD Project.
 #include "cell_iterator.h"
 #include "cell_hash_table.h"
 #include "complex_object.h"
+#include "cons.h"
 
-lisp_gc_collectible_list_t * _get_color_map_list(lisp_vm_t * vm, int index)
+inline static lisp_cons_t * _lisp_dl_as_cons(const lisp_dl_item_t * item)
+{
+  return ((lisp_cons_t *)(item + 1));
+}
+
+
+inline static lisp_complex_object_t * _lisp_dl_as_complex_object(const lisp_dl_item_t * item)
+{
+  return ((lisp_complex_object_t*)(item + 1));
+}
+
+
+static lisp_gc_collectible_list_t * _get_color_map_list(lisp_vm_t * vm, int index)
 {
   lisp_gc_color_map_t * gc_map;
   if(index < LISP_GC_NUM_COLORS * 2)
@@ -178,7 +191,7 @@ void lisp_gc_reachable_first(struct lisp_vm_t * vm,
     while(item)
     {
       cell.type_id = LISP_TID_CONS;
-      cell.data.obj = (((char*) item) + sizeof(lisp_dl_item_t));
+      cell.data.obj = _lisp_dl_as_cons(item);
       lisp_cell_hash_table_set(&itr->todo, &cell);
       item = item->next;
     }
@@ -187,6 +200,14 @@ void lisp_gc_reachable_first(struct lisp_vm_t * vm,
   for(i = 0; i < 3; i++)
   {
     lst = _get_color_map_list(vm, LISP_GC_NUM_COLORS * 2 + i);
+    item = lst->objects.first;
+    while(item)
+    {
+      cell.data.obj = (_lisp_dl_as_complex_object(item) + 1);
+      cell.type_id = _lisp_dl_as_complex_object(item)->type_id;
+      lisp_cell_hash_table_set(&itr->todo, &cell);
+      item = item->next;
+    }
   }
   itr->entry = HASH_TABLE_FIRST(&itr->todo);
   if(itr->entry != NULL)

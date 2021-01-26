@@ -156,6 +156,38 @@ lisp_gc_color_t lisp_get_cell_color(const lisp_cell_t * cell)
   }
 }
 
+/******************************************************************************
+ * lisp_unset
+ ******************************************************************************/
+inline static lisp_dl_item_t * _lisp_cons_as_dl_item(const lisp_cons_t * cons)
+{
+  return (lisp_dl_item_t*) (((char*)cons) - sizeof(lisp_dl_item_t));
+}
+
+static void _lisp_cons_unset(lisp_cons_t * cons)
+{
+  assert(cons->ref_count > 0);
+  if(!(--cons->ref_count))
+  {
+    lisp_dl_list_remove(&cons->gc_list->objects,
+                        _lisp_cons_as_dl_item(cons));
+    cons->gc_list = cons->gc_list->other_elements;
+    lisp_dl_list_append(&cons->gc_list->objects,
+                        _lisp_cons_as_dl_item(cons));
+  }
+}
+
+static void _lisp_complex_unset(lisp_complex_object_t * obj)
+{
+  assert(obj->ref_count > 0);
+  if(!(--obj->ref_count))
+  {
+    lisp_dl_list_remove(&obj->gc_list->objects, ((lisp_dl_item_t*)obj) - 1);
+    obj->gc_list = obj->gc_list->other_elements;
+    lisp_dl_list_append(&obj->gc_list->objects, ((lisp_dl_item_t*)obj) - 1);
+  }
+}
+
 int lisp_unset(lisp_cell_t * cell)
 {
   if(LISP_IS_STORAGE_ATOM_TID(cell->type_id))
@@ -165,12 +197,16 @@ int lisp_unset(lisp_cell_t * cell)
   }
   else if(LISP_IS_STORAGE_CONS_TID(cell->type_id))
   {
-    lisp_cons_unset((lisp_cons_t*)cell->data.obj);
+    _lisp_cons_unset((lisp_cons_t*)cell->data.obj);
+    return LISP_OK;
+  }
+  else if(LISP_IS_STORAGE_COMPLEX_TID(cell->type_id))
+  {
+    _lisp_complex_unset(((lisp_complex_object_t*)cell->data.obj) - 1);
     return LISP_OK;
   }
   else
   {
-    /*@todo implement other types */
     return LISP_NOT_IMPLEMENTED;
   }
   return LISP_OK;

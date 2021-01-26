@@ -79,20 +79,6 @@ inline static lisp_dl_item_t * _lisp_cons_as_dl_item(const lisp_cons_t * cons)
   return (lisp_dl_item_t*) (((char*)cons) - sizeof(lisp_dl_item_t));
 }
 
-/* @todo move as static function in cell */
-void lisp_cons_unset(lisp_cons_t * cons)
-{
-  assert(cons->ref_count > 0);
-  if(!(--cons->ref_count))
-  {
-    lisp_dl_list_remove(&cons->gc_list->objects,
-                        _lisp_cons_as_dl_item(cons));
-    cons->gc_list = cons->gc_list->other_elements;
-    lisp_dl_list_append(&cons->gc_list->objects,
-                        _lisp_cons_as_dl_item(cons));
-  }
-}
-
 void lisp_cons_grey(lisp_cons_t * cons)
 {
   if(cons->gc_list->grey_elements != NULL)
