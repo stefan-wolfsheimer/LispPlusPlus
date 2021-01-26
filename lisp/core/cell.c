@@ -37,29 +37,36 @@ either expressed or implied, of the FreeBSD Project.
 #include "gc_color_map.h"
 #include "complex_object.h"
 
-lisp_cell_t lisp_nil =
+lisp_cell_t lisp_nil = { type_id : LISP_TID_NIL };
+
+int lisp_is_null(const lisp_cell_t * cell)
 {
- type_id : LISP_TID_NIL
-};
+  return (LISP_STORAGE_ID(cell->type_id) == LISP_STORAGE_NULL);
+}
 
 int lisp_is_atomic(const lisp_cell_t * cell)
 {
-  return LISP_IS_STORAGE_ATOM_TID(cell->type_id);
+  return (LISP_STORAGE_ID(cell->type_id) == LISP_STORAGE_ATOM);
+}
+
+int lisp_is_cow_object(const lisp_cell_t * cell)
+{
+  return (LISP_STORAGE_ID(cell->type_id) == LISP_STORAGE_COW_OBJECT);
 }
 
 int lisp_is_object(const lisp_cell_t * cell)
 {
-  return LISP_IS_STORAGE_OBJECT_TID(cell->type_id);
+  return (LISP_STORAGE_ID(cell->type_id) == LISP_STORAGE_OBJECT);
 }
 
-int lisp_is_reference(const lisp_cell_t * cell)
+int lisp_is_cons(const lisp_cell_t * cell)
 {
-  return LISP_IS_STORAGE_REFERENCE_TID(cell->type_id);
+  return (LISP_STORAGE_ID(cell->type_id) == LISP_STORAGE_CONS);
 }
 
 int lisp_is_complex(const lisp_cell_t * cell)
 {
-  return LISP_IS_STORAGE_COMPLEX_TID(cell->type_id);
+  return (LISP_STORAGE_ID(cell->type_id) == LISP_STORAGE_COMPLEX);
 }
 
 struct lisp_complex_object_t * lisp_as_complex_object(const lisp_cell_t * cell)
@@ -74,10 +81,6 @@ struct lisp_complex_object_t * lisp_as_complex_object(const lisp_cell_t * cell)
   }
 }
 
-int lisp_is_cons(const lisp_cell_t * cell)
-{
-  return LISP_IS_STORAGE_CONS_TID(cell->type_id);
-}
 
 struct lisp_cons_t * lisp_as_cons(lisp_cell_t * cell)
 {

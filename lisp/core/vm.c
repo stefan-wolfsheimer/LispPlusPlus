@@ -508,24 +508,29 @@ static int _lisp_make_cons_cell(lisp_vm_t * vm,
 {
   if(source)
   {
-    if(LISP_IS_STORAGE_ATOM_TID(source->type_id))
+    switch(LISP_STORAGE_ID(source->type_id))
     {
-      target->type_id = source->type_id;
+    case LISP_STORAGE_ATOM:
       target->data = source->data;
-    }
-    else if(LISP_IS_STORAGE_CONS_TID(source->type_id))
-    {
+    case LISP_STORAGE_NULL:
+      target->type_id = source->type_id;
+      return LISP_OK;
+      break;
+    case LISP_STORAGE_COW_OBJECT:
+      break;
+    case LISP_STORAGE_OBJECT:
+      break;
+    case LISP_STORAGE_CONS:
       /* ensure that child is not white. */
       lisp_cons_grey((lisp_cons_t*)source->data.obj);
       target->type_id = source->type_id;
       target->data = source->data;
       return LISP_OK;
+    case LISP_STORAGE_COMPLEX:
+      break;
     }
-    else
-    {
-      /*@todo implement other types */
-      return LISP_NOT_IMPLEMENTED;
-    }
+    /*@todo implement other types */
+    return LISP_NOT_IMPLEMENTED;
   }
   else
   {

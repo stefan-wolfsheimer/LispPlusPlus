@@ -35,57 +35,65 @@ either expressed or implied, of the FreeBSD Project.
 
 /**
  * storage classes
- * 00 atom
- * 01 managed object: requires constructor and destructor
- *                    but does not contain sub cells.
- *                    copy on write.
- * 10 reference:      immuatble managed object.
- *                    copied reference
- * 11 complex object: object that can contain sub cells
- *                    e.g. array or cons
- * 110 cons:          object that can contains 2 sub cells
- * 111 complex obj.:  object that can contains sub cells
- *                    e.g. array or hash table
- * xx 000 000
- * 0b00 << 6: 0x00
- * 0b01 << 6: 0x40
- * 0b10 << 6: 0x80
- * 0b11 << 6: 0xc0
- * 0b110 << 5: 0xc0
- * 0b111 << 5: 0xe0
+ *     << 5
+ * 000 0x00 null types
+ * 001 0x20 atom
+ * 010 0x40 cow object requires constructor and destructor
+ *                     but does not contain sub cells.
+ *                     copy on write.
+ * 011 0x60 object     managed object.
+  *                    copied reference
+ * 100 0x80 cons       object that can contains 2 sub cells
+ * 101 0xa0 complex    object that can contains sub cells
+ *                     e.g. array or hash table
+ * 110 0xc0
+ * 111 0xe0
+ *
  */
-#define LISP_STORAGE_ATOM            0x00
-#define LISP_STORAGE_OBJECT          0x40
-#define LISP_STORAGE_REFERENCE       0x80
-#define LISP_STORAGE_COMPLEX_OR_CONS 0xc0
-#define LISP_STORAGE_COMPLEX         0xc0
-#define LISP_STORAGE_CONS            0xe0
+#define LISP_STORAGE_NULL            0
+#define LISP_STORAGE_ATOM            1
+#define LISP_STORAGE_COW_OBJECT      2
+#define LISP_STORAGE_OBJECT          3
+#define LISP_STORAGE_CONS            4
+#define LISP_STORAGE_COMPLEX         5
 
-#define LISP_TID_NIL                 (LISP_STORAGE_ATOM    + 0)
-#define LISP_TID_CONS                (LISP_STORAGE_CONS    + 0)
-#define LISP_TID_ARRAY               (LISP_STORAGE_COMPLEX + 1)
+#define LISP_STORAGE_NULL_O          0x00
+#define LISP_STORAGE_ATOM_O          0x20
+#define LISP_STORAGE_COW_OBJECT_O    0x40
+#define LISP_STORAGE_OBJECT_O        0x60
+#define LISP_STORAGE_CONS_O          0x80
+#define LISP_STORAGE_COMPLEX_O       0xa0
 
-#define LISP_IS_STORAGE_ATOM_TID(TID)           \
-  (((TID) & 0xc0) == LISP_STORAGE_ATOM)
+#define LISP_TID_NIL                 LISP_STORAGE_NULL_O
+#define LISP_TID_CONS                LISP_STORAGE_CONS_O
+#define LISP_TID_ARRAY               (LISP_STORAGE_COMPLEX_O + 1)
 
-#define LISP_IS_STORAGE_OBJECT_TID(TID)         \
-  (((TID) & 0xc0) == LISP_STORAGE_OBJECT)
+#define LISP_STORAGE_ID(__TID__) ((__TID__) >> 5)
 
-#define LISP_IS_STORAGE_REFERENCE_TID(TID)      \
-  (((TID) & 0xc0) == LISP_STORAGE_REFERENCE)
+/* @todo replace the following macros with switch statements */
+#define LISP_IS_STORAGE_NULL_TID(__TID__)               \
+  (LISP_STORAGE_ID(__TID__) == LISP_STORAGE_NULL)
+
+#define LISP_IS_STORAGE_ATOM_TID(__TID__)               \
+  (LISP_STORAGE_ID(__TID__) == LISP_STORAGE_ATOM)
+
+#define LISP_IS_STORAGE_COW_OBJECT_TID(__TID__)         \
+  (LISP_STORAGE_ID(__TID__) == LISP_STORAGE_COW_OBJECT)
+
+#define LISP_IS_STORAGE_OBJECT_TID(__TID__)             \
+  (LISP_STORAGE_ID(__TID__) == LISP_STORAGE_OBJECT)
+
+#define LISP_IS_STORAGE_CONS_TID(__TID__)               \
+  (LISP_STORAGE_ID(__TID__) == LISP_STORAGE_CONS)
+
+#define LISP_IS_STORAGE_COMPLEX_TID(__TID__)            \
+  (LISP_STORAGE_ID(__TID__) == LISP_STORAGE_COMPLEX)
 
 #define LISP_IS_STORAGE_COMPLEX_OR_CONS(TID)    \
-  (((TID) & 0xc0) == LISP_STORAGE_COMPLEX_OR_CONS)
-
-#define LISP_IS_STORAGE_CONS_TID(TID)           \
-  (((TID) & 0xe0) == LISP_STORAGE_CONS)
-
-#define LISP_IS_STORAGE_COMPLEX_TID(TID)        \
-  (((TID) & 0xe0) == LISP_STORAGE_COMPLEX)
+  (LISP_IS_STORAGE_CONS_TID(TID) || LISP_IS_STORAGE_COMPLEX_TID(TID))
 
 #define LISP_IS_CONS_TID(TID) ((TID) == LISP_TID_CONS)
 #define LISP_IS_NIL_TID(TID)  ((TID) == LISP_TID_NIL)
-
 
 struct lisp_cell_t;
 struct lisp_cell_iterator_t;
@@ -110,3 +118,4 @@ int lisp_load_static_types();
 extern lisp_type_t lisp_static_types[LISP_NUM_TYPES];
 
 #endif
+
