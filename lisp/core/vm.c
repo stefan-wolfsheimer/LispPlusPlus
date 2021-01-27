@@ -204,7 +204,7 @@ void * lisp_vm_alloc_root_complex_object(lisp_vm_t * vm,
   lisp_dl_item_t * item;
   lisp_complex_object_t * obj;
   lisp_gc_collectible_list_t * list;
-  assert(LISP_IS_STORAGE_COMPLEX_TID(tid));
+  assert(LISP_STORAGE_ID(tid) == LISP_STORAGE_COMPLEX);
   list = vm->object_color_map.white_root;
   item = (lisp_dl_item_t*) MALLOC(sizeof(lisp_dl_item_t) +
                                   sizeof(lisp_complex_object_t) +
@@ -387,7 +387,7 @@ int lisp_vm_recycle_all_objects(lisp_vm_t * vm)
   {
     obj = _lisp_dl_as_complex_object(item);
     assert(obj->ref_count == 0);
-    assert(LISP_IS_STORAGE_COMPLEX_TID(obj->type_id));
+    assert(LISP_STORAGE_ID(obj->type_id) == LISP_STORAGE_COMPLEX);
     assert(obj->type_id < LISP_NUM_TYPES);
     cell.type_id = obj->type_id;
     cell.data.obj = obj + 1;
@@ -585,7 +585,7 @@ static void _lisp_gc_dump_humamn(FILE * fp, lisp_vm_t * vm)
       lisp_gc_iterator_is_valid(&itr);
       lisp_gc_next(vm, &itr))
   {
-    if(LISP_IS_STORAGE_CONS_TID(itr.cell.type_id))
+    if(LISP_STORAGE_ID(itr.cell.type_id) == LISP_STORAGE_CONS)
     {
       num_conses++;
     }
@@ -611,7 +611,7 @@ int lisp_vm_gc_check(lisp_vm_t * vm)
       lisp_gc_iterator_is_valid(&itr);
       lisp_gc_next(vm, &itr))
   {
-    if(LISP_IS_STORAGE_CONS_TID(itr.cell.type_id))
+    if(LISP_STORAGE_ID(itr.cell.type_id) == LISP_STORAGE_CONS)
     {
       num_conses++;
     }
@@ -676,7 +676,8 @@ void lisp_vm_gc_get_stats(lisp_vm_t * vm,
         lisp_cell_iterator_is_valid(&citr);
         lisp_cell_next_child(&citr))
     {
-      if(LISP_IS_STORAGE_COMPLEX_OR_CONS(citr.child->type_id))
+      if(LISP_STORAGE_ID(citr.child->type_id) == LISP_STORAGE_CONS ||
+         LISP_STORAGE_ID(citr.child->type_id) == LISP_STORAGE_COMPLEX)
       {
         if(parent_color == LISP_GC_BLACK &&
            lisp_get_cell_color(citr.child) == LISP_GC_WHITE)

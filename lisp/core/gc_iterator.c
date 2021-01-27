@@ -243,7 +243,8 @@ int lisp_gc_reachable_next(struct lisp_vm_t * vm,
       if(!lisp_cell_in_hash(&itr->todo, citr.child) &&
          !lisp_cell_in_hash(&itr->root, citr.child))
       {
-        if(LISP_IS_STORAGE_COMPLEX_OR_CONS(citr.child->type_id))
+        if(LISP_STORAGE_ID(citr.child->type_id) == LISP_STORAGE_CONS ||
+           LISP_STORAGE_ID(citr.child->type_id) == LISP_STORAGE_COMPLEX)
         {
           lisp_cell_hash_table_set(&itr->todo, citr.child);
         }

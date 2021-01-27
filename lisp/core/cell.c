@@ -71,7 +71,7 @@ int lisp_is_complex(const lisp_cell_t * cell)
 
 struct lisp_complex_object_t * lisp_as_complex_object(const lisp_cell_t * cell)
 {
-  if(LISP_IS_STORAGE_COMPLEX_TID(cell->type_id))
+  if(LISP_STORAGE_ID(cell->type_id) == LISP_STORAGE_COMPLEX)
   {
     return (struct lisp_complex_object_t *)cell->data.obj;
   }
@@ -113,49 +113,48 @@ struct lisp_array_t * lisp_as_array(lisp_cell_t * cell)
 
 size_t lisp_get_ref_count(const lisp_cell_t * cell)
 {
-  if(LISP_IS_STORAGE_CONS_TID(cell->type_id))
+  switch(LISP_STORAGE_ID(cell->type_id))
   {
+  case LISP_STORAGE_CONS:
     return ((lisp_cons_t*)cell->data.obj)->ref_count;
-  }
-  else if(LISP_IS_STORAGE_COMPLEX_TID(cell->type_id))
-  {
+
+  case LISP_STORAGE_COMPLEX:
     return ((lisp_complex_object_t*)cell->data.obj)[-1].ref_count;
-  }
-  else
-  {
+
+  default:
     return 0;
   }
 }
 
 int lisp_is_root_cell(const lisp_cell_t * cell)
 {
-  if(LISP_IS_STORAGE_CONS_TID(cell->type_id))
+  switch(LISP_STORAGE_ID(cell->type_id))
   {
+  case LISP_STORAGE_CONS:
     return ((lisp_cons_t*)cell->data.obj)->gc_list->is_root;
-  }
-  else if(LISP_IS_STORAGE_COMPLEX_TID(cell->type_id))
-  {
+
+  case LISP_STORAGE_COMPLEX:
     return ((lisp_complex_object_t*)cell->data.obj)[-1].gc_list->is_root;
-  }
-  else
-  {
+
+  default:
     return 1;
+
   }
 }
 
 lisp_gc_color_t lisp_get_cell_color(const lisp_cell_t * cell)
 {
-  if(LISP_IS_STORAGE_CONS_TID(cell->type_id))
+  switch(LISP_STORAGE_ID(cell->type_id))
   {
+  case LISP_STORAGE_CONS:
     return ((lisp_cons_t*)cell->data.obj)->gc_list->color;
-  }
-  else if(LISP_IS_STORAGE_COMPLEX_TID(cell->type_id))
-  {
+
+  case LISP_STORAGE_COMPLEX:
     return ((lisp_complex_object_t*)cell->data.obj)[-1].gc_list->color;
-  }
-  else
-  {
+
+  default:
     return LISP_GC_NO_COLOR;
+
   }
 }
 
@@ -193,25 +192,31 @@ static void _lisp_complex_unset(lisp_complex_object_t * obj)
 
 int lisp_unset(lisp_cell_t * cell)
 {
-  if(LISP_IS_STORAGE_ATOM_TID(cell->type_id))
+  switch(LISP_STORAGE_ID(cell->type_id))
   {
+  case LISP_STORAGE_NULL:
+  case LISP_STORAGE_ATOM:
     cell->type_id = LISP_TID_NIL;
     cell->data.obj = NULL;
-  }
-  else if(LISP_IS_STORAGE_CONS_TID(cell->type_id))
-  {
+    return LISP_OK;
+
+  case LISP_STORAGE_COW_OBJECT:
+    return LISP_NOT_IMPLEMENTED;
+
+  case LISP_STORAGE_OBJECT:
+    return LISP_NOT_IMPLEMENTED;
+
+  case LISP_STORAGE_CONS:
     _lisp_cons_unset((lisp_cons_t*)cell->data.obj);
     return LISP_OK;
-  }
-  else if(LISP_IS_STORAGE_COMPLEX_TID(cell->type_id))
-  {
+
+  case LISP_STORAGE_COMPLEX:
     _lisp_complex_unset(((lisp_complex_object_t*)cell->data.obj) - 1);
     return LISP_OK;
-  }
-  else
-  {
+
+  default:
     return LISP_NOT_IMPLEMENTED;
   }
-  return LISP_OK;
+  return LISP_NOT_IMPLEMENTED;
 }
 

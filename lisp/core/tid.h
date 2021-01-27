@@ -57,40 +57,12 @@ either expressed or implied, of the FreeBSD Project.
 #define LISP_STORAGE_CONS            4
 #define LISP_STORAGE_COMPLEX         5
 
-#define LISP_STORAGE_NULL_O          0x00
-#define LISP_STORAGE_ATOM_O          0x20
-#define LISP_STORAGE_COW_OBJECT_O    0x40
-#define LISP_STORAGE_OBJECT_O        0x60
-#define LISP_STORAGE_CONS_O          0x80
-#define LISP_STORAGE_COMPLEX_O       0xa0
-
-#define LISP_TID_NIL                 LISP_STORAGE_NULL_O
-#define LISP_TID_CONS                LISP_STORAGE_CONS_O
-#define LISP_TID_ARRAY               (LISP_STORAGE_COMPLEX_O + 1)
-
 #define LISP_STORAGE_ID(__TID__) ((__TID__) >> 5)
+#define LISP_TID_OFFSET(__SID__, __OFF__) (((__SID__) << 5) + (__OFF__))
 
-/* @todo replace the following macros with switch statements */
-#define LISP_IS_STORAGE_NULL_TID(__TID__)               \
-  (LISP_STORAGE_ID(__TID__) == LISP_STORAGE_NULL)
-
-#define LISP_IS_STORAGE_ATOM_TID(__TID__)               \
-  (LISP_STORAGE_ID(__TID__) == LISP_STORAGE_ATOM)
-
-#define LISP_IS_STORAGE_COW_OBJECT_TID(__TID__)         \
-  (LISP_STORAGE_ID(__TID__) == LISP_STORAGE_COW_OBJECT)
-
-#define LISP_IS_STORAGE_OBJECT_TID(__TID__)             \
-  (LISP_STORAGE_ID(__TID__) == LISP_STORAGE_OBJECT)
-
-#define LISP_IS_STORAGE_CONS_TID(__TID__)               \
-  (LISP_STORAGE_ID(__TID__) == LISP_STORAGE_CONS)
-
-#define LISP_IS_STORAGE_COMPLEX_TID(__TID__)            \
-  (LISP_STORAGE_ID(__TID__) == LISP_STORAGE_COMPLEX)
-
-#define LISP_IS_STORAGE_COMPLEX_OR_CONS(TID)    \
-  (LISP_IS_STORAGE_CONS_TID(TID) || LISP_IS_STORAGE_COMPLEX_TID(TID))
+#define LISP_TID_NIL      LISP_TID_OFFSET(LISP_STORAGE_NULL, 0)
+#define LISP_TID_CONS     LISP_TID_OFFSET(LISP_STORAGE_CONS, 0)
+#define LISP_TID_ARRAY    LISP_TID_OFFSET(LISP_STORAGE_COMPLEX, 1)
 
 #define LISP_IS_CONS_TID(TID) ((TID) == LISP_TID_CONS)
 #define LISP_IS_NIL_TID(TID)  ((TID) == LISP_TID_NIL)

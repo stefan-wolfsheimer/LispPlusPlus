@@ -39,22 +39,28 @@ static int _lisp_cell_eq(const void * a, const void * b)
 {
   if(__AS_CELL__(a)->type_id == __AS_CELL__(b)->type_id)
   {
-    if(LISP_IS_NIL_TID(__AS_CELL__(a)->type_id))
+    switch(LISP_STORAGE_ID(__AS_CELL__(a)->type_id))
     {
+    case LISP_STORAGE_NULL:
       /* two NIL are always equal*/
       return 1;
-    }
-    if(LISP_IS_STORAGE_COMPLEX_TID(__AS_CELL__(a)->type_id))
-    {
+
+    case LISP_STORAGE_ATOM:
+      /* @todo */
+      return 0;
+
+    case LISP_STORAGE_COW_OBJECT:
+      /* @todo */
+      return 0;
+
+    case LISP_STORAGE_OBJECT:
+      /* @todo */
+      return 0;
+
+    case LISP_STORAGE_CONS:
+    case LISP_STORAGE_COMPLEX:
       return __AS_CELL__(a)->data.obj == __AS_CELL__(b)->data.obj;
-    }
-    else if(LISP_IS_STORAGE_CONS_TID(__AS_CELL__(a)->type_id))
-    {
-      return __AS_CELL__(a)->data.obj == __AS_CELL__(b)->data.obj;
-    }
-    else
-    {
-      /* @todo other types */
+    default:
       return 0;
     }
   }
@@ -81,26 +87,37 @@ static hash_code_t _lisp_cell_hash_function(const void * a)
   static const uint32_t seed = 1;
   uint32_t value;
   unsigned char data[sizeof(lisp_cell_t)];
-  if(LISP_IS_NIL_TID(__AS_CELL__(a)->type_id))
+  switch(LISP_STORAGE_ID(__AS_CELL__(a)->type_id))
   {
+  case LISP_STORAGE_NULL:
     data[0] = __AS_CELL__(a)->type_id;
     murmur_hash3_x86_32(data, 1, seed, &value);
     return value;
-  }
-  else if(LISP_IS_STORAGE_COMPLEX_TID(__AS_CELL__(a)->type_id) ||
-          LISP_IS_STORAGE_CONS_TID(__AS_CELL__(a)->type_id))
-  {
+
+  case LISP_STORAGE_ATOM:
+    /* @todo other types */
+    return 0;
+
+  case LISP_STORAGE_COW_OBJECT:
+    /* @todo other types */
+    return 0;
+
+  case LISP_STORAGE_OBJECT:
+    /* @todo other types */
+    return 0;
+
+  case LISP_STORAGE_CONS:
+  case LISP_STORAGE_COMPLEX:
     data[0] = __AS_CELL__(a)->type_id;
     _lisp_hash_init_data(data + 1,
                          (unsigned char*) &__AS_CELL__(a)->data.obj,
                          sizeof(void*));
     murmur_hash3_x86_32(data, sizeof(void*) + 1, seed, &value);
     return value;
-  }
-  else
-  {
-    /* @todo other types */
+
+  default:
     return 0;
+
   }
 }
 
@@ -111,15 +128,24 @@ static int _lisp_cell_hash_entry_constructor(void * target,
 {
   lisp_cell_t * cell = (lisp_cell_t*)target;
   cell->type_id = __AS_CELL__(src)->type_id;
-  if(LISP_IS_STORAGE_OBJECT_TID(cell->type_id) ||
-     LISP_IS_STORAGE_COMPLEX_TID(cell->type_id) ||
-     LISP_IS_STORAGE_CONS_TID(cell->type_id))
+  switch(LISP_STORAGE_ID(cell->type_id))
   {
+  case LISP_STORAGE_NULL:
+    /* @todo */
+    return 0;
+  case LISP_STORAGE_ATOM:
+    /* @todo */
+    return 0;
+  case LISP_STORAGE_COW_OBJECT:
+    /* @todo */
+    return 0;
+  case LISP_STORAGE_OBJECT:
+  case LISP_STORAGE_CONS:
+  case LISP_STORAGE_COMPLEX:
     cell->data.obj = __AS_CELL__(src)->data.obj;
-  }
-  else
-  {
-    /* @todo other tcopy cell */
+    return 0;
+  default:
+    return 0;
   }
   return 0;
 }
