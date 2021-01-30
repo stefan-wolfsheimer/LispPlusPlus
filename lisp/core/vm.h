@@ -136,14 +136,28 @@ int lisp_vm_recycle_all_objects(lisp_vm_t * vm);
 int lisp_vm_recycle_all(lisp_vm_t * vm);
 
 /**
- * Perform one garbage collector step
+ * Perform one garbage collector step and swap colors
+ * if possible.
  * @return true if colors were swapped
  */
 short int lisp_vm_gc_step(lisp_vm_t * vm);
 
 /**
- * Perform one gargage collector step on the cons space
- * @return true of conses are ready to be swapped.
+ * GC is swappable if there are no white or grey roots and
+ * no grey objects or conses.
+ *
+ * @return true if GC is swappable
+ */
+short int lisp_vm_gc_swappable(lisp_vm_t * vm);
+
+/**
+ * Swap GC space if swappable
+ */
+short int lisp_vm_gc_swap(lisp_vm_t * vm);
+
+/**
+ * Perform one gargage collector step on the cons space.
+ * @return true if conses are ready to be swapped.
  */
 short int lisp_vm_gc_cons_step(lisp_vm_t * vm);
 /**

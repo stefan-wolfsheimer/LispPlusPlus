@@ -476,7 +476,10 @@ static inline short int _lisp_vm_gc_cons_step(lisp_vm_t * vm)
     _lisp_grey_cell(&_lisp_dl_as_cons(item)->cdr);
     lisp_dl_list_remove_first(&map->white_root->objects);
     lisp_dl_list_append(&map->black_root->objects, item);
-    return 0;
+    return
+      map->white_root->objects.first == NULL &&
+      map->grey_root->objects.first == NULL &&
+      map->grey->objects.first == NULL;
   }
   else if(map->grey_root->objects.first)
   {
@@ -485,25 +488,18 @@ static inline short int _lisp_vm_gc_cons_step(lisp_vm_t * vm)
     _lisp_grey_cell(&_lisp_dl_as_cons(item)->cdr);
     lisp_dl_list_remove_first(&map->grey_root->objects);
     lisp_dl_list_append(&map->black_root->objects, item);
-    return 0;
+    return
+      map->grey_root->objects.first == NULL &&
+      map->grey->objects.first == NULL;
   }
   else if(map->grey->objects.first)
   {
     item = map->grey->objects.first;
-    /* @todo implement _cons_grey_children */
     _lisp_grey_cell(&_lisp_dl_as_cons(item)->car);
     _lisp_grey_cell(&_lisp_dl_as_cons(item)->cdr);
     lisp_dl_list_remove_first(&map->grey->objects);
     lisp_dl_list_append(&map->black->objects, item);
-    if(map->grey->objects.first)
-    {
-      return 0;
-    }
-    else
-    {
-      /* nothing left */
-      return 1;
-    }
+    return map->grey->objects.first == NULL;
   }
   else
   {
@@ -518,20 +514,79 @@ static inline short int _lisp_vm_gc_object_step(lisp_vm_t * vm)
   return 1;
 }
 
+static inline short int _lisp_vm_gc_swappable(lisp_vm_t * vm)
+{
+  return
+    vm->cons_color_map.white_root->objects.first == NULL &&
+    vm->cons_color_map.grey_root->objects.first == NULL &&
+    vm->cons_color_map.grey->objects.first == NULL &&
+    vm->object_color_map.white_root->objects.first == NULL &&
+    vm->object_color_map.grey_root->objects.first == NULL &&
+    vm->object_color_map.grey->objects.first == NULL;
+}
+
+void _lisp_vm_gc_swap_list(lisp_dl_list_t * target,
+                           lisp_dl_list_t * source)
+{
+  assert(target->first == NULL);
+  target->first = source->first;
+  target->last = source->last;
+  source->first = NULL;
+  source->last = NULL;
+}
+
+void _lisp_vm_gc_swap(lisp_vm_t * vm)
+{
+  assert(_lisp_vm_gc_swappable(vm));
+  vm->num_cycles++;
+
+  /* white objects are not reachable -> dispose them */
+  lisp_dl_list_move_list(&vm->disposed_conses,
+                         &vm->cons_color_map.white->objects);
+  lisp_dl_list_move_list(&vm->disposed_objects,
+                         &vm->object_color_map.white->objects);
+
+  /* move all black objects to white */
+  _lisp_vm_gc_swap_list(&vm->cons_color_map.white_root->objects,
+                        &vm->cons_color_map.black_root->objects);
+  _lisp_vm_gc_swap_list(&vm->object_color_map.white_root->objects,
+                        &vm->object_color_map.black_root->objects);
+  _lisp_vm_gc_swap_list(&vm->cons_color_map.white->objects,
+                        &vm->cons_color_map.black->objects);
+  _lisp_vm_gc_swap_list(&vm->object_color_map.white->objects,
+                        &vm->object_color_map.black->objects);
+}
+
 short int lisp_vm_gc_step(lisp_vm_t * vm)
 {
-  short int swapable = 1;
-  swapable &= _lisp_vm_gc_cons_step(vm);
-  swapable &= _lisp_vm_gc_object_step(vm);
-  if(swapable)
+  short int swappable = 1;
+  swappable &= _lisp_vm_gc_cons_step(vm);
+  swappable &= _lisp_vm_gc_object_step(vm);
+  if(swappable)
   {
-    vm->num_cycles++;
-    /*
-      @todo implement swap
-    */
+    _lisp_vm_gc_swap(vm);
     return 1;
   }
   return 0;
+}
+
+
+short int lisp_vm_gc_swappable(lisp_vm_t * vm)
+{
+  return _lisp_vm_gc_swappable(vm);
+}
+
+short int lisp_vm_gc_swap(lisp_vm_t * vm)
+{
+  if(lisp_vm_gc_swappable(vm))
+  {
+    _lisp_vm_gc_swap(vm);
+    return 1;
+  }
+  else
+  {
+    return 0;
+  }
 }
 
 short int lisp_vm_gc_cons_step(lisp_vm_t * vm)

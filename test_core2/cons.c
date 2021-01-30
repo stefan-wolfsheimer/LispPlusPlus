@@ -252,9 +252,57 @@ static void test_make_cons_and_recyle(unit_test_t * tst)
   ASSERT_FALSE(tst, lisp_is_root_cell(&cell[1]));
   ASSERT_FALSE(tst, lisp_is_root_cell(&cell[2]));
 
-  /* @todo stepwise GC
-    ......
-   */
+  ref_stat.num_root = 2;
+  ref_stat.num_white_root_conses = 2;
+  ref_stat.num_grey_conses = 3;
+  ref_stat.num_reachable = 2;
+  ref_stat.num_allocated = 5;
+  ref_stat.num_leaves = 4;
+  ref_stat.num_recycled = 0;
+  ref_stat.num_void = 3;
+  ref_stat.num_cons_pages = 2;
+  ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
+
+  ASSERT_FALSE(tst, lisp_vm_gc_cons_step(&vm));
+  ASSERT_FALSE(tst, lisp_vm_gc_cons_step(&vm));
+  ASSERT_FALSE(tst, lisp_vm_gc_cons_step(&vm));
+  ASSERT_FALSE(tst, lisp_vm_gc_cons_step(&vm));
+  ASSERT_FALSE(tst, lisp_vm_gc_swappable(&vm));
+  ASSERT(tst, lisp_vm_gc_cons_step(&vm));
+  ASSERT(tst, lisp_vm_gc_swappable(&vm));
+  ref_stat.num_white_root_conses = 0;
+  ref_stat.num_black_root_conses = 2;
+  ref_stat.num_grey_conses = 0;
+  ref_stat.num_grey_root_conses = 0;
+  ref_stat.num_black_conses = 3;
+  ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
+
+  /* first swap */
+  ASSERT(tst, lisp_vm_gc_swap(&vm));
+  ref_stat.num_cycles = 1;
+  ref_stat.num_white_root_conses = 2;
+  ref_stat.num_black_root_conses = 0;
+  ref_stat.num_white_conses = 3;
+  ref_stat.num_black_conses = 0;
+  ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
+
+  ASSERT_FALSE(tst, lisp_vm_gc_cons_step(&vm));
+  ASSERT(tst, lisp_vm_gc_cons_step(&vm));
+  ref_stat.num_white_root_conses = 0;
+  ref_stat.num_black_root_conses = 2;
+  ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
+
+  /* second swap */
+  ASSERT(tst, lisp_vm_gc_swap(&vm));
+  ref_stat.num_cycles = 2;
+  ref_stat.num_allocated = 2;
+  ref_stat.num_root = 2;
+  ref_stat.num_disposed = 3;
+  ref_stat.num_white_root_conses = 2;
+  ref_stat.num_black_root_conses = 0;
+  ref_stat.num_white_conses = 0;
+  ref_stat.num_black_conses = 0;
+  ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
 
   ASSERT_LISP_OK(tst, lisp_free_vm(&vm));
   ASSERT_MEMCHECK(tst);
