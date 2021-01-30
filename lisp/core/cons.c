@@ -79,18 +79,6 @@ inline static lisp_dl_item_t * _lisp_cons_as_dl_item(const lisp_cons_t * cons)
   return (lisp_dl_item_t*) (((char*)cons) - sizeof(lisp_dl_item_t));
 }
 
-void lisp_cons_grey(lisp_cons_t * cons)
-{
-  if(cons->gc_list->grey_elements != NULL)
-  {
-    lisp_dl_list_remove(&cons->gc_list->objects,
-                        _lisp_cons_as_dl_item(cons));
-    cons->gc_list = cons->gc_list->grey_elements;
-    lisp_dl_list_append(&cons->gc_list->objects,
-                        _lisp_cons_as_dl_item(cons));
-  }
-}
-
 int lisp_init_cons_type(struct lisp_type_t * t)
 {
   t->lisp_cell_first_child_ptr = _cons_first_child;

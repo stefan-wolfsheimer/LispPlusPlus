@@ -57,11 +57,6 @@ int lisp_cons_set_car(lisp_cons_t * cons,
 int lisp_cons_set_cdr(lisp_cons_t * cons,
                       lisp_cell_t * cdr);
 
-/**
- * If cons is in white list move it to grey list
- */
-void lisp_cons_grey(lisp_cons_t * cons);
-
 int lisp_init_cons_type(struct lisp_type_t * t);
 
 #endif

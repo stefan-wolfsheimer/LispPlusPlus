@@ -32,6 +32,9 @@ either expressed or implied, of the FreeBSD Project.
 #define __LISP_GC_STAT_H__
 #include <stdio.h>
 
+#define LISP_GC_STAT_NUM_FIELDS 24
+#define LISP_GC_STAT_PRINT_COLOR 1
+
 /**
  * Garbage collector statistics
  */
@@ -97,12 +100,36 @@ typedef struct lisp_gc_stat_t
    */
   size_t num_cons_pages;
 
+  size_t num_white_root_conses;
+  size_t num_grey_root_conses;
+  size_t num_black_root_conses;
+
+  size_t num_white_conses;
+  size_t num_grey_conses;
+  size_t num_black_conses;
+
+  size_t num_white_root_objects;
+  size_t num_grey_root_objects;
+  size_t num_black_root_objects;
+
+  size_t num_white_objects;
+  size_t num_grey_objects;
+  size_t num_black_objects;
+
   /**
    * Error flags
    */
   int error_black_has_white_child;
 } lisp_gc_stat_t;
 
+
+typedef struct lisp_gc_stat_field_t
+{
+  const char * name;
+  const char * format;
+  short int type;
+  void * (*getter)(lisp_gc_stat_t *);
+} lisp_gc_stat_field_t;
 
 void lisp_init_gc_stat(lisp_gc_stat_t * stat);
 int lisp_gc_stat_eq(lisp_gc_stat_t * stat1,
@@ -114,5 +141,7 @@ void lisp_gc_stat_print(FILE * fp,
 void lisp_gc_stat_print2(FILE * fp,
                          lisp_gc_stat_t * stat1,
                          lisp_gc_stat_t * stat2);
+
+extern lisp_gc_stat_field_t lisp_gc_stat_field[LISP_GC_STAT_NUM_FIELDS];
 
 #endif

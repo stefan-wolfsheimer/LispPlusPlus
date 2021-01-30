@@ -136,11 +136,14 @@ int lisp_vm_recycle_all_objects(lisp_vm_t * vm);
 int lisp_vm_recycle_all(lisp_vm_t * vm);
 
 /**
- * @todo implement function
+ * Perform one garbage collector step
+ * @return true if colors were swapped
  */
-void lisp_vm_gc_step(lisp_vm_t * vm);
+short int lisp_vm_gc_step(lisp_vm_t * vm);
+
 /**
- * @todo implement function
+ * Perform one gargage collector step on the cons space
+ * @return true of conses are ready to be swapped.
  */
 short int lisp_vm_gc_cons_step(lisp_vm_t * vm);
 /**

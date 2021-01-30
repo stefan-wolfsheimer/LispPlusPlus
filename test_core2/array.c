@@ -55,6 +55,7 @@ static void test_make_array(unit_test_t * tst)
   ASSERT(tst, lisp_is_root_cell(&cell[0]));
 
   ref_stat.num_root = 1;
+  ref_stat.num_white_root_objects = 1;
   ref_stat.num_reachable = 1;
   ref_stat.num_allocated = 1;
   ref_stat.num_leaves = 1;
@@ -67,6 +68,7 @@ static void test_make_array(unit_test_t * tst)
   ASSERT_EQ_I(tst, lisp_get_cell_color(&cell[1]), LISP_GC_WHITE);
   ASSERT(tst, lisp_is_root_cell(&cell[1]));
   ref_stat.num_root = 2;
+  ref_stat.num_white_root_objects = 2;
   ref_stat.num_reachable = 2;
   ref_stat.num_allocated = 2;
   ref_stat.num_leaves = 5;
@@ -78,6 +80,7 @@ static void test_make_array(unit_test_t * tst)
   ASSERT_EQ_I(tst, lisp_get_cell_color(&cell[2]), LISP_GC_WHITE);
   ASSERT(tst, lisp_is_root_cell(&cell[2]));
   ref_stat.num_root = 3;
+  ref_stat.num_white_root_objects = 3;
   ref_stat.num_reachable = 3;
   ref_stat.num_allocated = 3;
   ref_stat.num_leaves = 8;
@@ -88,6 +91,7 @@ static void test_make_array(unit_test_t * tst)
   ASSERT_EQ_I(tst, lisp_get_cell_color(&cell[3]), LISP_GC_WHITE);
   ASSERT(tst, lisp_is_root_cell(&cell[3]));
   ref_stat.num_root = 4;
+  ref_stat.num_white_root_objects = 4;
   ref_stat.num_reachable = 4;
   ref_stat.num_allocated = 4;
   ref_stat.num_leaves = 10;
@@ -98,6 +102,7 @@ static void test_make_array(unit_test_t * tst)
   ASSERT(tst, lisp_is_root_cell(&cell[4]));
   ASSERT_EQ_I(tst, lisp_get_cell_color(&cell[4]), LISP_GC_WHITE);
   ref_stat.num_root = 5;
+  ref_stat.num_white_root_objects = 5;
   ref_stat.num_reachable = 5;
   ref_stat.num_allocated = 5;
   ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
@@ -124,6 +129,8 @@ static void test_make_array(unit_test_t * tst)
   ASSERT_FALSE(tst, lisp_is_root_cell(&cell[2]));
 
   ref_stat.num_root = 2;
+  ref_stat.num_white_root_objects = 2;
+  ref_stat.num_grey_objects = 3;
   ref_stat.num_reachable = 2;
   ref_stat.num_allocated = 5;
   ref_stat.num_leaves = 2;
@@ -138,6 +145,7 @@ static void test_make_array(unit_test_t * tst)
   ref_stat.num_allocated = 2;
   ref_stat.num_leaves = 2;
   ref_stat.num_disposed = 3;
+  ref_stat.num_grey_objects = 0;
   ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
 
   /* make array cell[0] */
@@ -145,6 +153,7 @@ static void test_make_array(unit_test_t * tst)
   ASSERT_EQ_I(tst, lisp_get_cell_color(&cell[0]), LISP_GC_WHITE);
   ASSERT(tst, lisp_is_root_cell(&cell[0]));
   ref_stat.num_root = 3;
+  ref_stat.num_white_root_objects = 3;
   ref_stat.num_reachable = 3;
   ref_stat.num_allocated = 3;
   ref_stat.num_leaves = 3;
@@ -155,6 +164,7 @@ static void test_make_array(unit_test_t * tst)
   ASSERT_EQ_I(tst, lisp_get_cell_color(&cell[1]), LISP_GC_WHITE);
   ASSERT(tst, lisp_is_root_cell(&cell[1]));
   ref_stat.num_root = 4;
+  ref_stat.num_white_root_objects = 4;
   ref_stat.num_reachable = 4;
   ref_stat.num_allocated = 4;
   ref_stat.num_leaves = 8;
@@ -165,6 +175,7 @@ static void test_make_array(unit_test_t * tst)
   ASSERT_EQ_I(tst, lisp_get_cell_color(&cell[1]), LISP_GC_WHITE);
   ASSERT(tst, lisp_is_root_cell(&cell[2]));
   ref_stat.num_root = 5;
+  ref_stat.num_white_root_objects = 5;
   ref_stat.num_reachable = 5;
   ref_stat.num_allocated = 5;
   ref_stat.num_leaves = 11;
@@ -181,6 +192,7 @@ static void test_make_array(unit_test_t * tst)
   ASSERT_NEQ_PTR(tst, lisp_as_array(&cell[3]), lisp_as_array(&cell[4]));
   ASSERT_NEQ_PTR(tst, lisp_as_array(&cell[4]), lisp_as_array(&cell[5]));
   ref_stat.num_root = 6;
+  ref_stat.num_white_root_objects = 6;
   ref_stat.num_reachable = 6;
   ref_stat.num_allocated = 6;
   ref_stat.num_leaves = 13;

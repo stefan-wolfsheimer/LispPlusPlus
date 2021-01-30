@@ -40,12 +40,33 @@ either expressed or implied, of the FreeBSD Project.
 #include "complex_object.h"
 #include "array.h"
 
+#define DEFAULT_PAGE_SIZE 1024
+
 /*****************************************************************************
  Helper functions
  ****************************************************************************/
-#define DEFAULT_PAGE_SIZE 1024
+inline static lisp_dl_item_t * _lisp_cons_as_dl_item(const lisp_cons_t * cons)
+{
+  return (lisp_dl_item_t*) (((lisp_dl_item_t*)cons) - 1);
+}
 
-static int lisp_erase_list(lisp_gc_collectible_list_t * lst)
+inline static lisp_dl_item_t *
+_lisp_complex_object_as_dl_item(const lisp_complex_object_t * obj)
+{
+  return (lisp_dl_item_t*) (((lisp_dl_item_t*)obj) - 1);
+}
+
+inline static lisp_cons_t * _lisp_dl_as_cons(const lisp_dl_item_t * item)
+{
+  return ((lisp_cons_t *)(item + 1));
+}
+
+inline static lisp_complex_object_t * _lisp_dl_as_complex_object(const lisp_dl_item_t * item)
+{
+  return ((lisp_complex_object_t*)(item + 1));
+}
+
+static inline int lisp_erase_list(lisp_gc_collectible_list_t * lst)
 {
   lisp_dl_item_t * item;
   while(!lisp_dl_list_empty(&lst->objects))
@@ -57,6 +78,33 @@ static int lisp_erase_list(lisp_gc_collectible_list_t * lst)
   return LISP_OK;
 }
 
+static inline void _lisp_grey_cons(lisp_cons_t * cons)
+{
+  if(cons->gc_list->grey_elements != NULL)
+  {
+    lisp_dl_list_remove(&cons->gc_list->objects,
+                        _lisp_cons_as_dl_item(cons));
+    cons->gc_list = cons->gc_list->grey_elements;
+    lisp_dl_list_append(&cons->gc_list->objects,
+                        _lisp_cons_as_dl_item(cons));
+  }
+}
+
+static inline void _lisp_grey_complex_object(lisp_complex_object_t * obj)
+{
+  if(obj->gc_list->grey_elements != NULL)
+  {
+    lisp_dl_list_remove(&obj->gc_list->objects,
+                        _lisp_complex_object_as_dl_item(obj));
+    obj->gc_list = obj->gc_list->grey_elements;
+    lisp_dl_list_append(&obj->gc_list->objects,
+                        _lisp_complex_object_as_dl_item(obj));
+  }
+}
+
+/*****************************************************************************
+ constructor
+ ****************************************************************************/
 int lisp_init_vm(lisp_vm_t * vm)
 {
   int ret = lisp_load_static_types();
@@ -174,24 +222,6 @@ size_t lisp_vm_gc_set_steps(lisp_vm_t * vm, size_t n)
   size_t ret = vm->num_steps;
   vm->num_steps = n;
   return ret;
-}
-
-/*****************************************************************************
- cast functions
- ****************************************************************************/
-inline static lisp_dl_item_t * _lisp_cons_as_dl_item(const lisp_cons_t * cons)
-{
-  return (lisp_dl_item_t*) (((char*)cons) - sizeof(lisp_dl_item_t));
-}
-
-inline static lisp_cons_t * _lisp_dl_as_cons(const lisp_dl_item_t * item)
-{
-  return ((lisp_cons_t *)(item + 1));
-}
-
-inline static lisp_complex_object_t * _lisp_dl_as_complex_object(const lisp_dl_item_t * item)
-{
-  return ((lisp_complex_object_t*)(item + 1));
 }
 
 /****************************************************************************
@@ -420,19 +450,75 @@ int lisp_vm_recycle_all(lisp_vm_t * vm)
   return lisp_vm_recycle_all_objects(vm);
 }
 
+static inline void _lisp_grey_cell(lisp_cell_t * cell)
+{
+  switch(LISP_STORAGE_ID(cell->type_id))
+  {
+    /* @todo implement storage complex
+  case LISP_STORAGE_COMPLEX:
+    assert(0);
+    break; */
+  case LISP_STORAGE_CONS:
+    _lisp_grey_cons((lisp_cons_t*)cell->data.obj);
+    break;
+  }
+}
+
 static inline short int _lisp_vm_gc_cons_step(lisp_vm_t * vm)
 {
-  /* @todo implement function */
-  return 0;
+  lisp_gc_color_map_t * map;
+  lisp_dl_item_t * item;
+  map = &vm->cons_color_map;
+  if(map->white_root->objects.first)
+  {
+    item = map->white_root->objects.first;
+    _lisp_grey_cell(&_lisp_dl_as_cons(item)->car);
+    _lisp_grey_cell(&_lisp_dl_as_cons(item)->cdr);
+    lisp_dl_list_remove_first(&map->white_root->objects);
+    lisp_dl_list_append(&map->black_root->objects, item);
+    return 0;
+  }
+  else if(map->grey_root->objects.first)
+  {
+    item = map->grey_root->objects.first;
+    _lisp_grey_cell(&_lisp_dl_as_cons(item)->car);
+    _lisp_grey_cell(&_lisp_dl_as_cons(item)->cdr);
+    lisp_dl_list_remove_first(&map->grey_root->objects);
+    lisp_dl_list_append(&map->black_root->objects, item);
+    return 0;
+  }
+  else if(map->grey->objects.first)
+  {
+    item = map->grey->objects.first;
+    /* @todo implement _cons_grey_children */
+    _lisp_grey_cell(&_lisp_dl_as_cons(item)->car);
+    _lisp_grey_cell(&_lisp_dl_as_cons(item)->cdr);
+    lisp_dl_list_remove_first(&map->grey->objects);
+    lisp_dl_list_append(&map->black->objects, item);
+    if(map->grey->objects.first)
+    {
+      return 0;
+    }
+    else
+    {
+      /* nothing left */
+      return 1;
+    }
+  }
+  else
+  {
+    /* nothing left */
+    return 1;
+  }
 }
 
 static inline short int _lisp_vm_gc_object_step(lisp_vm_t * vm)
 {
   /* @todo implement function */
-  return 0;
+  return 1;
 }
 
-void lisp_vm_gc_step(lisp_vm_t * vm)
+short int lisp_vm_gc_step(lisp_vm_t * vm)
 {
   short int swapable = 1;
   swapable &= _lisp_vm_gc_cons_step(vm);
@@ -443,7 +529,9 @@ void lisp_vm_gc_step(lisp_vm_t * vm)
     /*
       @todo implement swap
     */
+    return 1;
   }
+  return 0;
 }
 
 short int lisp_vm_gc_cons_step(lisp_vm_t * vm)
@@ -506,6 +594,7 @@ static int _lisp_make_cons_cell(lisp_vm_t * vm,
                                 lisp_cell_t * target,
                                 const lisp_cell_t * source)
 {
+  /*@todo unit test coverage */
   if(source)
   {
     switch(LISP_STORAGE_ID(source->type_id))
@@ -524,12 +613,16 @@ static int _lisp_make_cons_cell(lisp_vm_t * vm,
       break;
     case LISP_STORAGE_CONS:
       /* ensure that child is not white. */
-      lisp_cons_grey((lisp_cons_t*)source->data.obj);
+      _lisp_grey_cons((lisp_cons_t*)source->data.obj);
       target->type_id = source->type_id;
       target->data = source->data;
       return LISP_OK;
     case LISP_STORAGE_COMPLEX:
-      return LISP_NOT_IMPLEMENTED;
+      /* ensure that child is not white */
+      _lisp_grey_complex_object((lisp_complex_object_t*)source->data.obj);
+      target->type_id = source->type_id;
+      target->data = source->data;
+      return LISP_OK;
       break;
     }
     /*@todo implement other types */
@@ -650,21 +743,51 @@ void lisp_vm_gc_get_stats(lisp_vm_t * vm,
   lisp_init_gc_stat(stat);
   stat->num_cycles = vm->num_cycles;
   stat->num_cons_pages = vm->num_cons_pages;
-  stat->num_root =
-    lisp_dl_list_size(&vm->cons_color_map.white_root->objects) +
-    lisp_dl_list_size(&vm->cons_color_map.grey_root->objects) +
-    lisp_dl_list_size(&vm->cons_color_map.black_root->objects) +
-    lisp_dl_list_size(&vm->object_color_map.white_root->objects) +
-    lisp_dl_list_size(&vm->object_color_map.grey_root->objects) +
+
+  stat->num_white_root_conses =
+    lisp_dl_list_size(&vm->cons_color_map.white_root->objects);
+  stat->num_grey_root_conses =
+    lisp_dl_list_size(&vm->cons_color_map.grey_root->objects);
+  stat->num_black_root_conses =
+    lisp_dl_list_size(&vm->cons_color_map.black_root->objects);
+
+  stat->num_white_conses =
+    lisp_dl_list_size(&vm->cons_color_map.white->objects);
+  stat->num_grey_conses =
+    lisp_dl_list_size(&vm->cons_color_map.grey->objects);
+  stat->num_black_conses =
+    lisp_dl_list_size(&vm->cons_color_map.black->objects);
+
+  stat->num_white_root_objects =
+    lisp_dl_list_size(&vm->object_color_map.white_root->objects);
+  stat->num_grey_root_objects =
+    lisp_dl_list_size(&vm->object_color_map.grey_root->objects);
+  stat->num_black_root_objects =
     lisp_dl_list_size(&vm->object_color_map.black_root->objects);
+
+  stat->num_white_objects =
+    lisp_dl_list_size(&vm->object_color_map.white->objects);
+  stat->num_grey_objects =
+    lisp_dl_list_size(&vm->object_color_map.grey->objects);
+  stat->num_black_objects =
+    lisp_dl_list_size(&vm->object_color_map.black->objects);
+
+  stat->num_root =
+    stat->num_white_root_conses +
+    stat->num_grey_root_conses +
+    stat->num_black_root_conses +
+    stat->num_white_root_objects +
+    stat->num_grey_root_objects +
+    stat->num_black_root_objects;
+
   stat->num_allocated =
     stat->num_root +
-    lisp_dl_list_size(&vm->cons_color_map.white->objects) +
-    lisp_dl_list_size(&vm->cons_color_map.grey->objects) +
-    lisp_dl_list_size(&vm->cons_color_map.black->objects) +
-    lisp_dl_list_size(&vm->object_color_map.white->objects) +
-    lisp_dl_list_size(&vm->object_color_map.grey->objects) +
-    lisp_dl_list_size(&vm->object_color_map.black->objects);
+    stat->num_white_conses +
+    stat->num_grey_conses +
+    stat->num_black_conses +
+    stat->num_white_objects +
+    stat->num_grey_objects +
+    stat->num_black_objects;
   stat->num_reachable = 0;
   for(lisp_gc_reachable_first(vm, &ritr);
       lisp_gc_reachable_iterator_is_valid(&ritr);
