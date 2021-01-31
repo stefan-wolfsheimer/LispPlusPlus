@@ -91,18 +91,6 @@ int lisp_vm_gc_set_cons_page_size(lisp_vm_t * gc, size_t page_size);
 
 size_t lisp_vm_gc_set_steps(lisp_vm_t * vm, size_t n);
 
-/*****************************************************************************
- constructors
- ****************************************************************************/
-/**
- * Create a cons as root.
- * @todo move to cons module
- */
-int lisp_make_cons(lisp_vm_t * vm,
-                   struct lisp_cell_t * cell,
-                   const struct lisp_cell_t * car,
-                   const struct lisp_cell_t * cdr);
-
 /****************************************************************************
  lisp_vm_t allocator and garbage collector operation
  ****************************************************************************/

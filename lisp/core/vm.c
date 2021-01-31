@@ -78,30 +78,6 @@ static inline int lisp_erase_list(lisp_gc_collectible_list_t * lst)
   return LISP_OK;
 }
 
-static inline void _lisp_grey_cons(lisp_cons_t * cons)
-{
-  if(cons->gc_list->grey_elements != NULL)
-  {
-    lisp_dl_list_remove(&cons->gc_list->objects,
-                        _lisp_cons_as_dl_item(cons));
-    cons->gc_list = cons->gc_list->grey_elements;
-    lisp_dl_list_append(&cons->gc_list->objects,
-                        _lisp_cons_as_dl_item(cons));
-  }
-}
-
-static inline void _lisp_grey_complex_object(lisp_complex_object_t * obj)
-{
-  if(obj->gc_list->grey_elements != NULL)
-  {
-    lisp_dl_list_remove(&obj->gc_list->objects,
-                        _lisp_complex_object_as_dl_item(obj));
-    obj->gc_list = obj->gc_list->grey_elements;
-    lisp_dl_list_append(&obj->gc_list->objects,
-                        _lisp_complex_object_as_dl_item(obj));
-  }
-}
-
 /*****************************************************************************
  constructor
  ****************************************************************************/
@@ -459,7 +435,7 @@ static inline void _lisp_grey_cell(lisp_cell_t * cell)
     assert(0);
     break; */
   case LISP_STORAGE_CONS:
-    _lisp_grey_cons((lisp_cons_t*)cell->data.obj);
+    lisp_cons_grey((lisp_cons_t*)cell->data.obj);
     break;
   }
 }
@@ -597,127 +573,6 @@ short int lisp_vm_gc_cons_step(lisp_vm_t * vm)
 short int lisp_vm_gc_object_step(lisp_vm_t * vm)
 {
   return _lisp_vm_gc_object_step(vm);
-}
-
-/*****************************************************************************
- constructors
- ****************************************************************************/
-static lisp_cons_t * _lisp_gc_alloc_cons(lisp_vm_t * vm,
-                                         lisp_gc_collectible_list_t * list,
-                                         size_t ref_count)
-{
-  lisp_dl_item_t * item;
-  if(!lisp_dl_list_empty(&vm->recycled_conses))
-  {
-    item = vm->recycled_conses.first;
-    lisp_dl_list_remove_first(&vm->recycled_conses);
-  }
-  else
-  {
-    if(vm->cons_pos >= vm->cons_page_size)
-    {
-      vm->current_cons_page = MALLOC((sizeof(lisp_dl_item_t) +
-                                      sizeof(lisp_cons_t)) * vm->cons_page_size);
-      vm->cons_pages = REALLOC(vm->cons_pages,
-                               sizeof(void*) * (vm->num_cons_pages + 1));
-      if(!vm->cons_pages)
-      {
-        return NULL;
-      }
-      vm->cons_pages[vm->num_cons_pages++] = vm->current_cons_page;
-      vm->cons_pos = 0;
-    }
-    item = (lisp_dl_item_t*)(
-                             (char*) vm->current_cons_page +
-                             ((
-                               sizeof(lisp_dl_item_t) +
-                               sizeof(lisp_cons_t)) *
-                              vm->cons_pos++));
-  }
-  lisp_dl_list_append(&list->objects, item);
-  lisp_cons_t * ret = (lisp_cons_t*)((
-                                      (char*) item) +
-                                     sizeof(lisp_dl_item_t));
-  ret->ref_count = ref_count;
-  ret->gc_list = list;
-  ret->car.type_id = LISP_TID_NIL;
-  ret->cdr.type_id = LISP_TID_NIL;
-  return ret;
-}
-
-static int _lisp_make_cons_cell(lisp_vm_t * vm,
-                                lisp_cell_t * target,
-                                const lisp_cell_t * source)
-{
-  /*@todo unit test coverage */
-  if(source)
-  {
-    switch(LISP_STORAGE_ID(source->type_id))
-    {
-    case LISP_STORAGE_ATOM:
-      target->data = source->data;
-    case LISP_STORAGE_NULL:
-      target->type_id = source->type_id;
-      return LISP_OK;
-      break;
-    case LISP_STORAGE_COW_OBJECT:
-      return LISP_NOT_IMPLEMENTED;
-      break;
-    case LISP_STORAGE_OBJECT:
-      return LISP_NOT_IMPLEMENTED;
-      break;
-    case LISP_STORAGE_CONS:
-      /* ensure that child is not white. */
-      _lisp_grey_cons((lisp_cons_t*)source->data.obj);
-      target->type_id = source->type_id;
-      target->data = source->data;
-      return LISP_OK;
-    case LISP_STORAGE_COMPLEX:
-      /* ensure that child is not white */
-      _lisp_grey_complex_object((lisp_complex_object_t*)source->data.obj);
-      target->type_id = source->type_id;
-      target->data = source->data;
-      return LISP_OK;
-      break;
-    }
-    /*@todo implement other types */
-    return LISP_NOT_IMPLEMENTED;
-  }
-  else
-  {
-    target->type_id = LISP_TID_NIL;
-  }
-  return LISP_OK;
-}
-
-int lisp_make_cons(lisp_vm_t * vm,
-                   lisp_cell_t * cell,
-                   const lisp_cell_t * car,
-                   const lisp_cell_t * cdr)
-{
-  int ret;
-  cell->type_id = LISP_TID_CONS;
-  cell->data.obj = _lisp_gc_alloc_cons(vm,
-                                       vm->cons_color_map.white_root,
-                                       1u);
-
-  if(!cell->data.obj)
-  {
-    return LISP_BAD_ALLOC;
-  }
-  ret = _lisp_make_cons_cell(vm,
-                             &((lisp_cons_t*)cell->data.obj)->car,
-                             car);
-  if(!ret)
-  {
-    return _lisp_make_cons_cell(vm,
-                                &((lisp_cons_t*)cell->data.obj)->cdr,
-                                cdr);
-  }
-  else
-  {
-    return ret;
-  }
 }
 
 /****************************************************************************

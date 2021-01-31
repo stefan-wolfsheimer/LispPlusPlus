@@ -30,8 +30,10 @@ either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
 #ifndef __LISP_COMPLEX_OBJECT_H__
 #define __LISP_COMPLEX_OBJECT_H__
+#include <stddef.h>
 #include "typedefs.h"
 #include "gc_color.h"
+#include "vm.h"
 
 /**
  * basic complex object
@@ -56,9 +58,8 @@ lisp_gc_color_t lisp_complex_object_get_color(const lisp_complex_object_t * obj)
 short int lisp_complex_object_is_root(const lisp_complex_object_t * obj);
 
 /**
- * @todo implement function
- * If cons is in white list move it to grey list
+ * If object is in white list move it to grey list
  */
-short int lisp_complex_object_grey(lisp_complex_object_t * obj);
+void lisp_complex_object_grey(lisp_complex_object_t * obj);
 
 #endif

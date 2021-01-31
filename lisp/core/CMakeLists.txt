@@ -8,5 +8,6 @@ add_library( LispCore
   gc_color_map.c
   vm.c
   cons.c
+  complex_object.c
   array.c
 )
