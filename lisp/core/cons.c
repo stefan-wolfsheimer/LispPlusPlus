@@ -107,6 +107,73 @@ void lisp_cons_grey(lisp_cons_t * cons)
   _lisp_cons_grey(cons);
 }
 
+/******************************************************************************
+ * car / cdr modification
+ ******************************************************************************/
+static int _lisp_unset_cons_cell(lisp_cell_t * target)
+{
+  switch(LISP_STORAGE_ID(target->type_id))
+  {
+  case LISP_STORAGE_ATOM:
+  case LISP_STORAGE_NULL:
+    target->type_id = LISP_TID_NIL;
+    return LISP_OK;
+    break;
+  case LISP_STORAGE_COW_OBJECT:
+    return LISP_NOT_IMPLEMENTED;
+    break;
+  case LISP_STORAGE_OBJECT:
+    return LISP_NOT_IMPLEMENTED;
+    break;
+  case LISP_STORAGE_CONS:
+    target->type_id = LISP_TID_NIL;
+    target->data.obj = NULL;
+    return LISP_OK;
+  case LISP_STORAGE_COMPLEX:
+    target->type_id = LISP_TID_NIL;
+    target->data.obj = NULL;
+    return LISP_OK;
+    break;
+  default:
+    return LISP_NOT_IMPLEMENTED;
+  }
+  return LISP_OK;
+}
+
+int lisp_cons_unset_car(lisp_cons_t * cons)
+{
+  return _lisp_unset_cons_cell(&cons->car);
+}
+
+int lisp_cons_unset_cdr(lisp_cons_t * cons)
+{
+  return _lisp_unset_cons_cell(&cons->cdr);
+}
+
+int lisp_cons_unset_car_cdr(lisp_cons_t * cons)
+{
+  int ret = _lisp_unset_cons_cell(&cons->car);
+  if(ret != LISP_OK)
+  {
+    return ret;
+  }
+  return _lisp_unset_cons_cell(&cons->cdr);
+}
+
+int lisp_cons_set_car(lisp_cons_t * cons,
+                      lisp_cell_t * car)
+{
+  return LISP_NOT_IMPLEMENTED;
+}
+
+int lisp_cons_set_cdr(lisp_cons_t * cons,
+                      lisp_cell_t * cdr)
+{
+  return LISP_NOT_IMPLEMENTED;
+}
+
+
+
 static int _lisp_make_cons_cell(lisp_vm_t * vm,
                                 lisp_cell_t * target,
                                 const lisp_cell_t * source)
@@ -182,18 +249,6 @@ int lisp_make_cons(lisp_vm_t * vm,
   }
 }
 
-
-int lisp_cons_set_car(lisp_cons_t * cons,
-                      lisp_cell_t * car)
-{
-  return LISP_NOT_IMPLEMENTED;
-}
-
-int lisp_cons_set_cdr(lisp_cons_t * cons,
-                      lisp_cell_t * cdr)
-{
-  return LISP_NOT_IMPLEMENTED;
-}
 
 static int _cons_first_child(lisp_cell_iterator_t * itr)
 {

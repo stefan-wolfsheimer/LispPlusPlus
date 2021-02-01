@@ -55,6 +55,11 @@ extern lisp_cell_t lisp_nil;
 int lisp_is_null(const lisp_cell_t * cell);
 
 /**
+ * Return if cell is NIL
+ */
+int lisp_is_nil(const lisp_cell_t * cell);
+
+/**
  * Check for storage class of cell.
  *
  * @return true if cell has atomic storage class

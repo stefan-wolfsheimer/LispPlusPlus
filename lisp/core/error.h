@@ -35,5 +35,6 @@ either expressed or implied, of the FreeBSD Project.
 #define LISP_BAD_ALLOC 1
 #define LISP_INVALID 2
 #define LISP_NOT_IMPLEMENTED 3
+#define LISP_NO_CHANGE 4
 
 #endif

@@ -44,6 +44,11 @@ int lisp_is_null(const lisp_cell_t * cell)
   return (LISP_STORAGE_ID(cell->type_id) == LISP_STORAGE_NULL);
 }
 
+int lisp_is_nil(const lisp_cell_t * cell)
+{
+  return (LISP_STORAGE_ID(cell->type_id) == LISP_TID_NIL);
+}
+
 int lisp_is_atomic(const lisp_cell_t * cell)
 {
   return (LISP_STORAGE_ID(cell->type_id) == LISP_STORAGE_ATOM);
@@ -137,7 +142,7 @@ int lisp_is_root_cell(const lisp_cell_t * cell)
     return ((lisp_complex_object_t*)cell->data.obj)[-1].gc_list->is_root;
 
   default:
-    return 1;
+    return 0;
 
   }
 }
@@ -208,10 +213,14 @@ int lisp_unset(lisp_cell_t * cell)
 
   case LISP_STORAGE_CONS:
     _lisp_cons_unset((lisp_cons_t*)cell->data.obj);
+    cell->type_id = LISP_TID_NIL;
+    cell->data.obj = NULL;
     return LISP_OK;
 
   case LISP_STORAGE_COMPLEX:
     _lisp_complex_unset(((lisp_complex_object_t*)cell->data.obj) - 1);
+    cell->type_id = LISP_TID_NIL;
+    cell->data.obj = NULL;
     return LISP_OK;
 
   default:

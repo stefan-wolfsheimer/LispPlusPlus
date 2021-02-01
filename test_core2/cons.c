@@ -333,6 +333,7 @@ static void test_make_cons_of_conses(unit_test_t * tst)
   ASSERT(tst, lisp_is_root_cell(&child1));
   ASSERT(tst, lisp_get_cell_color(&child1) == LISP_GC_WHITE);
   ASSERT_EQ_U(tst, lisp_get_ref_count(&child1), 1u);
+
   ref_stat.num_root = 1;
   ref_stat.num_white_root_conses = 1;
   ref_stat.num_allocated = 1;
@@ -352,12 +353,12 @@ static void test_make_cons_of_conses(unit_test_t * tst)
   ASSERT(tst, lisp_is_root_cell(&child2));
   ASSERT(tst, lisp_get_cell_color(&child2) == LISP_GC_WHITE);
   ASSERT_EQ_U(tst, lisp_get_ref_count(&child2), 1u);
+
   ref_stat.num_root = 2;
   ref_stat.num_white_root_conses = 2;
   ref_stat.num_allocated = 2;
   ref_stat.num_reachable = 2;
   ref_stat.num_leaves = 4;
-  ref_stat.num_cons_pages = 1;
   ref_stat.num_void = 2;
   ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
 
@@ -374,36 +375,90 @@ static void test_make_cons_of_conses(unit_test_t * tst)
   ASSERT(tst, lisp_get_cell_color(&child2) == LISP_GC_GREY);
   ASSERT_EQ_U(tst, lisp_get_ref_count(&root1), 1u);
   ASSERT(tst, lisp_get_cell_color(&child2) == LISP_GC_GREY);
+
   ref_stat.num_root = 3;
   ref_stat.num_white_root_conses = 1;
   ref_stat.num_grey_root_conses = 2;
   ref_stat.num_allocated = 3;
   ref_stat.num_reachable = 3;
-  ref_stat.num_leaves = 4;
   ref_stat.num_edges = 2;
-  ref_stat.num_cons_pages = 1;
   ref_stat.num_void = 1;
   ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
 
   /* unset child1, child2 */
   ASSERT_LISP_OK(tst, lisp_unset(&child1));
   ASSERT_LISP_OK(tst, lisp_unset(&child2));
+  ASSERT(tst, lisp_is_nil(&child1));
+  ASSERT(tst, lisp_is_nil(&child2));
   ASSERT_EQ_U(tst, lisp_get_ref_count(&child1), 0u);
   ASSERT_EQ_U(tst, lisp_get_ref_count(&child2), 0u);
   ASSERT_FALSE(tst, lisp_is_root_cell(&child1));
   ASSERT_FALSE(tst, lisp_is_root_cell(&child2));
 
+  int lisp_is_root_cell(const lisp_cell_t * cell);
+
   ref_stat.num_root = 1;
-  ref_stat.num_white_root_conses = 1;
   ref_stat.num_grey_root_conses = 0;
   ref_stat.num_grey_conses = 2;
   ref_stat.num_bulk = 2;
-  ref_stat.num_allocated = 3;
-  ref_stat.num_reachable = 3;
-  ref_stat.num_leaves = 4;
-  ref_stat.num_edges = 2;
-  ref_stat.num_cons_pages = 1;
   ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
+
+  /* gc step */
+  ASSERT_FALSE(tst, lisp_vm_gc_cons_step(&vm));
+  ref_stat.num_white_root_conses = 0;
+  ref_stat.num_black_root_conses = 1;
+  ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
+
+  /* second gc step */
+  ASSERT_FALSE(tst, lisp_vm_gc_cons_step(&vm));
+
+  ref_stat.num_grey_conses = 1;
+  ref_stat.num_black_conses = 1;
+  ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
+
+  /* third gc step */
+  ASSERT(tst, lisp_vm_gc_cons_step(&vm));
+  ASSERT(tst, lisp_vm_gc_swappable(&vm));
+  ASSERT(tst, lisp_vm_gc_swap(&vm));
+
+  ref_stat.num_cycles = 1;
+  ref_stat.num_white_root_conses = 1;
+  ref_stat.num_black_root_conses = 0;
+  ref_stat.num_grey_conses = 0;
+  ref_stat.num_white_conses = 2;
+  ref_stat.num_black_conses = 0;
+  ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
+
+  /* unset car / cdr */
+  ASSERT_LISP_OK(tst, lisp_cons_unset_car(lisp_as_cons(&root1)));
+  ASSERT_LISP_OK(tst, lisp_cons_unset_cdr(lisp_as_cons(&root1)));
+
+  ref_stat.num_bulk = 0;
+  ref_stat.num_reachable = 1;
+  ref_stat.num_leaves = 2;
+  ref_stat.num_edges = 0;
+  ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
+
+  /* 4th gc step */
+  ASSERT(tst, lisp_vm_gc_cons_step(&vm));
+  ASSERT(tst, lisp_vm_gc_swappable(&vm));
+  ASSERT(tst, lisp_vm_gc_swap(&vm));
+
+  ref_stat.num_allocated = 1;
+  ref_stat.num_disposed = 2;
+  ref_stat.num_cycles = 2;
+  ref_stat.num_white_conses = 0;
+  ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
+
+  /* recycle conses */
+  ASSERT_LISP_OK(tst, lisp_vm_recycle_next_cons(&vm));
+  ASSERT_LISP_OK(tst, lisp_vm_recycle_next_cons(&vm));
+  ASSERT_EQ_I(tst, lisp_vm_recycle_next_cons(&vm), LISP_NO_CHANGE);
+
+  ref_stat.num_recycled = 2;
+  ref_stat.num_disposed = 0;
+  ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
+
 
   ASSERT_LISP_OK(tst, lisp_free_vm(&vm));
   ASSERT_MEMCHECK(tst);

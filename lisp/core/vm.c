@@ -364,20 +364,38 @@ int lisp_vm_gc_full_cycle(lisp_vm_t * vm)
   return LISP_OK;
 }
 
+int lisp_vm_recycle_next_cons(lisp_vm_t * vm)
+{
+  lisp_dl_item_t * item;
+  int ret = LISP_NO_CHANGE;
+  if(vm->disposed_conses.first)
+  {
+    item = vm->disposed_conses.first;
+    ret = lisp_cons_unset_car_cdr(_lisp_dl_as_cons(item));
+    lisp_dl_list_remove_first(&vm->disposed_conses);
+    lisp_dl_list_append(&vm->recycled_conses, item);
+  }
+  return ret;
+}
+
 int lisp_vm_recycle_all_conses(lisp_vm_t * vm)
 {
   lisp_dl_item_t * item;
+  int ret = LISP_OK;
+  int r;
   for(item = vm->disposed_conses.first;
       item != NULL;
       item = item->next)
   {
-    /* @todo unset car & cdr */
-    /* _unset_cell(&_lisp_dl_as_cons(item)->car); */
-    /* _unset_cell(&_lisp_dl_as_cons(item)->cdr); */
+    r = lisp_cons_unset_car_cdr(_lisp_dl_as_cons(item));
+    if(r != LISP_OK)
+    {
+      ret = r;
+    }
   }
   lisp_dl_list_move_list(&vm->recycled_conses,
                          &vm->disposed_conses);
-  return LISP_OK;
+  return ret;
 }
 
 int lisp_vm_recycle_all_objects(lisp_vm_t * vm)

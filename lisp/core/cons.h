@@ -54,7 +54,25 @@ int lisp_make_cons(struct lisp_vm_t * vm,
                    const struct lisp_cell_t * car,
                    const struct lisp_cell_t * cdr);
 
+/******************************************************************************
+ * car / cdr modification
+ ******************************************************************************/
 void lisp_cons_grey(lisp_cons_t * cons);
+
+/**
+ * Unset car cell
+ */
+int lisp_cons_unset_car(lisp_cons_t * cons);
+
+/**
+ * Unset cdr cell
+ */
+int lisp_cons_unset_cdr(lisp_cons_t * cons);
+
+/**
+ * Unset car and cdr cell
+ */
+int lisp_cons_unset_car_cdr(lisp_cons_t * cons);
 
 /**
  * Set the car cell of the cons
