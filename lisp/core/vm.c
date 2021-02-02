@@ -88,12 +88,12 @@ int lisp_init_vm(lisp_vm_t * vm)
   {
     return ret;
   }
-  ret = lisp_init_color_map(&vm->cons_color_map);
+  ret = lisp_init_color_map(&vm->cons_color_map, vm);
   if(ret != LISP_OK)
   {
     return ret;
   }
-  ret = lisp_init_color_map(&vm->object_color_map);
+  ret = lisp_init_color_map(&vm->object_color_map, vm);
   if(ret != LISP_OK)
   {
     return ret;

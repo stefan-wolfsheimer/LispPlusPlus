@@ -86,6 +86,11 @@ int lisp_cons_set_car(lisp_cons_t * cons,
 int lisp_cons_set_cdr(lisp_cons_t * cons,
                       lisp_cell_t * cdr);
 
+int lisp_cons_set_car_cdr(lisp_cons_t * cons,
+                          lisp_cell_t * car,
+                          lisp_cell_t * cdr);
+
+
 int lisp_init_cons_type(struct lisp_type_t * t);
 
 #endif

@@ -323,7 +323,9 @@ static void test_make_cons_of_conses(unit_test_t * tst)
   lisp_vm_gc_set_steps(&vm, 0);
   ASSERT_LISP_OK(tst, lisp_vm_gc_set_cons_page_size(&vm, 4));
 
-  /* create first child */
+  /* create first child
+     child1 = (nil . nil)
+   */
   ASSERT_LISP_OK(tst,
                  lisp_make_cons(&vm,
                                 &child1,
@@ -343,7 +345,10 @@ static void test_make_cons_of_conses(unit_test_t * tst)
   ref_stat.num_void = 3;
   ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
 
-  /* create second child */
+  /* create second child
+     child1 = (nil . nil)
+     child2 = (nil . nil)
+   */
   ASSERT_LISP_OK(tst,
                  lisp_make_cons(&vm,
                                 &child2,
@@ -362,7 +367,11 @@ static void test_make_cons_of_conses(unit_test_t * tst)
   ref_stat.num_void = 2;
   ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
 
-  /* create cons(child1, child2)  */
+  /* create cons(child1, child2)
+     child1 = (nil . nil)
+     child2 = (nil . nil)
+     root = ( (nil . nil) . (nil . nil) )
+   */
   ASSERT_LISP_OK(tst,
                  lisp_make_cons(&vm,
                                 &root1,
@@ -385,7 +394,9 @@ static void test_make_cons_of_conses(unit_test_t * tst)
   ref_stat.num_void = 1;
   ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
 
-  /* unset child1, child2 */
+  /* unset child1, child2
+     root = ( (nil . nil) . (nil . nil) )
+  */
   ASSERT_LISP_OK(tst, lisp_unset(&child1));
   ASSERT_LISP_OK(tst, lisp_unset(&child2));
   ASSERT(tst, lisp_is_nil(&child1));
@@ -394,8 +405,6 @@ static void test_make_cons_of_conses(unit_test_t * tst)
   ASSERT_EQ_U(tst, lisp_get_ref_count(&child2), 0u);
   ASSERT_FALSE(tst, lisp_is_root_cell(&child1));
   ASSERT_FALSE(tst, lisp_is_root_cell(&child2));
-
-  int lisp_is_root_cell(const lisp_cell_t * cell);
 
   ref_stat.num_root = 1;
   ref_stat.num_grey_root_conses = 0;
@@ -429,7 +438,9 @@ static void test_make_cons_of_conses(unit_test_t * tst)
   ref_stat.num_black_conses = 0;
   ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
 
-  /* unset car / cdr */
+  /* unset car / cdr
+     root = ( nil . nil )
+  */
   ASSERT_LISP_OK(tst, lisp_cons_unset_car(lisp_as_cons(&root1)));
   ASSERT_LISP_OK(tst, lisp_cons_unset_cdr(lisp_as_cons(&root1)));
 
@@ -459,6 +470,226 @@ static void test_make_cons_of_conses(unit_test_t * tst)
   ref_stat.num_disposed = 0;
   ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
 
+  /* create first child
+     root = ( nil . nil )
+     child1 = ( nil . nil )
+  */
+  ASSERT_LISP_OK(tst,
+                 lisp_make_cons(&vm,
+                                &child1,
+                                &lisp_nil,
+                                &lisp_nil));
+  ASSERT(tst, lisp_is_cons(&child1));
+  ASSERT(tst, lisp_is_root_cell(&child1));
+  ASSERT(tst, lisp_get_cell_color(&child1) == LISP_GC_WHITE);
+  ASSERT_EQ_U(tst, lisp_get_ref_count(&child1), 1u);
+
+  ref_stat.num_root = 2;
+  ref_stat.num_white_root_conses = 2;
+  ref_stat.num_allocated = 2;
+  ref_stat.num_reachable = 2;
+  ref_stat.num_leaves = 4;
+  ref_stat.num_recycled = 1;
+  ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
+
+  /* create second child
+     root = ( nil . nil )
+     child1 = ( nil . nil )
+     child2 = ( nil . nil )
+  */
+  ASSERT_LISP_OK(tst,
+                 lisp_make_cons(&vm,
+                                &child2,
+                                &lisp_nil,
+                                &lisp_nil));
+  ASSERT(tst, lisp_is_cons(&child2));
+  ASSERT(tst, lisp_is_root_cell(&child2));
+  ASSERT(tst, lisp_get_cell_color(&child2) == LISP_GC_WHITE);
+  ASSERT_EQ_U(tst, lisp_get_ref_count(&child2), 1u);
+
+  ref_stat.num_root = 3;
+  ref_stat.num_white_root_conses = 3;
+  ref_stat.num_allocated = 3;
+  ref_stat.num_reachable = 3;
+  ref_stat.num_leaves = 6;
+  ref_stat.num_recycled = 0;
+  ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
+
+  /* set car, cdr
+     root = ( ( nil . nil ) . ( nil . nil ) )
+     child1 = ( nil . nil )
+     child2 = ( nil . nil )
+  */
+  ASSERT_LISP_OK(tst, lisp_cons_set_car_cdr(lisp_as_cons(&root1),
+                                            &child1,
+                                            &child2));
+
+  ref_stat.num_leaves = 4;
+  ref_stat.num_edges = 2;
+  ref_stat.num_white_root_conses = 1;
+  ref_stat.num_grey_root_conses = 2;
+  ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
+
+  /* unset child1, child2
+     root = ( ( nil . nil ) . ( nil . nil ) )
+     child1 = nil
+     child2 = nil
+  */
+  ASSERT_LISP_OK(tst, lisp_unset(&child1));
+  ASSERT_LISP_OK(tst, lisp_unset(&child2));
+  ASSERT(tst, lisp_is_nil(&child1));
+  ASSERT(tst, lisp_is_nil(&child2));
+
+  ref_stat.num_root = 1;
+  ref_stat.num_grey_root_conses = 0;
+  ref_stat.num_grey_conses = 2;
+  ref_stat.num_bulk = 2;
+  ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
+
+  /* create first child
+     root = ( ( nil . nil ) . ( nil . nil ) )
+     child1 = ( nil . nil )
+  */
+  ASSERT_LISP_OK(tst,
+                 lisp_make_cons(&vm,
+                                &child1,
+                                &lisp_nil,
+                                &lisp_nil));
+  ASSERT(tst, lisp_is_cons(&child1));
+  ASSERT(tst, lisp_is_root_cell(&child1));
+  ASSERT(tst, lisp_get_cell_color(&child1) == LISP_GC_WHITE);
+  ASSERT_EQ_U(tst, lisp_get_ref_count(&child1), 1u);
+
+  ref_stat.num_root = 2;
+  ref_stat.num_white_root_conses = 2;
+  ref_stat.num_allocated = 4;
+  ref_stat.num_reachable = 4;
+  ref_stat.num_leaves = 6;
+  ref_stat.num_recycled = 0;
+  ref_stat.num_void = 0;
+  ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
+
+  /* set car cdr
+     child1 = ( nil . nil )
+     root = ( child1 . child1 )
+  */
+  ASSERT_LISP_OK(tst, lisp_cons_set_car_cdr(lisp_as_cons(&root1),
+                                            &child1,
+                                            &child1));
+  ref_stat.num_bulk = 0;
+  ref_stat.num_reachable = 2;
+  ref_stat.num_leaves = 2;
+  ref_stat.num_white_root_conses = 1;
+  ref_stat.num_grey_root_conses = 1;
+  ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
+
+  /* unset child1
+     child1 = nil
+     root = ( #1 . #1 )
+     #1 = (nil, nil)
+  */
+  ASSERT_LISP_OK(tst, lisp_unset(&child1));
+  ASSERT(tst, lisp_is_nil(&child1));
+
+  ref_stat.num_bulk = 1;
+  ref_stat.num_root = 1;
+  ref_stat.num_reachable = 2;
+  ref_stat.num_leaves = 2;
+  ref_stat.num_grey_conses = 3;
+  ref_stat.num_grey_root_conses = 0;
+  ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
+
+  /* set car(car root) = root
+     set cdr(cdr root) = root
+     child1 = nil
+     root = ( #1 . #1 )
+     #1 = (root, root)
+  */
+  ASSERT_LISP_OK(tst,
+                 lisp_cons_set_car(lisp_as_cons(&lisp_as_cons(&root1)->car),
+                                   &root1));
+  ASSERT_LISP_OK(tst,
+                 lisp_cons_set_cdr(lisp_as_cons(&lisp_as_cons(&root1)->cdr),
+                                   &root1));
+  ASSERT_EQ_PTR(tst,
+                lisp_as_cons(&lisp_as_cons(&root1)->car),
+                lisp_as_cons(&lisp_as_cons(&root1)->cdr));
+  ASSERT_EQ_PTR(tst,
+                lisp_as_cons(&lisp_as_cons(&lisp_as_cons(&root1)->car)->car),
+                lisp_as_cons(&root1));
+  ASSERT_EQ_PTR(tst,
+                lisp_as_cons(&lisp_as_cons(&lisp_as_cons(&root1)->car)->cdr),
+                lisp_as_cons(&root1));
+
+  ref_stat.num_leaves = 0;
+  ref_stat.num_edges = 4;
+  ref_stat.num_white_root_conses = 0;
+  ref_stat.num_grey_root_conses = 1;
+  ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
+
+  /* set cdr(root) = root 
+     root = ( #1 . root )
+     #1 = (root, root)
+  */
+  ASSERT_LISP_OK(tst,
+                 lisp_cons_set_cdr(lisp_as_cons(&root1),
+                                   &root1));
+  ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
+
+  /* gc step */
+  ASSERT_FALSE(tst, lisp_vm_gc_cons_step(&vm));
+  ref_stat.num_black_root_conses = 1;
+  ref_stat.num_grey_root_conses = 0;
+  ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
+
+  /* gc step */
+  ASSERT_FALSE(tst, lisp_vm_gc_cons_step(&vm));
+  ref_stat.num_black_conses = 1;
+  ref_stat.num_grey_conses = 2;
+  ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
+
+  /* gc step */
+  ASSERT_FALSE(tst, lisp_vm_gc_cons_step(&vm));
+  ref_stat.num_black_conses = 2;
+  ref_stat.num_grey_conses = 1;
+  ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
+
+  /* gc step */
+  ASSERT(tst, lisp_vm_gc_cons_step(&vm));
+  ref_stat.num_black_conses = 3;
+  ref_stat.num_grey_conses = 0;
+  ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
+
+  /* swap */
+  ASSERT(tst, lisp_vm_gc_swap(&vm));
+  ref_stat.num_cycles = 3;
+  ref_stat.num_white_root_conses = 1;
+  ref_stat.num_black_root_conses = 0;
+  ref_stat.num_white_conses = 3;
+  ref_stat.num_black_conses = 0;
+  ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
+
+  /* gc step */
+  ASSERT(tst, lisp_vm_gc_cons_step(&vm));
+  ref_stat.num_white_root_conses = 0;
+  ref_stat.num_black_root_conses = 1;
+  ref_stat.num_black_conses = 0;
+  ref_stat.num_white_conses = 3;
+  ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
+
+  /* swap */
+  ASSERT(tst, lisp_vm_gc_swap(&vm));
+  ref_stat.num_cycles = 4;
+  ref_stat.num_bulk = 1;
+  ref_stat.num_root = 1;
+  ref_stat.num_reachable = 2;
+  ref_stat.num_allocated = 1;
+  ref_stat.num_disposed = 3;
+  ref_stat.num_white_root_conses = 1;
+  ref_stat.num_black_root_conses = 0;
+  ref_stat.num_white_conses = 0;
+
+  ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
 
   ASSERT_LISP_OK(tst, lisp_free_vm(&vm));
   ASSERT_MEMCHECK(tst);

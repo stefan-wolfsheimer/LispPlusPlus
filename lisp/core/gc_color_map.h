@@ -33,6 +33,7 @@ either expressed or implied, of the FreeBSD Project.
 #include <lisp/util/dl_list.h>
 #include "gc_color.h"
 
+struct lisp_vm_t;
 /**
  * List of objects in garbage collector
  * generation.
@@ -45,6 +46,7 @@ typedef struct lisp_gc_collectible_list_t
   struct lisp_gc_collectible_list_t * other_elements;
   struct lisp_gc_collectible_list_t * grey_elements;
   struct lisp_gc_collectible_list_t * to_elements;
+  struct lisp_vm_t * vm;
 } lisp_gc_collectible_list_t;
 
 typedef struct lisp_gc_color_map_t
@@ -59,7 +61,8 @@ typedef struct lisp_gc_color_map_t
 
 } lisp_gc_color_map_t;
 
-int lisp_init_color_map(lisp_gc_color_map_t * map);
+int lisp_init_color_map(lisp_gc_color_map_t * map,
+                        struct lisp_vm_t * vm);
 int lisp_free_color_map(lisp_gc_color_map_t * map);
 
 #endif

@@ -36,7 +36,8 @@ either expressed or implied, of the FreeBSD Project.
  Helper functions
  ****************************************************************************/
 static lisp_gc_collectible_list_t * _new_gc_collectible_list(lisp_gc_color_t c,
-                                                             short int is_root)
+                                                             short int is_root,
+                                                             struct lisp_vm_t * vm)
 {
   lisp_gc_collectible_list_t * lst = MALLOC(sizeof(lisp_gc_collectible_list_t));
   if(lst)
@@ -44,34 +45,36 @@ static lisp_gc_collectible_list_t * _new_gc_collectible_list(lisp_gc_color_t c,
     lst->is_root = is_root;
     lisp_init_dl_list(&lst->objects);
     lst->color = c;
+    lst->vm = vm;
   }
   return lst;
 }
 
 
-int lisp_init_color_map(lisp_gc_color_map_t * map)
+int lisp_init_color_map(lisp_gc_color_map_t * map,
+                        struct lisp_vm_t * vm)
 {
-  if( (map->white = _new_gc_collectible_list(LISP_GC_WHITE, 0)) == NULL)
+  if( (map->white = _new_gc_collectible_list(LISP_GC_WHITE, 0, vm)) == NULL)
   {
     return LISP_BAD_ALLOC;
   }
-  if( (map->grey = _new_gc_collectible_list(LISP_GC_GREY, 0)) == NULL)
+  if( (map->grey = _new_gc_collectible_list(LISP_GC_GREY, 0, vm)) == NULL)
   {
     return LISP_BAD_ALLOC;
   }
-  if( (map->black = _new_gc_collectible_list(LISP_GC_BLACK, 0)) == NULL)
+  if( (map->black = _new_gc_collectible_list(LISP_GC_BLACK, 0, vm)) == NULL)
   {
     return LISP_BAD_ALLOC;
   }
-  if( (map->white_root = _new_gc_collectible_list(LISP_GC_WHITE, 1)) == NULL)
+  if( (map->white_root = _new_gc_collectible_list(LISP_GC_WHITE, 1, vm)) == NULL)
   {
     return LISP_BAD_ALLOC;
   }
-  if( (map->grey_root = _new_gc_collectible_list(LISP_GC_GREY, 1)) == NULL)
+  if( (map->grey_root = _new_gc_collectible_list(LISP_GC_GREY, 1, vm)) == NULL)
   {
     return LISP_BAD_ALLOC;
   }
-  if( (map->black_root = _new_gc_collectible_list(LISP_GC_BLACK, 1)) == NULL)
+  if( (map->black_root = _new_gc_collectible_list(LISP_GC_BLACK, 1, vm)) == NULL)
   {
     return LISP_BAD_ALLOC;
   }
