@@ -17,20 +17,26 @@ SET(CMAKE_CXX_FLAGS_DEBUG  "-O0 -g")
 # @todo: create config.h file
 SET(CMAKE_C_FLAGS_DEBUG  "-O0 -g -DDEBUG -DWITH_COLOR -DHAS_FMEMOPEN -Werror -Wall")
 SET(CMAKE_C_FLAGS_RELEASE "-O2 -DNDEBUG -DWITH_COLOR")
+SET(CMAKE_C_FLAGS_COVERAGE "-O0 -g -DDEBUG -DWITH_COLOR -Werror -Wall -fprofile-arcs -ftest-coverage")
 
 include_directories (${PROJECT_SOURCE_DIR}/Catch2/single_include)
 include_directories (${PROJECT_SOURCE_DIR}/CliArgs/include)
 include_directories (${PROJECT_SOURCE_DIR}/CSVPlusPlus/)
 include_directories (${PROJECT_SOURCE_DIR})
 
+IF(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES Release)
 add_subdirectory (lpp/core)
 add_subdirectory (lpp/scheme)
 add_subdirectory (lpp/simul)
+ENDIF(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES Release)
+
+IF(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES Release OR CMAKE_BUILD_TYPE MATCHES Coverage)
 add_subdirectory (lisp/util)
 add_subdirectory (lisp/core)
 add_subdirectory (test_util)
 # @todo rename to test_core2
 add_subdirectory (test_core2)
+ENDIF(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES Release OR CMAKE_BUILD_TYPE MATCHES Coverage)
 
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
   message("debug mode")
@@ -63,6 +69,9 @@ IF(CMAKE_BUILD_TYPE MATCHES Debug)
     test_simul/test_gc_sim.cpp
     )
   target_link_libraries(runtest Catch Scheme Core Simul)
+ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
+
+IF(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES Coverage)
   add_executable(
     unit_tests
     unit_tests.c
@@ -73,11 +82,13 @@ IF(CMAKE_BUILD_TYPE MATCHES Debug)
     LispCore
     Util
     )
-ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
+ENDIF(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES Coverage)
 
+IF(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES Release)
 # add_library(Simul INTERFACE)
 # add_library(Simul)
 target_include_directories(Catch INTERFACE test)
 
 add_executable(gc_sim gc_sim.cpp)
 target_link_libraries(gc_sim Simul Scheme Core)
+ENDIF(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES Release)
