@@ -75,11 +75,13 @@ typedef struct lisp_type_t
   /**
    * This function is called before the
    * memory is freed.
+   * @todo remove lisp_ prefix
    */
   int (*lisp_destructor_ptr)(void * ptr);
   int (*lisp_cell_first_child_ptr)(struct lisp_cell_iterator_t * itr);
   int (*lisp_cell_child_iterator_is_valid_ptr)(struct lisp_cell_iterator_t * itr);
   int (*lisp_cell_next_child_ptr)(struct lisp_cell_iterator_t * itr);
+  struct lisp_cell_t * (*grey_next_child_ptr)(void * ptr);
 } lisp_type_t;
 
 /**

@@ -462,14 +462,19 @@ static inline short int _lisp_vm_gc_cons_step(lisp_vm_t * vm)
 {
   lisp_gc_color_map_t * map;
   lisp_dl_item_t * item;
+  lisp_cons_t * cons;
   map = &vm->cons_color_map;
   if(map->white_root->objects.first)
   {
     item = map->white_root->objects.first;
-    _lisp_grey_cell(&_lisp_dl_as_cons(item)->car);
-    _lisp_grey_cell(&_lisp_dl_as_cons(item)->cdr);
-    lisp_dl_list_remove_first(&map->white_root->objects);
+    cons = _lisp_dl_as_cons(item);
+    /* note that in rare cases cons itself can be moved while
+       during greying cells */
+    _lisp_grey_cell(&cons->car);
+    _lisp_grey_cell(&cons->cdr);
+    lisp_dl_list_remove(&cons->gc_list->objects, item);
     lisp_dl_list_append(&map->black_root->objects, item);
+    _lisp_dl_as_cons(item)->gc_list = map->black_root;
     return
       map->white_root->objects.first == NULL &&
       map->grey_root->objects.first == NULL &&
@@ -478,10 +483,12 @@ static inline short int _lisp_vm_gc_cons_step(lisp_vm_t * vm)
   else if(map->grey_root->objects.first)
   {
     item = map->grey_root->objects.first;
-    _lisp_grey_cell(&_lisp_dl_as_cons(item)->car);
-    _lisp_grey_cell(&_lisp_dl_as_cons(item)->cdr);
-    lisp_dl_list_remove_first(&map->grey_root->objects);
+    cons = _lisp_dl_as_cons(item);
+    _lisp_grey_cell(&cons->car);
+    _lisp_grey_cell(&cons->cdr);
+    lisp_dl_list_remove(&cons->gc_list->objects, item);
     lisp_dl_list_append(&map->black_root->objects, item);
+    _lisp_dl_as_cons(item)->gc_list = map->black_root;
     return
       map->grey_root->objects.first == NULL &&
       map->grey->objects.first == NULL;
@@ -489,10 +496,12 @@ static inline short int _lisp_vm_gc_cons_step(lisp_vm_t * vm)
   else if(map->grey->objects.first)
   {
     item = map->grey->objects.first;
-    _lisp_grey_cell(&_lisp_dl_as_cons(item)->car);
-    _lisp_grey_cell(&_lisp_dl_as_cons(item)->cdr);
-    lisp_dl_list_remove_first(&map->grey->objects);
+    cons = _lisp_dl_as_cons(item);
+    _lisp_grey_cell(&cons->car);
+    _lisp_grey_cell(&cons->cdr);
+    lisp_dl_list_remove(&cons->gc_list->objects, item);
     lisp_dl_list_append(&map->black->objects, item);
+    _lisp_dl_as_cons(item)->gc_list = map->black;
     return map->grey->objects.first == NULL;
   }
   else
@@ -502,10 +511,80 @@ static inline short int _lisp_vm_gc_cons_step(lisp_vm_t * vm)
   }
 }
 
+static inline short int _lisp_vm_gc_object_grey_child(lisp_gc_collectible_list_t * from,
+                                                      lisp_gc_collectible_list_t * to)
+{
+  lisp_dl_item_t * item;
+  lisp_complex_object_t * obj;
+  lisp_cell_t * cell;
+  item = from->objects.first;
+  obj = _lisp_dl_as_complex_object(item);
+  assert(obj->type_id < LISP_NUM_TYPES);
+  assert(lisp_static_types[obj->type_id].grey_next_child_ptr);
+  cell = lisp_static_types[obj->type_id].grey_next_child_ptr(obj + 1);
+  if(cell)
+  {
+    _lisp_grey_cell(cell);
+    return 0;
+  }
+  else
+  {
+    lisp_dl_list_remove_first(&from->objects);
+    lisp_dl_list_append(&to->objects, item);
+    _lisp_dl_as_complex_object(item)->gc_list = to;
+    return 1;
+  }
+
+}
+
 static inline short int _lisp_vm_gc_object_step(lisp_vm_t * vm)
 {
-  /* @todo implement function */
-  return 1;
+  /* @todo test coverage */
+  lisp_gc_color_map_t * map;
+  map = &vm->object_color_map;
+  if(map->white_root->objects.first)
+  {
+    if(_lisp_vm_gc_object_grey_child(map->white_root, map->black_root))
+    {
+      return
+        map->white_root->objects.first == NULL &&
+        map->grey_root->objects.first == NULL &&
+        map->grey->objects.first == NULL;
+    }
+    else
+    {
+      return 0;
+    }
+  }
+  else if(map->grey_root->objects.first)
+  {
+    if(_lisp_vm_gc_object_grey_child(map->grey_root, map->black_root))
+    {
+      return
+        map->grey_root->objects.first == NULL &&
+        map->grey->objects.first == NULL;
+    }
+    else
+    {
+      return 0;
+    }
+  }
+  else if(map->grey->objects.first)
+  {
+    if(_lisp_vm_gc_object_grey_child(map->grey, map->black))
+    {
+      return map->grey->objects.first == NULL;
+    }
+    else
+    {
+      return 0;
+    }
+  }
+  else
+  {
+    /* nothing left */
+    return 1;
+  }
 }
 
 static inline short int _lisp_vm_gc_swappable(lisp_vm_t * vm)
@@ -519,14 +598,27 @@ static inline short int _lisp_vm_gc_swappable(lisp_vm_t * vm)
     vm->object_color_map.grey->objects.first == NULL;
 }
 
-void _lisp_vm_gc_swap_list(lisp_dl_list_t * target,
-                           lisp_dl_list_t * source)
+void _lisp_vm_gc_swap_list(lisp_gc_collectible_list_t ** _target,
+                           lisp_gc_collectible_list_t ** _source)
 {
-  assert(target->first == NULL);
-  target->first = source->first;
-  target->last = source->last;
-  source->first = NULL;
-  source->last = NULL;
+  /* @todo remove is_cons arg */
+  assert((*_target)->objects.first == NULL);
+  assert((*_target)->objects.last == NULL);
+  lisp_gc_collectible_list_t * tmp;
+  lisp_gc_color_t color;
+  short int is_root;
+
+  tmp = *_target;
+  *_target = *_source;
+  *_source = tmp;
+
+  color = (*_target)->color;
+  (*_target)->color = (*_source)->color;
+  (*_source)->color = color;
+
+  is_root = (*_target)->is_root;
+  (*_target)->is_root = (*_source)->is_root;
+  (*_source)->is_root = is_root;
 }
 
 void _lisp_vm_gc_swap(lisp_vm_t * vm)
@@ -541,14 +633,17 @@ void _lisp_vm_gc_swap(lisp_vm_t * vm)
                          &vm->object_color_map.white->objects);
 
   /* move all black objects to white */
-  _lisp_vm_gc_swap_list(&vm->cons_color_map.white_root->objects,
-                        &vm->cons_color_map.black_root->objects);
-  _lisp_vm_gc_swap_list(&vm->object_color_map.white_root->objects,
-                        &vm->object_color_map.black_root->objects);
-  _lisp_vm_gc_swap_list(&vm->cons_color_map.white->objects,
-                        &vm->cons_color_map.black->objects);
-  _lisp_vm_gc_swap_list(&vm->object_color_map.white->objects,
-                        &vm->object_color_map.black->objects);
+  _lisp_vm_gc_swap_list(&vm->cons_color_map.white_root,
+                        &vm->cons_color_map.black_root);
+  _lisp_vm_gc_swap_list(&vm->cons_color_map.white,
+                        &vm->cons_color_map.black);
+  lisp_color_map_refresh(&vm->cons_color_map);
+
+  _lisp_vm_gc_swap_list(&vm->object_color_map.white_root,
+                        &vm->object_color_map.black_root);
+  _lisp_vm_gc_swap_list(&vm->object_color_map.white,
+                        &vm->object_color_map.black);
+  lisp_color_map_refresh(&vm->object_color_map);
 }
 
 short int lisp_vm_gc_step(lisp_vm_t * vm)
@@ -661,6 +756,54 @@ void lisp_vm_gc_dump(FILE * fp, lisp_vm_t * vm, int mode)
   }
 }
 
+static lisp_gc_collectible_list_t * _lisp_dl_as_coll_list_cons(const lisp_dl_item_t * item)
+{
+  return _lisp_dl_as_cons(item)->gc_list;
+}
+
+static lisp_gc_collectible_list_t * _lisp_dl_as_coll_list_object(const lisp_dl_item_t * item)
+{
+  return _lisp_dl_as_complex_object(item)->gc_list;
+}
+
+inline static size_t _lisp_vm_check_object_list(lisp_dl_list_t * lst,
+                                                lisp_gc_collectible_list_t * (*list_getter)(const lisp_dl_item_t * item),
+                                                int * err)
+{
+  lisp_dl_item_t * item;
+  size_t n;
+  lisp_gc_collectible_list_t * clst;
+  n = 0;
+  item = lst->first;
+  if(lst->first)
+  {
+    if(lst->last == NULL ||
+       lst->first->prev != NULL ||
+       lst->last->next != NULL)
+    {
+      *err = 1;
+    }
+  }
+  else
+  {
+    if(lst->last != NULL)
+    {
+      *err = 1;
+    }
+  }
+  for(item = lst->first; item != NULL; item = item->next)
+  {
+    clst = list_getter(item);
+    if(&clst->objects != lst)
+    {
+      *err = 1;
+    }
+    n++;
+  }
+  assert(n == lisp_dl_list_size(lst));
+  return n;
+}
+
 void lisp_vm_gc_get_stats(lisp_vm_t * vm,
                           struct lisp_gc_stat_t * stat)
 {
@@ -672,34 +815,42 @@ void lisp_vm_gc_get_stats(lisp_vm_t * vm,
   stat->num_cycles = vm->num_cycles;
   stat->num_cons_pages = vm->num_cons_pages;
 
-  stat->num_white_root_conses =
-    lisp_dl_list_size(&vm->cons_color_map.white_root->objects);
-  stat->num_grey_root_conses =
-    lisp_dl_list_size(&vm->cons_color_map.grey_root->objects);
-  stat->num_black_root_conses =
-    lisp_dl_list_size(&vm->cons_color_map.black_root->objects);
-
-  stat->num_white_conses =
-    lisp_dl_list_size(&vm->cons_color_map.white->objects);
-  stat->num_grey_conses =
-    lisp_dl_list_size(&vm->cons_color_map.grey->objects);
-  stat->num_black_conses =
-    lisp_dl_list_size(&vm->cons_color_map.black->objects);
-
-  stat->num_white_root_objects =
-    lisp_dl_list_size(&vm->object_color_map.white_root->objects);
-  stat->num_grey_root_objects =
-    lisp_dl_list_size(&vm->object_color_map.grey_root->objects);
-  stat->num_black_root_objects =
-    lisp_dl_list_size(&vm->object_color_map.black_root->objects);
-
-  stat->num_white_objects =
-    lisp_dl_list_size(&vm->object_color_map.white->objects);
-  stat->num_grey_objects =
-    lisp_dl_list_size(&vm->object_color_map.grey->objects);
-  stat->num_black_objects =
-    lisp_dl_list_size(&vm->object_color_map.black->objects);
-
+  stat->num_white_root_conses = _lisp_vm_check_object_list(&vm->cons_color_map.white_root->objects,
+                                                           _lisp_dl_as_coll_list_cons,
+                                                           &stat->error_list_white_root_conses);
+  stat->num_grey_root_conses = _lisp_vm_check_object_list(&vm->cons_color_map.grey_root->objects,
+                                                          _lisp_dl_as_coll_list_cons,
+                                                          &stat->error_list_grey_root_conses);
+  stat->num_black_root_conses = _lisp_vm_check_object_list(&vm->cons_color_map.black_root->objects,
+                                                           _lisp_dl_as_coll_list_cons,
+                                                           &stat->error_list_black_root_conses);
+  stat->num_white_conses = _lisp_vm_check_object_list(&vm->cons_color_map.white->objects,
+                                                      _lisp_dl_as_coll_list_cons,
+                                                      &stat->error_list_white_conses);
+  stat->num_grey_conses = _lisp_vm_check_object_list(&vm->cons_color_map.grey->objects,
+                                                     _lisp_dl_as_coll_list_cons,
+                                                     &stat->error_list_grey_conses);
+  stat->num_black_conses = _lisp_vm_check_object_list(&vm->cons_color_map.black->objects,
+                                                      _lisp_dl_as_coll_list_cons,
+                                                      &stat->error_list_black_conses);
+  stat->num_white_root_objects = _lisp_vm_check_object_list(&vm->object_color_map.white_root->objects,
+                                                            _lisp_dl_as_coll_list_object,
+                                                            &stat->error_list_white_root_conses);
+  stat->num_grey_root_objects = _lisp_vm_check_object_list(&vm->object_color_map.grey_root->objects,
+                                                           _lisp_dl_as_coll_list_object,
+                                                           &stat->error_list_grey_root_conses);
+  stat->num_black_root_objects = _lisp_vm_check_object_list(&vm->object_color_map.black_root->objects,
+                                                            _lisp_dl_as_coll_list_object,
+                                                            &stat->error_list_black_root_conses);
+  stat->num_white_objects = _lisp_vm_check_object_list(&vm->object_color_map.white->objects,
+                                                       _lisp_dl_as_coll_list_object,
+                                                       &stat->error_list_white_conses);
+  stat->num_grey_objects = _lisp_vm_check_object_list(&vm->object_color_map.grey->objects,
+                                                      _lisp_dl_as_coll_list_object,
+                                                      &stat->error_list_grey_conses);
+  stat->num_black_objects = _lisp_vm_check_object_list(&vm->object_color_map.black->objects,
+                                                       _lisp_dl_as_coll_list_object,
+                                                       &stat->error_list_black_conses);
   stat->num_root =
     stat->num_white_root_conses +
     stat->num_grey_root_conses +

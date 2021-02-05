@@ -145,6 +145,18 @@ _GC_STAT_GETTER(num_white_objects);
 _GC_STAT_GETTER(num_grey_objects);
 _GC_STAT_GETTER(num_black_objects);
 _GC_STAT_GETTER(error_black_has_white_child);
+_GC_STAT_GETTER(error_list_white_root_conses);
+_GC_STAT_GETTER(error_list_grey_root_conses);
+_GC_STAT_GETTER(error_list_black_root_conses);
+_GC_STAT_GETTER(error_list_white_conses);
+_GC_STAT_GETTER(error_list_grey_conses);
+_GC_STAT_GETTER(error_list_black_conses);
+_GC_STAT_GETTER(error_list_white_root_object);
+_GC_STAT_GETTER(error_list_grey_root_object);
+_GC_STAT_GETTER(error_list_black_root_object);
+_GC_STAT_GETTER(error_list_white_object);
+_GC_STAT_GETTER(error_list_grey_object);
+_GC_STAT_GETTER(error_list_black_object);
 
 
 lisp_gc_stat_field_t lisp_gc_stat_field[LISP_GC_STAT_NUM_FIELDS] =
@@ -172,7 +184,19 @@ lisp_gc_stat_field_t lisp_gc_stat_field[LISP_GC_STAT_NUM_FIELDS] =
     _GC_STAT_SIZE_FIELD(num_white_objects),
     _GC_STAT_SIZE_FIELD(num_grey_objects),
     _GC_STAT_SIZE_FIELD(num_black_objects),
-    _GC_STAT_BOOL_FIELD(error_black_has_white_child)
+    _GC_STAT_BOOL_FIELD(error_black_has_white_child),
+    _GC_STAT_BOOL_FIELD(error_list_white_root_conses),
+    _GC_STAT_BOOL_FIELD(error_list_grey_root_conses),
+    _GC_STAT_BOOL_FIELD(error_list_black_root_conses),
+    _GC_STAT_BOOL_FIELD(error_list_white_conses),
+    _GC_STAT_BOOL_FIELD(error_list_grey_conses),
+    _GC_STAT_BOOL_FIELD(error_list_black_conses),
+    _GC_STAT_BOOL_FIELD(error_list_white_root_object),
+    _GC_STAT_BOOL_FIELD(error_list_grey_root_object),
+    _GC_STAT_BOOL_FIELD(error_list_black_root_object),
+    _GC_STAT_BOOL_FIELD(error_list_white_object),
+    _GC_STAT_BOOL_FIELD(error_list_grey_object),
+    _GC_STAT_BOOL_FIELD(error_list_black_object)
   };
 
 void lisp_init_gc_stat(lisp_gc_stat_t * stat)

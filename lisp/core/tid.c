@@ -37,7 +37,8 @@ either expressed or implied, of the FreeBSD Project.
 #define EMPTY_TYPE { NULL, \
                      NULL, \
                      NULL, \
-                     NULL }
+                     NULL, \
+                     NULL}
 
 #define REGISTER_TYPE( __ID__, __FUNC__ )               \
   {                                                     \

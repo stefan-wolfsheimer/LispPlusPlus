@@ -78,6 +78,23 @@ int lisp_init_color_map(lisp_gc_color_map_t * map,
   {
     return LISP_BAD_ALLOC;
   }
+  lisp_color_map_refresh(map);
+  return LISP_OK;
+}
+
+int lisp_free_color_map(lisp_gc_color_map_t * map)
+{
+  FREE(map->white_root);
+  FREE(map->grey_root);
+  FREE(map->black_root);
+  FREE(map->white);
+  FREE(map->grey);
+  FREE(map->black);
+  return LISP_OK;
+}
+
+void lisp_color_map_refresh(lisp_gc_color_map_t * map)
+{
   /*
    * we don't know if another object still refers to unrooted objects
    * -> never transition from root to white
@@ -102,18 +119,4 @@ int lisp_init_color_map(lisp_gc_color_map_t * map,
   map->white->to_elements         = map->grey;
   map->grey->to_elements          = map->black;
   map->black->to_elements         = NULL;
-
-  return LISP_OK;
 }
-
-int lisp_free_color_map(lisp_gc_color_map_t * map)
-{
-  FREE(map->white_root);
-  FREE(map->grey_root);
-  FREE(map->black_root);
-  FREE(map->white);
-  FREE(map->grey);
-  FREE(map->black);
-  return LISP_OK;
-}
-

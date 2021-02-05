@@ -32,7 +32,7 @@ either expressed or implied, of the FreeBSD Project.
 #define __LISP_GC_STAT_H__
 #include <stdio.h>
 
-#define LISP_GC_STAT_NUM_FIELDS 24
+#define LISP_GC_STAT_NUM_FIELDS 36
 #define LISP_GC_STAT_PRINT_COLOR 1
 
 /**
@@ -120,6 +120,18 @@ typedef struct lisp_gc_stat_t
    * Error flags
    */
   int error_black_has_white_child;
+  int error_list_white_root_conses;
+  int error_list_grey_root_conses;
+  int error_list_black_root_conses;
+  int error_list_white_conses;
+  int error_list_grey_conses;
+  int error_list_black_conses;
+  int error_list_white_root_object;
+  int error_list_grey_root_object;
+  int error_list_black_root_object;
+  int error_list_white_object;
+  int error_list_grey_object;
+  int error_list_black_object;
 } lisp_gc_stat_t;
 
 

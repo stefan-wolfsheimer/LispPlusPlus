@@ -39,15 +39,28 @@ typedef struct lisp_array_t
 {
   struct lisp_cell_t * data;
   size_t size;
+  size_t gc_pos;
 } lisp_array_t;
 
 /**
- * Create an array as root.
+ * Create an array.
  */
 int lisp_make_array(struct lisp_vm_t * vm,
                     struct lisp_cell_t * cell,
-                    size_t n);
+                    size_t n,
+                    struct lisp_cell_t * value);
 
+/**
+ * Resize the array.
+ */
+int lisp_array_resize(struct lisp_vm_t * vm,
+                      struct lisp_array_t * array,
+                      size_t n,
+                      struct lisp_cell_t * value);
+
+/**
+ * Initialize static type.
+ */
 int lisp_init_array_type(struct lisp_type_t * t);
 
 #endif

@@ -51,6 +51,7 @@ typedef struct lisp_gc_collectible_list_t
 
 typedef struct lisp_gc_color_map_t
 {
+  /* @todo make array of collectible_list */
   lisp_gc_collectible_list_t * white;
   lisp_gc_collectible_list_t * grey;
   lisp_gc_collectible_list_t * black;
@@ -64,5 +65,7 @@ typedef struct lisp_gc_color_map_t
 int lisp_init_color_map(lisp_gc_color_map_t * map,
                         struct lisp_vm_t * vm);
 int lisp_free_color_map(lisp_gc_color_map_t * map);
+
+void lisp_color_map_refresh(lisp_gc_color_map_t * map);
 
 #endif
