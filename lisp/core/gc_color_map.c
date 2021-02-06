@@ -50,73 +50,58 @@ static lisp_gc_collectible_list_t * _new_gc_collectible_list(lisp_gc_color_t c,
   return lst;
 }
 
-
-int lisp_init_color_map(lisp_gc_color_map_t * map,
-                        struct lisp_vm_t * vm)
+int lisp_init_collectible_lists(lisp_gc_collectible_list_t * lists[],
+                                struct lisp_vm_t * vm)
 {
-  if( (map->white = _new_gc_collectible_list(LISP_GC_WHITE, 0, vm)) == NULL)
+  size_t i;
+  for(i = 0; i < LISP_GC_NUM_CLASSES; i++)
   {
-    return LISP_BAD_ALLOC;
+    lists[i] = _new_gc_collectible_list(i,
+                                        LISP_GC_IS_ROOT_CLASS(i),
+                                        vm);
+    if(lists[i] == NULL)
+    {
+      return LISP_BAD_ALLOC;
+    }
   }
-  if( (map->grey = _new_gc_collectible_list(LISP_GC_GREY, 0, vm)) == NULL)
-  {
-    return LISP_BAD_ALLOC;
-  }
-  if( (map->black = _new_gc_collectible_list(LISP_GC_BLACK, 0, vm)) == NULL)
-  {
-    return LISP_BAD_ALLOC;
-  }
-  if( (map->white_root = _new_gc_collectible_list(LISP_GC_WHITE, 1, vm)) == NULL)
-  {
-    return LISP_BAD_ALLOC;
-  }
-  if( (map->grey_root = _new_gc_collectible_list(LISP_GC_GREY, 1, vm)) == NULL)
-  {
-    return LISP_BAD_ALLOC;
-  }
-  if( (map->black_root = _new_gc_collectible_list(LISP_GC_BLACK, 1, vm)) == NULL)
-  {
-    return LISP_BAD_ALLOC;
-  }
-  lisp_color_map_refresh(map);
+  lisp_collectible_list_refresh(lists);
   return LISP_OK;
 }
 
-int lisp_free_color_map(lisp_gc_color_map_t * map)
+int lisp_free_collectible_lists(lisp_gc_collectible_list_t * lists[])
 {
-  FREE(map->white_root);
-  FREE(map->grey_root);
-  FREE(map->black_root);
-  FREE(map->white);
-  FREE(map->grey);
-  FREE(map->black);
+  size_t i;
+  for(i = 0; i < LISP_GC_NUM_CLASSES; i++)
+  {
+    FREE(lists[i]);
+  }
   return LISP_OK;
 }
 
-void lisp_color_map_refresh(lisp_gc_color_map_t * map)
+void lisp_collectible_list_refresh(lisp_gc_collectible_list_t * l[])
 {
   /*
    * we don't know if another object still refers to unrooted objects
    * -> never transition from root to white
    */
-  map->white_root->other_elements = map->grey;
-  map->grey_root->other_elements  = map->grey;
-  map->black_root->other_elements = map->black;
-  map->white->other_elements      = map->white_root;
-  map->grey->other_elements       = map->white_root;
-  map->black->other_elements      = map->white_root;
+  l[LISP_GC_WHITE_ROOT]->other_elements = l[LISP_GC_GREY];
+  l[LISP_GC_GREY_ROOT ]->other_elements = l[LISP_GC_GREY];
+  l[LISP_GC_BLACK_ROOT]->other_elements = l[LISP_GC_BLACK];
+  l[LISP_GC_WHITE     ]->other_elements = l[LISP_GC_WHITE_ROOT];
+  l[LISP_GC_GREY      ]->other_elements = l[LISP_GC_WHITE_ROOT];
+  l[LISP_GC_BLACK     ]->other_elements = l[LISP_GC_WHITE_ROOT];
 
-  map->white_root->grey_elements  = map->grey_root;
-  map->grey_root->grey_elements   = NULL;
-  map->black_root->grey_elements  = NULL;
-  map->white->grey_elements       = map->grey;
-  map->grey->grey_elements        = NULL;
-  map->black->grey_elements       = NULL;
+  l[LISP_GC_WHITE_ROOT]->grey_elements = l[LISP_GC_GREY_ROOT];
+  l[LISP_GC_GREY_ROOT ]->grey_elements = NULL;
+  l[LISP_GC_BLACK_ROOT]->grey_elements = NULL;
+  l[LISP_GC_WHITE     ]->grey_elements = l[LISP_GC_GREY];
+  l[LISP_GC_GREY      ]->grey_elements = NULL;
+  l[LISP_GC_BLACK     ]->grey_elements = NULL;
 
-  map->white_root->to_elements    = map->grey_root;
-  map->grey_root->to_elements     = map->black_root;
-  map->black_root->to_elements    = NULL;
-  map->white->to_elements         = map->grey;
-  map->grey->to_elements          = map->black;
-  map->black->to_elements         = NULL;
+  l[LISP_GC_WHITE_ROOT]->to_elements = l[LISP_GC_GREY_ROOT];
+  l[LISP_GC_GREY_ROOT ]->to_elements = l[LISP_GC_BLACK_ROOT];
+  l[LISP_GC_BLACK_ROOT]->to_elements = NULL;
+  l[LISP_GC_WHITE     ]->to_elements = l[LISP_GC_GREY];
+  l[LISP_GC_GREY      ]->to_elements = l[LISP_GC_BLACK];;
+  l[LISP_GC_BLACK     ]->to_elements = NULL;
 }

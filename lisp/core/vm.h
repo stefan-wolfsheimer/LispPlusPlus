@@ -49,10 +49,10 @@ struct lisp_gc_stat_t;
 typedef struct lisp_vm_t
 {
   /* active conses */
-  lisp_gc_color_map_t cons_color_map;
+  lisp_gc_collectible_list_t * cons_lists[LISP_GC_NUM_CLASSES];
 
   /* active objects */
-  lisp_gc_color_map_t object_color_map;
+  lisp_gc_collectible_list_t * object_lists[LISP_GC_NUM_CLASSES];
 
   /* cons memory */
   void ** cons_pages;

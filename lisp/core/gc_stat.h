@@ -31,6 +31,7 @@ either expressed or implied, of the FreeBSD Project.
 #ifndef __LISP_GC_STAT_H__
 #define __LISP_GC_STAT_H__
 #include <stdio.h>
+#include "gc_color.h"
 
 #define LISP_GC_STAT_NUM_FIELDS 36
 #define LISP_GC_STAT_PRINT_COLOR 1
@@ -100,38 +101,14 @@ typedef struct lisp_gc_stat_t
    */
   size_t num_cons_pages;
 
-  size_t num_white_root_conses;
-  size_t num_grey_root_conses;
-  size_t num_black_root_conses;
-
-  size_t num_white_conses;
-  size_t num_grey_conses;
-  size_t num_black_conses;
-
-  size_t num_white_root_objects;
-  size_t num_grey_root_objects;
-  size_t num_black_root_objects;
-
-  size_t num_white_objects;
-  size_t num_grey_objects;
-  size_t num_black_objects;
-
+  size_t num_conses[LISP_GC_NUM_CLASSES];
+  size_t num_objects[LISP_GC_NUM_CLASSES];
   /**
    * Error flags
    */
   int error_black_has_white_child;
-  int error_list_white_root_conses;
-  int error_list_grey_root_conses;
-  int error_list_black_root_conses;
-  int error_list_white_conses;
-  int error_list_grey_conses;
-  int error_list_black_conses;
-  int error_list_white_root_object;
-  int error_list_grey_root_object;
-  int error_list_black_root_object;
-  int error_list_white_object;
-  int error_list_grey_object;
-  int error_list_black_object;
+  int error_cons_lists[LISP_GC_NUM_CLASSES];
+  int error_object_lists[LISP_GC_NUM_CLASSES];
 } lisp_gc_stat_t;
 
 

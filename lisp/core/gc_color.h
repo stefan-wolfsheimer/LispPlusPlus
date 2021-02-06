@@ -32,16 +32,22 @@ either expressed or implied, of the FreeBSD Project.
 #define __LISP_GC_COLOR_H__
 
 #define LISP_GC_NUM_COLORS 3
+#define LISP_GC_NUM_CLASSES 6
 
 /**
  * Color for 3-generation garbage collector
  */
 typedef enum lisp_gc_color_t
-{ 
-  LISP_GC_WHITE = 0,
-  LISP_GC_GREY  = 1,
-  LISP_GC_BLACK = 2,
-  LISP_GC_NO_COLOR = 3
+{
+  LISP_GC_WHITE_ROOT = 0,
+  LISP_GC_GREY_ROOT = 1,
+  LISP_GC_BLACK_ROOT = 2,
+  LISP_GC_WHITE = 3,
+  LISP_GC_GREY  = 4,
+  LISP_GC_BLACK = 5,
+  LISP_GC_NO_COLOR = 6
 } lisp_gc_color_t;
+
+#define LISP_GC_IS_ROOT_CLASS(__I__) ((__I__) <  LISP_GC_WHITE)
 
 #endif

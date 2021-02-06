@@ -2,7 +2,7 @@
 Copyright (c) 2020, Stefan Wolfsheimer
 
 All rights reserved.
-
+.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
 
@@ -50,10 +50,9 @@ static void test_make_cons(unit_test_t * tst)
 
   /* make cons cell[0] */
   ASSERT_LISP_OK(tst, lisp_make_cons(&vm, &cell[0], NULL, NULL));
-  ASSERT_EQ_I(tst, lisp_get_cell_color(&cell[0]), LISP_GC_WHITE);
-  ASSERT(tst, lisp_is_root_cell(&cell[0]));
+  ASSERT_EQ_I(tst, lisp_get_cell_color(&cell[0]), LISP_GC_WHITE_ROOT);
   ref_stat.num_root = 1;
-  ref_stat.num_white_root_conses = 1;
+  ref_stat.num_conses[LISP_GC_WHITE_ROOT] = 1;
   ref_stat.num_reachable = 1;
   ref_stat.num_allocated = 1;
   ref_stat.num_leaves = 2;
@@ -63,10 +62,9 @@ static void test_make_cons(unit_test_t * tst)
 
   /* make cons cell[1] */
   ASSERT_LISP_OK(tst, lisp_make_cons(&vm, &cell[1], NULL, NULL));
-  ASSERT_EQ_I(tst, lisp_get_cell_color(&cell[1]), LISP_GC_WHITE);
-  ASSERT(tst, lisp_is_root_cell(&cell[1]));
+  ASSERT_EQ_I(tst, lisp_get_cell_color(&cell[1]), LISP_GC_WHITE_ROOT);
   ref_stat.num_root = 2;
-  ref_stat.num_white_root_conses = 2;
+  ref_stat.num_conses[LISP_GC_WHITE_ROOT] = 2;
   ref_stat.num_reachable = 2;
   ref_stat.num_allocated = 2;
   ref_stat.num_leaves = 4;
@@ -75,10 +73,9 @@ static void test_make_cons(unit_test_t * tst)
 
   /* make cons cell[2] */
   ASSERT_LISP_OK(tst, lisp_make_cons(&vm, &cell[2], NULL, NULL));
-  ASSERT_EQ_I(tst, lisp_get_cell_color(&cell[2]), LISP_GC_WHITE);
-  ASSERT(tst, lisp_is_root_cell(&cell[2]));
+  ASSERT_EQ_I(tst, lisp_get_cell_color(&cell[2]), LISP_GC_WHITE_ROOT);
   ref_stat.num_root = 3;
-  ref_stat.num_white_root_conses = 3;
+  ref_stat.num_conses[LISP_GC_WHITE_ROOT] = 3;
   ref_stat.num_reachable = 3;
   ref_stat.num_allocated = 3;
   ref_stat.num_leaves = 6;
@@ -87,10 +84,9 @@ static void test_make_cons(unit_test_t * tst)
 
   /* make cons cell[3] */
   ASSERT_LISP_OK(tst, lisp_make_cons(&vm, &cell[3], NULL, NULL));
-  ASSERT_EQ_I(tst, lisp_get_cell_color(&cell[3]), LISP_GC_WHITE);
-  ASSERT(tst, lisp_is_root_cell(&cell[3]));
+  ASSERT_EQ_I(tst, lisp_get_cell_color(&cell[3]), LISP_GC_WHITE_ROOT);
   ref_stat.num_root = 4;
-  ref_stat.num_white_root_conses = 4;
+  ref_stat.num_conses[LISP_GC_WHITE_ROOT] = 4;
   ref_stat.num_reachable = 4;
   ref_stat.num_allocated = 4;
   ref_stat.num_leaves = 8;
@@ -99,11 +95,10 @@ static void test_make_cons(unit_test_t * tst)
 
   /* make cons cell[4] */
   ASSERT_LISP_OK(tst, lisp_make_cons(&vm, &cell[4], NULL, NULL));
-  ASSERT(tst, lisp_is_root_cell(&cell[4]));
-  ASSERT_EQ_I(tst, lisp_get_cell_color(&cell[4]), LISP_GC_WHITE);
+  ASSERT_EQ_I(tst, lisp_get_cell_color(&cell[4]), LISP_GC_WHITE_ROOT);
   ASSERT_EQ_I(tst, vm.cons_pos, 1u);
   ref_stat.num_root = 5;
-  ref_stat.num_white_root_conses = 5;
+  ref_stat.num_conses[LISP_GC_WHITE_ROOT] = 5;
   ref_stat.num_reachable = 5;
   ref_stat.num_allocated = 5;
   ref_stat.num_leaves = 10;
@@ -133,8 +128,8 @@ static void test_make_cons(unit_test_t * tst)
   ASSERT_FALSE(tst, lisp_is_root_cell(&cell[2]));
 
   ref_stat.num_root = 2;
-  ref_stat.num_white_root_conses = 2;
-  ref_stat.num_grey_conses = 3;
+  ref_stat.num_conses[LISP_GC_WHITE_ROOT] = 2;
+  ref_stat.num_conses[LISP_GC_GREY] = 3;
   ref_stat.num_reachable = 2;
   ref_stat.num_allocated = 5;
   ref_stat.num_leaves = 4;
@@ -150,7 +145,7 @@ static void test_make_cons(unit_test_t * tst)
   ref_stat.num_leaves = 4;
   ref_stat.num_void = 3;
   ref_stat.num_disposed = 3;
-  ref_stat.num_grey_conses = 0;
+  ref_stat.num_conses[LISP_GC_GREY] = 0;
   ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
   ASSERT_LISP_OK(tst, lisp_vm_recycle_all_conses(&vm));
   ref_stat.num_disposed = 0;
@@ -160,13 +155,12 @@ static void test_make_cons(unit_test_t * tst)
 
   /* make cons cell[0] */
   ASSERT_LISP_OK(tst, lisp_make_cons(&vm, &cell[0], NULL, NULL));
-  ASSERT_EQ_I(tst, lisp_get_cell_color(&cell[0]), LISP_GC_WHITE);
-  ASSERT(tst, lisp_is_root_cell(&cell[0]));
+  ASSERT_EQ_I(tst, lisp_get_cell_color(&cell[0]), LISP_GC_WHITE_ROOT);
   ASSERT_EQ_I(tst, vm.cons_pos, 1u);
   ASSERT_LISP_OK(tst, lisp_vm_recycle_all_conses(&vm));
 
   ref_stat.num_root = 3;
-  ref_stat.num_white_root_conses = 3;
+  ref_stat.num_conses[LISP_GC_WHITE_ROOT] = 3;
   ref_stat.num_reachable = 3;
   ref_stat.num_allocated = 3;
   ref_stat.num_leaves = 6;
@@ -175,11 +169,10 @@ static void test_make_cons(unit_test_t * tst)
 
   /* make cons cell[1] */
   ASSERT_LISP_OK(tst, lisp_make_cons(&vm, &cell[1], NULL, NULL));
-  ASSERT_EQ_I(tst, lisp_get_cell_color(&cell[1]), LISP_GC_WHITE);
-  ASSERT(tst, lisp_is_root_cell(&cell[1]));
+  ASSERT_EQ_I(tst, lisp_get_cell_color(&cell[1]), LISP_GC_WHITE_ROOT);
   ASSERT_EQ_I(tst, vm.cons_pos, 1u);
   ref_stat.num_root = 4;
-  ref_stat.num_white_root_conses = 4;
+  ref_stat.num_conses[LISP_GC_WHITE_ROOT] = 4;
   ref_stat.num_reachable = 4;
   ref_stat.num_allocated = 4;
   ref_stat.num_leaves = 8;
@@ -188,11 +181,10 @@ static void test_make_cons(unit_test_t * tst)
 
   /* make cons cell[2] */
   ASSERT_LISP_OK(tst, lisp_make_cons(&vm, &cell[2], NULL, NULL));
-  ASSERT_EQ_I(tst, lisp_get_cell_color(&cell[1]), LISP_GC_WHITE);
-  ASSERT(tst, lisp_is_root_cell(&cell[2]));
+  ASSERT_EQ_I(tst, lisp_get_cell_color(&cell[1]), LISP_GC_WHITE_ROOT);
   ASSERT_EQ_I(tst, vm.cons_pos, 1u);
   ref_stat.num_root = 5;
-  ref_stat.num_white_root_conses = 5;
+  ref_stat.num_conses[LISP_GC_WHITE_ROOT] = 5;
   ref_stat.num_reachable = 5;
   ref_stat.num_allocated = 5;
   ref_stat.num_leaves = 10;
@@ -202,8 +194,7 @@ static void test_make_cons(unit_test_t * tst)
   /* cell[5] */
   ASSERT_LISP_OK(tst, lisp_make_cons(&vm, &cell[5], NULL, NULL));
   ASSERT_EQ_I(tst, vm.cons_pos, 2u);
-  ASSERT_EQ_I(tst, lisp_get_cell_color(&cell[5]), LISP_GC_WHITE);
-  ASSERT(tst, lisp_is_root_cell(&cell[5]));
+  ASSERT_EQ_I(tst, lisp_get_cell_color(&cell[5]), LISP_GC_WHITE_ROOT);
   ASSERT_NEQ_PTR(tst, lisp_as_cons(&cell[0]), NULL);
   ASSERT_NEQ_PTR(tst, lisp_as_cons(&cell[0]), lisp_as_cons(&cell[1]));
   ASSERT_NEQ_PTR(tst, lisp_as_cons(&cell[1]), lisp_as_cons(&cell[2]));
@@ -211,7 +202,7 @@ static void test_make_cons(unit_test_t * tst)
   ASSERT_NEQ_PTR(tst, lisp_as_cons(&cell[3]), lisp_as_cons(&cell[4]));
   ASSERT_NEQ_PTR(tst, lisp_as_cons(&cell[4]), lisp_as_cons(&cell[5]));
   ref_stat.num_root = 6;
-  ref_stat.num_white_root_conses = 6;
+  ref_stat.num_conses[LISP_GC_WHITE_ROOT] = 6;
   ref_stat.num_reachable = 6;
   ref_stat.num_allocated = 6;
   ref_stat.num_leaves = 12;
@@ -253,8 +244,8 @@ static void test_make_cons_and_recyle(unit_test_t * tst)
   ASSERT_FALSE(tst, lisp_is_root_cell(&cell[2]));
 
   ref_stat.num_root = 2;
-  ref_stat.num_white_root_conses = 2;
-  ref_stat.num_grey_conses = 3;
+  ref_stat.num_conses[LISP_GC_WHITE_ROOT] = 2;
+  ref_stat.num_conses[LISP_GC_GREY] = 3;
   ref_stat.num_reachable = 2;
   ref_stat.num_allocated = 5;
   ref_stat.num_leaves = 4;
@@ -270,26 +261,26 @@ static void test_make_cons_and_recyle(unit_test_t * tst)
   ASSERT_FALSE(tst, lisp_vm_gc_swappable(&vm));
   ASSERT(tst, lisp_vm_gc_cons_step(&vm));
   ASSERT(tst, lisp_vm_gc_swappable(&vm));
-  ref_stat.num_white_root_conses = 0;
-  ref_stat.num_black_root_conses = 2;
-  ref_stat.num_grey_conses = 0;
-  ref_stat.num_grey_root_conses = 0;
-  ref_stat.num_black_conses = 3;
+  ref_stat.num_conses[LISP_GC_WHITE_ROOT] = 0;
+  ref_stat.num_conses[LISP_GC_BLACK_ROOT] = 2;
+  ref_stat.num_conses[LISP_GC_GREY] = 0;
+  ref_stat.num_conses[LISP_GC_GREY_ROOT] = 0;
+  ref_stat.num_conses[LISP_GC_BLACK] = 3;
   ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
 
   /* first swap */
   ASSERT(tst, lisp_vm_gc_swap(&vm));
   ref_stat.num_cycles = 1;
-  ref_stat.num_white_root_conses = 2;
-  ref_stat.num_black_root_conses = 0;
-  ref_stat.num_white_conses = 3;
-  ref_stat.num_black_conses = 0;
+  ref_stat.num_conses[LISP_GC_WHITE_ROOT] = 2;
+  ref_stat.num_conses[LISP_GC_BLACK_ROOT] = 0;
+  ref_stat.num_conses[LISP_GC_WHITE] = 3;
+  ref_stat.num_conses[LISP_GC_BLACK] = 0;
   ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
 
   ASSERT_FALSE(tst, lisp_vm_gc_cons_step(&vm));
   ASSERT(tst, lisp_vm_gc_cons_step(&vm));
-  ref_stat.num_white_root_conses = 0;
-  ref_stat.num_black_root_conses = 2;
+  ref_stat.num_conses[LISP_GC_WHITE_ROOT] = 0;
+  ref_stat.num_conses[LISP_GC_BLACK_ROOT] = 2;
   ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
 
   /* second swap */
@@ -298,10 +289,10 @@ static void test_make_cons_and_recyle(unit_test_t * tst)
   ref_stat.num_allocated = 2;
   ref_stat.num_root = 2;
   ref_stat.num_disposed = 3;
-  ref_stat.num_white_root_conses = 2;
-  ref_stat.num_black_root_conses = 0;
-  ref_stat.num_white_conses = 0;
-  ref_stat.num_black_conses = 0;
+  ref_stat.num_conses[LISP_GC_WHITE_ROOT] = 2;
+  ref_stat.num_conses[LISP_GC_BLACK_ROOT] = 0;
+  ref_stat.num_conses[LISP_GC_WHITE] = 0;
+  ref_stat.num_conses[LISP_GC_BLACK] = 0;
   ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
 
   ASSERT_LISP_OK(tst, lisp_free_vm(&vm));
@@ -332,12 +323,11 @@ static void test_make_cons_of_conses(unit_test_t * tst)
                                 &lisp_nil,
                                 &lisp_nil));
   ASSERT(tst, lisp_is_cons(&child1));
-  ASSERT(tst, lisp_is_root_cell(&child1));
-  ASSERT(tst, lisp_get_cell_color(&child1) == LISP_GC_WHITE);
+  ASSERT(tst, lisp_get_cell_color(&child1) == LISP_GC_WHITE_ROOT);
   ASSERT_EQ_U(tst, lisp_get_ref_count(&child1), 1u);
 
   ref_stat.num_root = 1;
-  ref_stat.num_white_root_conses = 1;
+  ref_stat.num_conses[LISP_GC_WHITE_ROOT] = 1;
   ref_stat.num_allocated = 1;
   ref_stat.num_reachable = 1;
   ref_stat.num_leaves = 2;
@@ -355,12 +345,11 @@ static void test_make_cons_of_conses(unit_test_t * tst)
                                 &lisp_nil,
                                 &lisp_nil));
   ASSERT(tst, lisp_is_cons(&child2));
-  ASSERT(tst, lisp_is_root_cell(&child2));
-  ASSERT(tst, lisp_get_cell_color(&child2) == LISP_GC_WHITE);
+  ASSERT(tst, lisp_get_cell_color(&child2) == LISP_GC_WHITE_ROOT);
   ASSERT_EQ_U(tst, lisp_get_ref_count(&child2), 1u);
 
   ref_stat.num_root = 2;
-  ref_stat.num_white_root_conses = 2;
+  ref_stat.num_conses[LISP_GC_WHITE_ROOT] = 2;
   ref_stat.num_allocated = 2;
   ref_stat.num_reachable = 2;
   ref_stat.num_leaves = 4;
@@ -378,16 +367,14 @@ static void test_make_cons_of_conses(unit_test_t * tst)
                                 &child1,
                                 &child2));
   ASSERT(tst, lisp_is_cons(&root1));
-  ASSERT(tst, lisp_is_root_cell(&root1));
-  ASSERT(tst, lisp_get_cell_color(&root1) == LISP_GC_WHITE);
-  ASSERT(tst, lisp_get_cell_color(&child1) == LISP_GC_GREY);
-  ASSERT(tst, lisp_get_cell_color(&child2) == LISP_GC_GREY);
+  ASSERT(tst, lisp_get_cell_color(&root1) == LISP_GC_WHITE_ROOT);
+  ASSERT(tst, lisp_get_cell_color(&child1) == LISP_GC_GREY_ROOT);
+  ASSERT(tst, lisp_get_cell_color(&child2) == LISP_GC_GREY_ROOT);
   ASSERT_EQ_U(tst, lisp_get_ref_count(&root1), 1u);
-  ASSERT(tst, lisp_get_cell_color(&child2) == LISP_GC_GREY);
 
   ref_stat.num_root = 3;
-  ref_stat.num_white_root_conses = 1;
-  ref_stat.num_grey_root_conses = 2;
+  ref_stat.num_conses[LISP_GC_WHITE_ROOT] = 1;
+  ref_stat.num_conses[LISP_GC_GREY_ROOT] = 2;
   ref_stat.num_allocated = 3;
   ref_stat.num_reachable = 3;
   ref_stat.num_edges = 2;
@@ -407,22 +394,22 @@ static void test_make_cons_of_conses(unit_test_t * tst)
   ASSERT_FALSE(tst, lisp_is_root_cell(&child2));
 
   ref_stat.num_root = 1;
-  ref_stat.num_grey_root_conses = 0;
-  ref_stat.num_grey_conses = 2;
+  ref_stat.num_conses[LISP_GC_GREY_ROOT] = 0;
+  ref_stat.num_conses[LISP_GC_GREY] = 2;
   ref_stat.num_bulk = 2;
   ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
 
   /* gc step */
   ASSERT_FALSE(tst, lisp_vm_gc_cons_step(&vm));
-  ref_stat.num_white_root_conses = 0;
-  ref_stat.num_black_root_conses = 1;
+  ref_stat.num_conses[LISP_GC_WHITE_ROOT] = 0;
+  ref_stat.num_conses[LISP_GC_BLACK_ROOT] = 1;
   ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
 
   /* second gc step */
   ASSERT_FALSE(tst, lisp_vm_gc_cons_step(&vm));
 
-  ref_stat.num_grey_conses = 1;
-  ref_stat.num_black_conses = 1;
+  ref_stat.num_conses[LISP_GC_GREY] = 1;
+  ref_stat.num_conses[LISP_GC_BLACK] = 1;
   ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
 
   /* third gc step */
@@ -431,11 +418,11 @@ static void test_make_cons_of_conses(unit_test_t * tst)
   ASSERT(tst, lisp_vm_gc_swap(&vm));
 
   ref_stat.num_cycles = 1;
-  ref_stat.num_white_root_conses = 1;
-  ref_stat.num_black_root_conses = 0;
-  ref_stat.num_grey_conses = 0;
-  ref_stat.num_white_conses = 2;
-  ref_stat.num_black_conses = 0;
+  ref_stat.num_conses[LISP_GC_WHITE_ROOT] = 1;
+  ref_stat.num_conses[LISP_GC_BLACK_ROOT] = 0;
+  ref_stat.num_conses[LISP_GC_GREY] = 0;
+  ref_stat.num_conses[LISP_GC_WHITE] = 2;
+  ref_stat.num_conses[LISP_GC_BLACK] = 0;
   ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
 
   /* unset car / cdr
@@ -459,7 +446,7 @@ static void test_make_cons_of_conses(unit_test_t * tst)
   ref_stat.num_allocated = 1;
   ref_stat.num_disposed = 2;
   ref_stat.num_cycles = 2;
-  ref_stat.num_white_conses = 0;
+  ref_stat.num_conses[LISP_GC_WHITE] = 0;
   ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
 
   /* recycle conses */
@@ -481,12 +468,11 @@ static void test_make_cons_of_conses(unit_test_t * tst)
                                 &lisp_nil,
                                 &lisp_nil));
   ASSERT(tst, lisp_is_cons(&child1));
-  ASSERT(tst, lisp_is_root_cell(&child1));
-  ASSERT(tst, lisp_get_cell_color(&child1) == LISP_GC_WHITE);
+  ASSERT(tst, lisp_get_cell_color(&child1) == LISP_GC_WHITE_ROOT);
   ASSERT_EQ_U(tst, lisp_get_ref_count(&child1), 1u);
 
   ref_stat.num_root = 2;
-  ref_stat.num_white_root_conses = 2;
+  ref_stat.num_conses[LISP_GC_WHITE_ROOT] = 2;
   ref_stat.num_allocated = 2;
   ref_stat.num_reachable = 2;
   ref_stat.num_leaves = 4;
@@ -504,12 +490,11 @@ static void test_make_cons_of_conses(unit_test_t * tst)
                                 &lisp_nil,
                                 &lisp_nil));
   ASSERT(tst, lisp_is_cons(&child2));
-  ASSERT(tst, lisp_is_root_cell(&child2));
-  ASSERT(tst, lisp_get_cell_color(&child2) == LISP_GC_WHITE);
+  ASSERT(tst, lisp_get_cell_color(&child2) == LISP_GC_WHITE_ROOT);
   ASSERT_EQ_U(tst, lisp_get_ref_count(&child2), 1u);
 
   ref_stat.num_root = 3;
-  ref_stat.num_white_root_conses = 3;
+  ref_stat.num_conses[LISP_GC_WHITE_ROOT] = 3;
   ref_stat.num_allocated = 3;
   ref_stat.num_reachable = 3;
   ref_stat.num_leaves = 6;
@@ -527,8 +512,8 @@ static void test_make_cons_of_conses(unit_test_t * tst)
 
   ref_stat.num_leaves = 4;
   ref_stat.num_edges = 2;
-  ref_stat.num_white_root_conses = 1;
-  ref_stat.num_grey_root_conses = 2;
+  ref_stat.num_conses[LISP_GC_WHITE_ROOT] = 1;
+  ref_stat.num_conses[LISP_GC_GREY_ROOT] = 2;
   ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
 
   /* unset child1, child2
@@ -542,8 +527,8 @@ static void test_make_cons_of_conses(unit_test_t * tst)
   ASSERT(tst, lisp_is_nil(&child2));
 
   ref_stat.num_root = 1;
-  ref_stat.num_grey_root_conses = 0;
-  ref_stat.num_grey_conses = 2;
+  ref_stat.num_conses[LISP_GC_GREY_ROOT] = 0;
+  ref_stat.num_conses[LISP_GC_GREY] = 2;
   ref_stat.num_bulk = 2;
   ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
 
@@ -557,12 +542,11 @@ static void test_make_cons_of_conses(unit_test_t * tst)
                                 &lisp_nil,
                                 &lisp_nil));
   ASSERT(tst, lisp_is_cons(&child1));
-  ASSERT(tst, lisp_is_root_cell(&child1));
-  ASSERT(tst, lisp_get_cell_color(&child1) == LISP_GC_WHITE);
+  ASSERT(tst, lisp_get_cell_color(&child1) == LISP_GC_WHITE_ROOT);
   ASSERT_EQ_U(tst, lisp_get_ref_count(&child1), 1u);
 
   ref_stat.num_root = 2;
-  ref_stat.num_white_root_conses = 2;
+  ref_stat.num_conses[LISP_GC_WHITE_ROOT] = 2;
   ref_stat.num_allocated = 4;
   ref_stat.num_reachable = 4;
   ref_stat.num_leaves = 6;
@@ -580,8 +564,8 @@ static void test_make_cons_of_conses(unit_test_t * tst)
   ref_stat.num_bulk = 0;
   ref_stat.num_reachable = 2;
   ref_stat.num_leaves = 2;
-  ref_stat.num_white_root_conses = 1;
-  ref_stat.num_grey_root_conses = 1;
+  ref_stat.num_conses[LISP_GC_WHITE_ROOT] = 1;
+  ref_stat.num_conses[LISP_GC_GREY_ROOT] = 1;
   ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
 
   /* unset child1
@@ -596,8 +580,8 @@ static void test_make_cons_of_conses(unit_test_t * tst)
   ref_stat.num_root = 1;
   ref_stat.num_reachable = 2;
   ref_stat.num_leaves = 2;
-  ref_stat.num_grey_conses = 3;
-  ref_stat.num_grey_root_conses = 0;
+  ref_stat.num_conses[LISP_GC_GREY] = 3;
+  ref_stat.num_conses[LISP_GC_GREY_ROOT] = 0;
   ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
 
   /* set car(car root) = root
@@ -624,8 +608,8 @@ static void test_make_cons_of_conses(unit_test_t * tst)
 
   ref_stat.num_leaves = 0;
   ref_stat.num_edges = 4;
-  ref_stat.num_white_root_conses = 0;
-  ref_stat.num_grey_root_conses = 1;
+  ref_stat.num_conses[LISP_GC_WHITE_ROOT] = 0;
+  ref_stat.num_conses[LISP_GC_GREY_ROOT] = 1;
   ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
 
   /* set cdr(root) = root 
@@ -639,49 +623,49 @@ static void test_make_cons_of_conses(unit_test_t * tst)
 
   /* gc step */
   ASSERT_FALSE(tst, lisp_vm_gc_cons_step(&vm));
-  ref_stat.num_black_root_conses = 1;
-  ref_stat.num_grey_root_conses = 0;
+  ref_stat.num_conses[LISP_GC_BLACK_ROOT] = 1;
+  ref_stat.num_conses[LISP_GC_GREY_ROOT] = 0;
   ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
 
   /* gc step */
   ASSERT_FALSE(tst, lisp_vm_gc_cons_step(&vm));
-  ref_stat.num_black_conses = 1;
-  ref_stat.num_grey_conses = 2;
+  ref_stat.num_conses[LISP_GC_BLACK] = 1;
+  ref_stat.num_conses[LISP_GC_GREY] = 2;
   ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
 
   /* gc step */
   ASSERT_FALSE(tst, lisp_vm_gc_cons_step(&vm));
-  ref_stat.num_black_conses = 2;
-  ref_stat.num_grey_conses = 1;
+  ref_stat.num_conses[LISP_GC_BLACK] = 2;
+  ref_stat.num_conses[LISP_GC_GREY] = 1;
   ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
 
   /* gc step */
   ASSERT(tst, lisp_vm_gc_cons_step(&vm));
-  ref_stat.num_black_conses = 3;
-  ref_stat.num_grey_conses = 0;
+  ref_stat.num_conses[LISP_GC_BLACK] = 3;
+  ref_stat.num_conses[LISP_GC_GREY] = 0;
   ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
 
   /* swap */
   ASSERT(tst, lisp_vm_gc_swap(&vm));
   ref_stat.num_cycles = 3;
-  ref_stat.num_white_root_conses = 1;
-  ref_stat.num_black_root_conses = 0;
-  ref_stat.num_white_conses = 3;
-  ref_stat.num_black_conses = 0;
+  ref_stat.num_conses[LISP_GC_WHITE_ROOT] = 1;
+  ref_stat.num_conses[LISP_GC_BLACK_ROOT] = 0;
+  ref_stat.num_conses[LISP_GC_WHITE] = 3;
+  ref_stat.num_conses[LISP_GC_BLACK] = 0;
   ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
 
   /* gc step */
   ASSERT_FALSE(tst, lisp_vm_gc_cons_step(&vm));
-  ref_stat.num_white_root_conses = 0;
-  ref_stat.num_black_root_conses = 1;
-  ref_stat.num_black_conses = 0;
-  ref_stat.num_white_conses = 2;
-  ref_stat.num_grey_conses = 1;
+  ref_stat.num_conses[LISP_GC_WHITE_ROOT] = 0;
+  ref_stat.num_conses[LISP_GC_BLACK_ROOT] = 1;
+  ref_stat.num_conses[LISP_GC_BLACK] = 0;
+  ref_stat.num_conses[LISP_GC_WHITE] = 2;
+  ref_stat.num_conses[LISP_GC_GREY] = 1;
   ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
 
   ASSERT(tst, lisp_vm_gc_cons_step(&vm));
-  ref_stat.num_black_conses = 1;
-  ref_stat.num_grey_conses = 0;
+  ref_stat.num_conses[LISP_GC_BLACK] = 1;
+  ref_stat.num_conses[LISP_GC_GREY] = 0;
   ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
 
   /* swap */
@@ -692,24 +676,24 @@ static void test_make_cons_of_conses(unit_test_t * tst)
   ref_stat.num_reachable = 2;
   ref_stat.num_allocated = 2;
   ref_stat.num_disposed = 2;
-  ref_stat.num_white_root_conses = 1;
-  ref_stat.num_black_root_conses = 0;
-  ref_stat.num_white_conses = 1;
-  ref_stat.num_black_conses = 0;
+  ref_stat.num_conses[LISP_GC_WHITE_ROOT] = 1;
+  ref_stat.num_conses[LISP_GC_BLACK_ROOT] = 0;
+  ref_stat.num_conses[LISP_GC_WHITE] = 1;
+  ref_stat.num_conses[LISP_GC_BLACK] = 0;
   ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
 
   /* gc step */
   ASSERT_FALSE(tst, lisp_vm_gc_cons_step(&vm));
-  ref_stat.num_white_root_conses = 0;
-  ref_stat.num_black_root_conses = 1;
-  ref_stat.num_white_conses = 0;
-  ref_stat.num_grey_conses = 1;
+  ref_stat.num_conses[LISP_GC_WHITE_ROOT] = 0;
+  ref_stat.num_conses[LISP_GC_BLACK_ROOT] = 1;
+  ref_stat.num_conses[LISP_GC_WHITE] = 0;
+  ref_stat.num_conses[LISP_GC_GREY] = 1;
   ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
 
   /* gc step */
   ASSERT(tst, lisp_vm_gc_cons_step(&vm));
-  ref_stat.num_grey_conses = 0;
-  ref_stat.num_black_conses = 1;
+  ref_stat.num_conses[LISP_GC_GREY] = 0;
+  ref_stat.num_conses[LISP_GC_BLACK] = 1;
   ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
 
   /* gc swap */
@@ -717,10 +701,10 @@ static void test_make_cons_of_conses(unit_test_t * tst)
   ref_stat.num_cycles = 5;
   ref_stat.num_bulk = 1;
   ref_stat.num_root = 1;
-  ref_stat.num_white_root_conses = 1;
-  ref_stat.num_black_root_conses = 0;
-  ref_stat.num_white_conses = 1;
-  ref_stat.num_black_conses = 0;
+  ref_stat.num_conses[LISP_GC_WHITE_ROOT] = 1;
+  ref_stat.num_conses[LISP_GC_BLACK_ROOT] = 0;
+  ref_stat.num_conses[LISP_GC_WHITE] = 1;
+  ref_stat.num_conses[LISP_GC_BLACK] = 0;
   ASSERT_LISP_CHECK_GC_STATS(tst, &vm, &ref_stat);
 
   ASSERT_LISP_OK(tst, lisp_free_vm(&vm));

@@ -48,14 +48,18 @@ either expressed or implied, of the FreeBSD Project.
   static void * _get_##__NAME__(lisp_gc_stat_t * stat)    \
   { return &stat->__NAME__; }
 
+#define _GC_STAT_ARRAY_GETTER(__FIELD__, __I__,__NAME__)  \
+  static void * _get_##__NAME__(lisp_gc_stat_t * stat)    \
+  { return &stat->__FIELD__[__I__]; }
+
 #define _GC_STAT_SIZE_FIELD(__NAME__)                             \
-  {#__NAME__, "% 5zu", _GC_STAT_FIELD_SIZE_T, _get_##__NAME__}    \
+  {#__NAME__, "% 5zu", _GC_STAT_FIELD_SIZE_T, _get_##__NAME__}
 
 #define _GC_STAT_INT_FIELD(__NAME__)                            \
-  {#__NAME__, "% 5d", _GC_STAT_FIELD_INT, _get_##__NAME__}      \
+  {#__NAME__, "% 5d", _GC_STAT_FIELD_INT, _get_##__NAME__}
 
 #define _GC_STAT_BOOL_FIELD(__NAME__)                           \
-  {#__NAME__, "% 5d", _GC_STAT_FIELD_BOOL, _get_##__NAME__}     \
+  {#__NAME__, "% 5d", _GC_STAT_FIELD_BOOL, _get_##__NAME__}
 
 static void _gc_stat_print_field(FILE * fp,
                                  lisp_gc_stat_field_t * field,
@@ -132,32 +136,36 @@ _GC_STAT_GETTER(num_cycles);
 _GC_STAT_GETTER(num_leaves);
 _GC_STAT_GETTER(num_edges);
 _GC_STAT_GETTER(num_cons_pages);
-_GC_STAT_GETTER(num_white_root_conses);
-_GC_STAT_GETTER(num_grey_root_conses);
-_GC_STAT_GETTER(num_black_root_conses);
-_GC_STAT_GETTER(num_white_conses);
-_GC_STAT_GETTER(num_grey_conses);
-_GC_STAT_GETTER(num_black_conses);
-_GC_STAT_GETTER(num_white_root_objects);
-_GC_STAT_GETTER(num_grey_root_objects);
-_GC_STAT_GETTER(num_black_root_objects);
-_GC_STAT_GETTER(num_white_objects);
-_GC_STAT_GETTER(num_grey_objects);
-_GC_STAT_GETTER(num_black_objects);
-_GC_STAT_GETTER(error_black_has_white_child);
-_GC_STAT_GETTER(error_list_white_root_conses);
-_GC_STAT_GETTER(error_list_grey_root_conses);
-_GC_STAT_GETTER(error_list_black_root_conses);
-_GC_STAT_GETTER(error_list_white_conses);
-_GC_STAT_GETTER(error_list_grey_conses);
-_GC_STAT_GETTER(error_list_black_conses);
-_GC_STAT_GETTER(error_list_white_root_object);
-_GC_STAT_GETTER(error_list_grey_root_object);
-_GC_STAT_GETTER(error_list_black_root_object);
-_GC_STAT_GETTER(error_list_white_object);
-_GC_STAT_GETTER(error_list_grey_object);
-_GC_STAT_GETTER(error_list_black_object);
 
+_GC_STAT_ARRAY_GETTER(num_conses, LISP_GC_WHITE_ROOT, num_white_root_conses);
+_GC_STAT_ARRAY_GETTER(num_conses, LISP_GC_GREY_ROOT, num_grey_root_conses);
+_GC_STAT_ARRAY_GETTER(num_conses, LISP_GC_BLACK_ROOT, num_black_root_conses);
+_GC_STAT_ARRAY_GETTER(num_conses, LISP_GC_WHITE, num_white_conses);
+_GC_STAT_ARRAY_GETTER(num_conses, LISP_GC_GREY, num_grey_conses);
+_GC_STAT_ARRAY_GETTER(num_conses, LISP_GC_BLACK, num_black_conses);
+
+_GC_STAT_ARRAY_GETTER(num_objects, LISP_GC_WHITE_ROOT, num_white_root_objects);
+_GC_STAT_ARRAY_GETTER(num_objects, LISP_GC_GREY_ROOT, num_grey_root_objects);
+_GC_STAT_ARRAY_GETTER(num_objects, LISP_GC_BLACK_ROOT, num_black_root_objects);
+_GC_STAT_ARRAY_GETTER(num_objects, LISP_GC_WHITE, num_white_objects);
+_GC_STAT_ARRAY_GETTER(num_objects, LISP_GC_GREY, num_grey_objects);
+_GC_STAT_ARRAY_GETTER(num_objects, LISP_GC_BLACK, num_black_objects);
+
+_GC_STAT_GETTER(error_black_has_white_child);
+
+_GC_STAT_ARRAY_GETTER(error_cons_lists, LISP_GC_WHITE_ROOT, error_list_white_root_conses);
+_GC_STAT_ARRAY_GETTER(error_cons_lists, LISP_GC_GREY_ROOT, error_list_grey_root_conses);
+_GC_STAT_ARRAY_GETTER(error_cons_lists, LISP_GC_BLACK_ROOT, error_list_black_root_conses);
+_GC_STAT_ARRAY_GETTER(error_cons_lists, LISP_GC_WHITE, error_list_white_conses);
+_GC_STAT_ARRAY_GETTER(error_cons_lists, LISP_GC_GREY, error_list_grey_conses);
+_GC_STAT_ARRAY_GETTER(error_cons_lists, LISP_GC_BLACK, error_list_black_conses);
+
+_GC_STAT_ARRAY_GETTER(error_object_lists, LISP_GC_WHITE_ROOT, error_list_white_root_object);
+_GC_STAT_ARRAY_GETTER(error_object_lists, LISP_GC_GREY_ROOT, error_list_grey_root_object);
+_GC_STAT_ARRAY_GETTER(error_object_lists, LISP_GC_BLACK_ROOT, error_list_black_root_object);
+_GC_STAT_ARRAY_GETTER(error_object_lists, LISP_GC_WHITE, error_list_white_object);
+_GC_STAT_ARRAY_GETTER(error_object_lists, LISP_GC_GREY, error_list_grey_object);
+_GC_STAT_ARRAY_GETTER(error_object_lists, LISP_GC_BLACK, error_list_black_object);
 
 lisp_gc_stat_field_t lisp_gc_stat_field[LISP_GC_STAT_NUM_FIELDS] =
   {

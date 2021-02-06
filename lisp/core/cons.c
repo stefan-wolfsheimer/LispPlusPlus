@@ -187,7 +187,7 @@ int lisp_make_cons(lisp_vm_t * vm,
   int ret;
   cell->type_id = LISP_TID_CONS;
   cell->data.obj = _lisp_gc_alloc_cons(vm,
-                                       vm->cons_color_map.white_root,
+                                       vm->cons_lists[LISP_GC_WHITE_ROOT],
                                        1u);
 
   if(!cell->data.obj)

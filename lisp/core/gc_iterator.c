@@ -51,38 +51,18 @@ inline static lisp_complex_object_t * _lisp_dl_as_complex_object(const lisp_dl_i
 
 static lisp_gc_collectible_list_t * _get_color_map_list(lisp_vm_t * vm, int index)
 {
-  lisp_gc_color_map_t * gc_map;
-  if(index < LISP_GC_NUM_COLORS * 2)
+  if(index < LISP_GC_NUM_CLASSES)
   {
-    gc_map = &vm->cons_color_map;
+    return vm->cons_lists[index];
+  }
+  else if(index < LISP_GC_NUM_CLASSES * 2)
+  {
+    return vm->object_lists[index - LISP_GC_NUM_CLASSES];
   }
   else
   {
-    gc_map = &vm->object_color_map;
-    index-= LISP_GC_NUM_COLORS * 2;
+    return NULL;
   }
-  switch(index)
-  {
-  case 0:
-    return gc_map->white_root;
-    break;
-  case 1:
-    return gc_map->grey_root;
-    break;
-  case 2:
-    return gc_map->black_root;
-    break;
-  case 3:
-    return gc_map->white;
-    break;
-  case 4:
-    return gc_map->grey;
-    break;
-  case 5:
-    return gc_map->black;
-    break;
-  }
-  return NULL;
 }
 
 int lisp_gc_iterator_is_valid(lisp_gc_iterator_t * itr)
