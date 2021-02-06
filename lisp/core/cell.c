@@ -171,6 +171,11 @@ inline static lisp_dl_item_t * _lisp_cons_as_dl_item(const lisp_cons_t * cons)
   return (lisp_dl_item_t*) (((char*)cons) - sizeof(lisp_dl_item_t));
 }
 
+inline static lisp_dl_item_t * _lisp_complex_object_as_dl_item(const lisp_complex_object_t * obj)
+{
+  return (lisp_dl_item_t*) (((lisp_dl_item_t*)obj) - 1);
+}
+
 static void _lisp_cons_unset(lisp_cons_t * cons)
 {
   assert(cons->ref_count > 0);
@@ -227,5 +232,107 @@ int lisp_unset(lisp_cell_t * cell)
     return LISP_NOT_IMPLEMENTED;
   }
   return LISP_NOT_IMPLEMENTED;
+}
+
+/*****************************************************************************
+ * internal functions
+ *****************************************************************************/
+static inline void _lisp_cons_grey(lisp_cons_t * cons)
+{
+  if(cons->gc_list->grey_elements != NULL)
+  {
+    lisp_dl_list_remove(&cons->gc_list->objects,
+                        _lisp_cons_as_dl_item(cons));
+    cons->gc_list = cons->gc_list->grey_elements;
+    lisp_dl_list_append(&cons->gc_list->objects,
+                        _lisp_cons_as_dl_item(cons));
+  }
+}
+
+static inline void _lisp_complex_object_grey(lisp_complex_object_t * obj)
+{
+  if(obj->gc_list->grey_elements != NULL)
+  {
+    lisp_dl_list_remove(&obj->gc_list->objects,
+                        _lisp_complex_object_as_dl_item(obj));
+    obj->gc_list = obj->gc_list->grey_elements;
+    lisp_dl_list_append(&obj->gc_list->objects,
+                        _lisp_complex_object_as_dl_item(obj));
+  }
+}
+
+
+int lisp_init_child_cell(lisp_cell_t * target,
+                         const lisp_cell_t * source)
+{
+  /*@todo unit test coverage */
+  if(source)
+  {
+    switch(LISP_STORAGE_ID(source->type_id))
+    {
+    case LISP_STORAGE_ATOM:
+      target->data = source->data;
+    case LISP_STORAGE_NULL:
+      target->type_id = source->type_id;
+      return LISP_OK;
+      break;
+    case LISP_STORAGE_COW_OBJECT:
+      return LISP_NOT_IMPLEMENTED;
+      break;
+    case LISP_STORAGE_OBJECT:
+      return LISP_NOT_IMPLEMENTED;
+      break;
+    case LISP_STORAGE_CONS:
+      /* ensure that child is not white. */
+      _lisp_cons_grey((lisp_cons_t*)source->data.obj);
+      target->type_id = source->type_id;
+      target->data = source->data;
+      return LISP_OK;
+    case LISP_STORAGE_COMPLEX:
+      /* ensure that child is not white */
+      _lisp_complex_object_grey((lisp_complex_object_t*)source->data.obj - 1);
+      target->type_id = source->type_id;
+      target->data = source->data;
+      return LISP_OK;
+      break;
+    }
+    /*@todo implement other types */
+    return LISP_NOT_IMPLEMENTED;
+  }
+  else
+  {
+    target->type_id = LISP_TID_NIL;
+  }
+  return LISP_OK;
+}
+
+int lisp_unset_child_cell(lisp_cell_t * target)
+{
+  switch(LISP_STORAGE_ID(target->type_id))
+  {
+  case LISP_STORAGE_ATOM:
+  case LISP_STORAGE_NULL:
+    target->type_id = LISP_TID_NIL;
+    return LISP_OK;
+    break;
+  case LISP_STORAGE_COW_OBJECT:
+    return LISP_NOT_IMPLEMENTED;
+    break;
+  case LISP_STORAGE_OBJECT:
+    return LISP_NOT_IMPLEMENTED;
+    break;
+  case LISP_STORAGE_CONS:
+    target->type_id = LISP_TID_NIL;
+    target->data.obj = NULL;
+    return LISP_OK;
+  case LISP_STORAGE_COMPLEX:
+    target->type_id = LISP_TID_NIL;
+    target->data.obj = NULL;
+    return LISP_OK;
+    break;
+  default:
+    return LISP_NOT_IMPLEMENTED;
+  }
+  return LISP_OK;
 }
 

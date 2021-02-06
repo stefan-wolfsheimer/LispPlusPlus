@@ -455,6 +455,7 @@ static void test_make_cons_of_conses(unit_test_t * tst)
   ASSERT(tst, lisp_vm_gc_swappable(&vm));
   ASSERT(tst, lisp_vm_gc_swap(&vm));
 
+  ref_stat.num_bulk = 0;
   ref_stat.num_allocated = 1;
   ref_stat.num_disposed = 2;
   ref_stat.num_cycles = 2;

@@ -39,6 +39,7 @@ typedef struct lisp_array_t
 {
   struct lisp_cell_t * data;
   size_t size;
+  size_t reserved; /*@todo implement reserved memory */
   size_t gc_pos;
 } lisp_array_t;
 
@@ -50,13 +51,25 @@ int lisp_make_array(struct lisp_vm_t * vm,
                     size_t n,
                     struct lisp_cell_t * value);
 
+/******************************************************************************
+ * modificators
+ ******************************************************************************/
 /**
  * Resize the array.
  */
-int lisp_array_resize(struct lisp_vm_t * vm,
-                      struct lisp_array_t * array,
+int lisp_array_resize(struct lisp_array_t * array,
                       size_t n,
                       struct lisp_cell_t * value);
+
+int lisp_array_append(struct lisp_array_t * array,
+                      struct lisp_cell_t * value);
+
+/**
+ * Unset nth element of array.
+ * \return LISP_RANGE_ERROR or LISP_OK
+ */
+int lisp_array_unset(struct lisp_array_t * array,
+                     size_t n);
 
 /**
  * Initialize static type.

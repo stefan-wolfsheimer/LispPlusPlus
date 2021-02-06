@@ -125,6 +125,12 @@ int lisp_vm_recycle_next_cons(lisp_vm_t * vm);
 int lisp_vm_recycle_all_objects(lisp_vm_t * vm);
 
 /**
+ * recycle next cons.
+ * @return LISP_NO_CHANGE of disposed list was empty LISP_OK otherwise
+ */
+int lisp_vm_recycle_next_object(lisp_vm_t * vm);
+
+/**
  * Recycle all conses and objects
  */
 int lisp_vm_recycle_all(lisp_vm_t * vm);

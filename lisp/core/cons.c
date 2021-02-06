@@ -110,110 +110,35 @@ void lisp_cons_grey(lisp_cons_t * cons)
 /******************************************************************************
  * car / cdr modification
  ******************************************************************************/
-static int _lisp_unset_cons_cell(lisp_cell_t * target)
-{
-  switch(LISP_STORAGE_ID(target->type_id))
-  {
-  case LISP_STORAGE_ATOM:
-  case LISP_STORAGE_NULL:
-    target->type_id = LISP_TID_NIL;
-    return LISP_OK;
-    break;
-  case LISP_STORAGE_COW_OBJECT:
-    return LISP_NOT_IMPLEMENTED;
-    break;
-  case LISP_STORAGE_OBJECT:
-    return LISP_NOT_IMPLEMENTED;
-    break;
-  case LISP_STORAGE_CONS:
-    target->type_id = LISP_TID_NIL;
-    target->data.obj = NULL;
-    return LISP_OK;
-  case LISP_STORAGE_COMPLEX:
-    target->type_id = LISP_TID_NIL;
-    target->data.obj = NULL;
-    return LISP_OK;
-    break;
-  default:
-    return LISP_NOT_IMPLEMENTED;
-  }
-  return LISP_OK;
-}
-
-static int _lisp_set_cons_cell(lisp_vm_t * vm,
-                               lisp_cell_t * target,
-                               const lisp_cell_t * source)
-{
-  /*@todo unit test coverage */
-  if(source)
-  {
-    switch(LISP_STORAGE_ID(source->type_id))
-    {
-    case LISP_STORAGE_ATOM:
-      target->data = source->data;
-    case LISP_STORAGE_NULL:
-      target->type_id = source->type_id;
-      return LISP_OK;
-      break;
-    case LISP_STORAGE_COW_OBJECT:
-      return LISP_NOT_IMPLEMENTED;
-      break;
-    case LISP_STORAGE_OBJECT:
-      return LISP_NOT_IMPLEMENTED;
-      break;
-    case LISP_STORAGE_CONS:
-      /* ensure that child is not white. */
-      _lisp_cons_grey((lisp_cons_t*)source->data.obj);
-      target->type_id = source->type_id;
-      target->data = source->data;
-      return LISP_OK;
-    case LISP_STORAGE_COMPLEX:
-      /* ensure that child is not white */
-      lisp_complex_object_grey((lisp_complex_object_t*)source->data.obj);
-      target->type_id = source->type_id;
-      target->data = source->data;
-      return LISP_OK;
-      break;
-    }
-    /*@todo implement other types */
-    return LISP_NOT_IMPLEMENTED;
-  }
-  else
-  {
-    target->type_id = LISP_TID_NIL;
-  }
-  return LISP_OK;
-}
-
 int lisp_cons_unset_car(lisp_cons_t * cons)
 {
-  return _lisp_unset_cons_cell(&cons->car);
+  return lisp_unset_child_cell(&cons->car);
 }
 
 int lisp_cons_unset_cdr(lisp_cons_t * cons)
 {
-  return _lisp_unset_cons_cell(&cons->cdr);
+  return lisp_unset_child_cell(&cons->cdr);
 }
 
 int lisp_cons_unset_car_cdr(lisp_cons_t * cons)
 {
-  int ret = _lisp_unset_cons_cell(&cons->car);
+  int ret = lisp_unset_child_cell(&cons->car);
   if(ret != LISP_OK)
   {
     return ret;
   }
-  return _lisp_unset_cons_cell(&cons->cdr);
+  return lisp_unset_child_cell(&cons->cdr);
 }
 
 int _lisp_cons_set_car(lisp_cons_t * cons,
                        lisp_cell_t * car)
 {
   int ret;
-  if( (ret = _lisp_unset_cons_cell(&cons->car)) != LISP_OK)
+  if( (ret = lisp_unset_child_cell(&cons->car)) != LISP_OK)
   {
     return ret;
   }
-  return _lisp_set_cons_cell(cons->gc_list->vm, &cons->car, car);
+  return lisp_init_child_cell(&cons->car, car);
 }
 
 int lisp_cons_set_car(lisp_cons_t * cons,
@@ -226,11 +151,11 @@ int _lisp_cons_set_cdr(lisp_cons_t * cons,
                        lisp_cell_t * cdr)
 {
   int ret;
-  if( (ret = _lisp_unset_cons_cell(&cons->cdr)) != LISP_OK)
+  if( (ret = lisp_unset_child_cell(&cons->cdr)) != LISP_OK)
   {
     return ret;
   }
-  return _lisp_set_cons_cell(cons->gc_list->vm, &cons->cdr, cdr);
+  return lisp_init_child_cell(&cons->cdr, cdr);
 }
 
 int lisp_cons_set_cdr(lisp_cons_t * cons,
@@ -269,14 +194,10 @@ int lisp_make_cons(lisp_vm_t * vm,
   {
     return LISP_BAD_ALLOC;
   }
-  ret = _lisp_set_cons_cell(vm,
-                            &((lisp_cons_t*)cell->data.obj)->car,
-                            car);
+  ret = lisp_init_child_cell(&((lisp_cons_t*)cell->data.obj)->car, car);
   if(!ret)
   {
-    return _lisp_set_cons_cell(vm,
-                               &((lisp_cons_t*)cell->data.obj)->cdr,
-                               cdr);
+    return lisp_init_child_cell(&((lisp_cons_t*)cell->data.obj)->cdr, cdr);
   }
   else
   {

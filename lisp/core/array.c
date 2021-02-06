@@ -57,11 +57,21 @@ int lisp_make_array(struct lisp_vm_t * vm,
   {
     return LISP_BAD_ALLOC;
   }
-  cells = MALLOC(sizeof(lisp_cell_t) * n);
-  ((lisp_array_t*)cell->data.obj)->size = n;
-  ((lisp_array_t*)cell->data.obj)->data = cells;
-  ((lisp_array_t*)cell->data.obj)->gc_pos = 0;
-  return _lisp_array_init_cells(cells, 0, n, value);
+  if(n)
+  {
+    cells = MALLOC(sizeof(lisp_cell_t) * n);
+    ((lisp_array_t*)cell->data.obj)->size = n;
+    ((lisp_array_t*)cell->data.obj)->data = cells;
+    ((lisp_array_t*)cell->data.obj)->gc_pos = 0;
+    return _lisp_array_init_cells(cells, 0, n, value);
+  }
+  else
+  {
+    ((lisp_array_t*)cell->data.obj)->size = 0;
+    ((lisp_array_t*)cell->data.obj)->data = NULL;
+    ((lisp_array_t*)cell->data.obj)->gc_pos = 0;
+    return LISP_OK;
+  }
 }
 
 /******************************************************************************
@@ -73,10 +83,18 @@ static int _lisp_array_init_cells(lisp_cell_t * cells,
                                   lisp_cell_t * value)
 {
   size_t i;
+  int ret;
   if(value)
   {
-    /* @todo */
-    return LISP_NOT_IMPLEMENTED;
+    for(i=begin; i < end; i++)
+    {
+      ret = lisp_init_child_cell(cells + i, value);
+      if(ret != LISP_OK)
+      {
+        return ret;
+      }
+    }
+    return LISP_OK;
   }
   else
   {
@@ -123,8 +141,10 @@ static int _lisp_array_unset_cells(lisp_cell_t * cells,
   return LISP_OK;
 }
 
-int lisp_array_resize(struct lisp_vm_t * vm,
-                      struct lisp_array_t * array,
+/******************************************************************************
+ * modificators
+ ******************************************************************************/
+int lisp_array_resize(struct lisp_array_t * array,
                       size_t n,
                       struct lisp_cell_t * value)
 {
@@ -156,11 +176,43 @@ int lisp_array_resize(struct lisp_vm_t * vm,
   return LISP_OK;
 }
 
+int lisp_array_append(lisp_array_t * array, lisp_cell_t * value)
+{
+  int ret;
+  array->data = REALLOC(array->data,
+                        (array->size + 1) * sizeof(lisp_cell_t));
+  ret = _lisp_array_init_cells(array->data,
+                               array->size,
+                               array->size + 1,
+                               value);
+  if(ret != LISP_OK)
+  {
+    return ret;
+  }
+  array->size++;
+  return LISP_OK;
+}
+
+int lisp_array_unset(struct lisp_array_t * array, size_t n)
+{
+  if(n < array->size)
+  {
+    return lisp_unset_child_cell(array->data + n);
+  }
+  else
+  {
+    return LISP_RANGE_ERROR;
+  }
+}
+
 
 /* typdefinition functions */
 static int _array_destructor(void * ptr)
 {
-  FREE(((lisp_array_t*)ptr)->data);
+  if(((lisp_array_t*)ptr)->data)
+  {
+    FREE(((lisp_array_t*)ptr)->data);
+  }
   return LISP_OK;
 }
 

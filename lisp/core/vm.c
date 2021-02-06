@@ -406,6 +406,8 @@ int lisp_vm_recycle_all_objects(lisp_vm_t * vm)
   lisp_cell_t cell;
   lisp_type_t * type;
   lisp_complex_object_t * obj;
+  int ret, r;
+  ret = LISP_OK;
   item = vm->disposed_objects.first;
   while(item)
   {
@@ -419,8 +421,11 @@ int lisp_vm_recycle_all_objects(lisp_vm_t * vm)
         lisp_cell_iterator_is_valid(&citr);
         lisp_cell_next_child(&citr))
     {
-      /* @todo unset car & cdr */
-      /* _unset_cell(&citr.cell); */
+      r = lisp_unset_child_cell(citr.child);
+      if(r != LISP_OK)
+      {
+        ret = r;
+      }
     }
     next = item->next;
     type = &lisp_static_types[_lisp_dl_as_complex_object(item)->type_id];
@@ -431,7 +436,52 @@ int lisp_vm_recycle_all_objects(lisp_vm_t * vm)
     FREE(item);
     item = next;
   }
-  return LISP_OK;
+  return ret;
+}
+
+int lisp_vm_recycle_next_object(lisp_vm_t * vm)
+{
+  lisp_dl_item_t * item;
+  int ret,r;
+  lisp_complex_object_t * obj;
+  lisp_cell_t cell;
+  lisp_cell_iterator_t citr;
+  lisp_type_t * type;
+  if(vm->disposed_objects.first)
+  {
+    item = vm->disposed_objects.first;
+    obj = _lisp_dl_as_complex_object(item);
+    lisp_dl_list_remove_first(&vm->disposed_objects);
+    ret = LISP_OK;
+    assert(obj->ref_count == 0);
+    assert(LISP_STORAGE_ID(obj->type_id) == LISP_STORAGE_COMPLEX);
+    assert(obj->type_id < LISP_NUM_TYPES);
+    cell.type_id = obj->type_id;
+    cell.data.obj = obj + 1;
+
+    /*@todo do it stepwise */
+    for(lisp_first_child(&cell, &citr);
+        lisp_cell_iterator_is_valid(&citr);
+        lisp_cell_next_child(&citr))
+    {
+      r = lisp_unset_child_cell(citr.child);
+      if(r != LISP_OK)
+      {
+        ret = r;
+      }
+    }
+    type = &lisp_static_types[obj->type_id];
+    if(type->lisp_destructor_ptr)
+    {
+      type->lisp_destructor_ptr(obj + 1);
+    }
+    FREE(item);
+    return ret;
+  }
+  else
+  {
+    return LISP_NO_CHANGE;
+  }
 }
 
 int lisp_vm_recycle_all(lisp_vm_t * vm)

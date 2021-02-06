@@ -36,5 +36,6 @@ either expressed or implied, of the FreeBSD Project.
 #define LISP_INVALID 2
 #define LISP_NOT_IMPLEMENTED 3
 #define LISP_NO_CHANGE 4
+#define LISP_RANGE_ERROR 5
 
 #endif

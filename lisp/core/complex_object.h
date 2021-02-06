@@ -57,9 +57,4 @@ lisp_gc_color_t lisp_complex_object_get_color(const lisp_complex_object_t * obj)
  */
 short int lisp_complex_object_is_root(const lisp_complex_object_t * obj);
 
-/**
- * If object is in white list move it to grey list
- */
-void lisp_complex_object_grey(lisp_complex_object_t * obj);
-
 #endif

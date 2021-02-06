@@ -124,4 +124,22 @@ lisp_gc_color_t lisp_get_cell_color(const lisp_cell_t * cell);
  */
 int lisp_unset(lisp_cell_t * cell);
 
+/*****************************************************************************
+ * internal functions
+ *****************************************************************************/
+/**
+ * Init child cell of cons or complex object.
+ *
+ * \param target pointer to (uninitialized) cell
+ * \param source
+ * \return LISP_OK if successful
+ */
+int lisp_init_child_cell(lisp_cell_t * target, const lisp_cell_t * source);
+
+/**
+ * Unset child cell of cons or complex object.
+ * \return LISP_OK
+ */
+int lisp_unset_child_cell(lisp_cell_t * target);
+
 #endif
