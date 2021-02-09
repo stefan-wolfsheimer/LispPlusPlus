@@ -5,4 +5,5 @@ add_library( Util
   xmalloc.c
   murmur_hash3.c
   hash_table.c
+  serialization.c
 )

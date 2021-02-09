@@ -5,4 +5,5 @@ add_library( TestUtil
   test.c
   dl_list.c
   hash_table.c
+  serialization.c
   )
