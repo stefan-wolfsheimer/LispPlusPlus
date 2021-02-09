@@ -32,6 +32,7 @@ either expressed or implied, of the FreeBSD Project.
 #define __LISP_GC_STAT_H__
 #include <stdio.h>
 #include "gc_color.h"
+#include <lisp/util/serialization.h>
 
 #define LISP_GC_STAT_NUM_FIELDS 36
 #define LISP_GC_STAT_PRINT_COLOR 1
@@ -131,6 +132,6 @@ void lisp_gc_stat_print2(FILE * fp,
                          lisp_gc_stat_t * stat1,
                          lisp_gc_stat_t * stat2);
 
-extern lisp_gc_stat_field_t lisp_gc_stat_field[LISP_GC_STAT_NUM_FIELDS];
+extern serialization_field_t lisp_gc_stat_fields[LISP_GC_STAT_NUM_FIELDS];
 
 #endif
