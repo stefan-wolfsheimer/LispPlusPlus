@@ -172,6 +172,10 @@ int lisp_vm_gc_check(lisp_vm_t * vm);
 
 void lisp_vm_gc_dump(FILE * fp, lisp_vm_t * vm, int mode);
 
+/**
+ * Get garbage collector statistics.
+ */
 void lisp_vm_gc_get_stats(lisp_vm_t * vm,
                           struct lisp_gc_stat_t * stat);
+
 #endif
