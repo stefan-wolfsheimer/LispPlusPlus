@@ -2,6 +2,7 @@
 #define __COMMON_H__
 #include <lisp/core/vm.h>
 #include <lisp/core/gc_stat.h>
+#include <lisp/core/error.h>
 
 #define LISP_GC_DUMP_TEST LISP_GC_DUMP_HUMAN
 /* LISP_GC_DUMP_SILENT 0

@@ -28,13 +28,12 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 ******************************************************************************/
+#include <unit_tests/common.h>
 #include <lisp/util/unit_test.h>
 #include <lisp/util/xmalloc.h>
 #include <lisp/core/vm.h>
 #include <lisp/core/cons.h>
 #include <lisp/core/error.h>
-#include "common.h"
-
 
 void test_vm(unit_context_t * ctx)
 {
