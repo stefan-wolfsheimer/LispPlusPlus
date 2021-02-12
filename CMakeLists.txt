@@ -33,9 +33,11 @@ ENDIF(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES Release)
 IF(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES Release OR CMAKE_BUILD_TYPE MATCHES Coverage)
 add_subdirectory (lisp/util)
 add_subdirectory (lisp/core)
-add_subdirectory (test_util)
-# @todo rename to test_core2
-add_subdirectory (test_core2)
+add_subdirectory (lisp/simul)
+add_subdirectory (unit_tests/util)
+add_subdirectory (unit_tests/simul)
+add_subdirectory (unit_tests/core)
+
 ENDIF(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES Release OR CMAKE_BUILD_TYPE MATCHES Coverage)
 
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
@@ -73,13 +75,15 @@ ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
 
 IF(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES Coverage)
   add_executable(
-    unit_tests
-    unit_tests.c
+    run_unit_tests
+    unit_tests/unit_tests.c
     )
-  target_link_libraries(unit_tests
+  target_link_libraries(run_unit_tests
     TestUtil
     TestCore
+    TestSimul
     LispCore
+    LispSimul
     Util
     )
 ENDIF(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES Coverage)

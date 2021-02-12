@@ -15,6 +15,9 @@ void test_vm(unit_context_t * ctx);
 void test_cons(unit_context_t * ctx);
 void test_array(unit_context_t * ctx);
 
+/* simul */
+void test_simul(unit_context_t * ctx);
+
 int main(int argc, const char ** argv)
 {
   unit_context_t * ctx = unit_create_context();
@@ -31,6 +34,8 @@ int main(int argc, const char ** argv)
   test_vm(ctx);
   test_cons(ctx);
   test_array(ctx);
+
+  test_simul(ctx);
 
   int parse_result = unit_parse_argv(ctx, argc, argv);
   if(parse_result == UNIT_ARGV_RUN) 
