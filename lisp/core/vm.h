@@ -95,9 +95,20 @@ size_t lisp_vm_gc_set_steps(lisp_vm_t * vm, size_t n);
  lisp_vm_t allocator and garbage collector operation
  ****************************************************************************/
 /**
- * Allocate a memory complex objects.
+ * Allocate memory for a complex objects.
+ *
+ * The object has ref-count 1 and added to the WHITE_ROOT list.
  */
 void * lisp_vm_alloc_root_complex_object(lisp_vm_t * vm,
+                                         lisp_type_id_t tid,
+                                         size_t size);
+
+/**
+ * Allocate memory for a temporary (non-rooted) complex objects.
+ *
+ * The object has ref-count 0 and added to the GREY list.
+ */
+void * lisp_vm_alloc_temp_complex_object(lisp_vm_t * vm,
                                          lisp_type_id_t tid,
                                          size_t size);
 

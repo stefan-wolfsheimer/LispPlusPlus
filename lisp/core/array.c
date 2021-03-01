@@ -42,17 +42,15 @@ static int _lisp_array_init_cells(lisp_cell_t * target,
                                   size_t end,
                                   lisp_cell_t * value);
 
-
-int lisp_make_array(struct lisp_vm_t * vm,
-                    struct lisp_cell_t * cell,
-                    size_t n,
-                    struct lisp_cell_t * value)
+/*******************************************************************
+ * make array
+ *******************************************************************/
+static int _lisp_init_array(lisp_cell_t * cell,
+                            size_t n,
+                            struct lisp_cell_t * value)
 {
   lisp_cell_t * cells;
   cell->type_id = LISP_TID_ARRAY;
-  cell->data.obj = lisp_vm_alloc_root_complex_object(vm,
-                                                     LISP_TID_ARRAY,
-                                                     sizeof(lisp_array_t));
   if(!cell->data.obj)
   {
     return LISP_BAD_ALLOC;
@@ -72,6 +70,28 @@ int lisp_make_array(struct lisp_vm_t * vm,
     ((lisp_array_t*)cell->data.obj)->gc_pos = 0;
     return LISP_OK;
   }
+}
+
+int lisp_make_array(struct lisp_vm_t * vm,
+                    struct lisp_cell_t * cell,
+                    size_t n,
+                    struct lisp_cell_t * value)
+{
+  cell->data.obj = lisp_vm_alloc_root_complex_object(vm,
+                                                     LISP_TID_ARRAY,
+                                                     sizeof(lisp_array_t));
+  return _lisp_init_array(cell, n, value);
+}
+
+int lisp_make_temp_array(struct lisp_vm_t * vm,
+                         struct lisp_cell_t * cell,
+                         size_t n,
+                         struct lisp_cell_t * value)
+{
+  cell->data.obj = lisp_vm_alloc_temp_complex_object(vm,
+                                                     LISP_TID_ARRAY,
+                                                     sizeof(lisp_array_t));
+  return _lisp_init_array(cell, n, value);
 }
 
 /******************************************************************************
@@ -141,6 +161,17 @@ static int _lisp_array_unset_cells(lisp_cell_t * cells,
   return LISP_OK;
 }
 
+size_t lisp_array_size(const lisp_array_t * array)
+{
+  return array->size;
+}
+
+const lisp_cell_t * lisp_array_get(const lisp_array_t * array, size_t i)
+{
+  assert(i < array->size);
+  return array->data + i;
+}
+
 /******************************************************************************
  * modificators
  ******************************************************************************/
@@ -191,6 +222,14 @@ int lisp_array_append(lisp_array_t * array, lisp_cell_t * value)
   }
   array->size++;
   return LISP_OK;
+}
+
+int lisp_array_set(lisp_array_t * array,
+                   size_t i,
+                   lisp_cell_t * value)
+{
+  assert(i < array->size);
+  return lisp_set_child_cell(array->data + i, value);
 }
 
 int lisp_array_unset(struct lisp_array_t * array, size_t n)

@@ -39,6 +39,13 @@ either expressed or implied, of the FreeBSD Project.
 
 lisp_cell_t lisp_nil = { type_id : LISP_TID_NIL };
 
+int lisp_make_nil(lisp_cell_t * cell)
+{
+  cell->type_id = LISP_TID_NIL;
+  cell->data.obj = NULL;
+  return LISP_OK;
+}
+
 int lisp_is_null(const lisp_cell_t * cell)
 {
   return (LISP_STORAGE_ID(cell->type_id) == LISP_STORAGE_NULL);
@@ -87,7 +94,7 @@ struct lisp_complex_object_t * lisp_as_complex_object(const lisp_cell_t * cell)
 }
 
 
-struct lisp_cons_t * lisp_as_cons(lisp_cell_t * cell)
+struct lisp_cons_t * lisp_as_cons(const lisp_cell_t * cell)
 {
   if(LISP_IS_CONS_TID(cell->type_id))
   {
@@ -104,7 +111,7 @@ int lisp_is_array(const lisp_cell_t * cell)
   return cell->type_id == LISP_TID_ARRAY;
 }
 
-struct lisp_array_t * lisp_as_array(lisp_cell_t * cell)
+struct lisp_array_t * lisp_as_array(const lisp_cell_t * cell)
 {
   if(cell->type_id == LISP_TID_ARRAY)
   {
@@ -261,9 +268,38 @@ static inline void _lisp_complex_object_grey(lisp_complex_object_t * obj)
   }
 }
 
+static inline int _lisp_unset_child_cell(lisp_cell_t * target)
+{
+  switch(LISP_STORAGE_ID(target->type_id))
+  {
+  case LISP_STORAGE_ATOM:
+  case LISP_STORAGE_NULL:
+    target->type_id = LISP_TID_NIL;
+    return LISP_OK;
+    break;
+  case LISP_STORAGE_COW_OBJECT:
+    return LISP_NOT_IMPLEMENTED;
+    break;
+  case LISP_STORAGE_OBJECT:
+    return LISP_NOT_IMPLEMENTED;
+    break;
+  case LISP_STORAGE_CONS:
+    target->type_id = LISP_TID_NIL;
+    target->data.obj = NULL;
+    return LISP_OK;
+  case LISP_STORAGE_COMPLEX:
+    target->type_id = LISP_TID_NIL;
+    target->data.obj = NULL;
+    return LISP_OK;
+    break;
+  default:
+    return LISP_NOT_IMPLEMENTED;
+  }
+  return LISP_OK;
+}
 
-int lisp_init_child_cell(lisp_cell_t * target,
-                         const lisp_cell_t * source)
+static inline int _lisp_init_child_cell(lisp_cell_t * target,
+                                        const lisp_cell_t * source)
 {
   /*@todo unit test coverage */
   if(source)
@@ -306,33 +342,26 @@ int lisp_init_child_cell(lisp_cell_t * target,
   return LISP_OK;
 }
 
+int lisp_init_child_cell(lisp_cell_t * target,
+                         const lisp_cell_t * source)
+{
+  return _lisp_init_child_cell(target, source);
+}
+
+int lisp_set_child_cell(lisp_cell_t * target,
+                        const lisp_cell_t * source)
+{
+  int ret;
+  ret = _lisp_unset_child_cell(target);
+  if(ret != LISP_OK)
+  {
+    return ret;
+  }
+  return _lisp_init_child_cell(target, source);
+}
+
 int lisp_unset_child_cell(lisp_cell_t * target)
 {
-  switch(LISP_STORAGE_ID(target->type_id))
-  {
-  case LISP_STORAGE_ATOM:
-  case LISP_STORAGE_NULL:
-    target->type_id = LISP_TID_NIL;
-    return LISP_OK;
-    break;
-  case LISP_STORAGE_COW_OBJECT:
-    return LISP_NOT_IMPLEMENTED;
-    break;
-  case LISP_STORAGE_OBJECT:
-    return LISP_NOT_IMPLEMENTED;
-    break;
-  case LISP_STORAGE_CONS:
-    target->type_id = LISP_TID_NIL;
-    target->data.obj = NULL;
-    return LISP_OK;
-  case LISP_STORAGE_COMPLEX:
-    target->type_id = LISP_TID_NIL;
-    target->data.obj = NULL;
-    return LISP_OK;
-    break;
-  default:
-    return LISP_NOT_IMPLEMENTED;
-  }
-  return LISP_OK;
+  return  _lisp_unset_child_cell(target);
 }
 

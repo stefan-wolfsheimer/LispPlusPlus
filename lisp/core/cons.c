@@ -108,6 +108,19 @@ void lisp_cons_grey(lisp_cons_t * cons)
 }
 
 /******************************************************************************
+ * car / cdr getter
+ ******************************************************************************/
+const struct lisp_cell_t * lisp_cons_get_car(const lisp_cons_t * cons)
+{
+  return &cons->car;
+}
+
+const struct lisp_cell_t * lisp_cons_get_cdr(const lisp_cons_t * cons)
+{
+  return &cons->cdr;
+}
+
+/******************************************************************************
  * car / cdr modification
  ******************************************************************************/
 int lisp_cons_unset_car(lisp_cons_t * cons)
@@ -130,38 +143,16 @@ int lisp_cons_unset_car_cdr(lisp_cons_t * cons)
   return lisp_unset_child_cell(&cons->cdr);
 }
 
-int _lisp_cons_set_car(lisp_cons_t * cons,
-                       lisp_cell_t * car)
-{
-  int ret;
-  if( (ret = lisp_unset_child_cell(&cons->car)) != LISP_OK)
-  {
-    return ret;
-  }
-  return lisp_init_child_cell(&cons->car, car);
-}
-
 int lisp_cons_set_car(lisp_cons_t * cons,
                       lisp_cell_t * car)
 {
-  return _lisp_cons_set_car(cons, car);
-}
-
-int _lisp_cons_set_cdr(lisp_cons_t * cons,
-                       lisp_cell_t * cdr)
-{
-  int ret;
-  if( (ret = lisp_unset_child_cell(&cons->cdr)) != LISP_OK)
-  {
-    return ret;
-  }
-  return lisp_init_child_cell(&cons->cdr, cdr);
+  return lisp_set_child_cell(&cons->car, car);
 }
 
 int lisp_cons_set_cdr(lisp_cons_t * cons,
                       lisp_cell_t * cdr)
 {
-  return _lisp_cons_set_cdr(cons, cdr);
+  return lisp_set_child_cell(&cons->cdr, cdr);
 }
 
 int lisp_cons_set_car_cdr(lisp_cons_t * cons,
@@ -169,13 +160,13 @@ int lisp_cons_set_car_cdr(lisp_cons_t * cons,
                           lisp_cell_t * cdr)
 {
   int ret;
-  if((ret = _lisp_cons_set_car(cons, car)) != LISP_OK)
+  if((ret = lisp_set_child_cell(&cons->car, car)) != LISP_OK)
   {
     return ret;
   }
   else
   {
-    return _lisp_cons_set_cdr(cons, cdr);
+    return lisp_set_child_cell(&cons->cdr, cdr);
   }
 }
 
@@ -204,6 +195,34 @@ int lisp_make_cons(lisp_vm_t * vm,
     return ret;
   }
 }
+
+int lisp_make_temp_cons(struct lisp_vm_t * vm,
+                        struct lisp_cell_t * cell,
+                        const struct lisp_cell_t * car,
+                        const struct lisp_cell_t * cdr)
+{
+  int ret;
+  cell->type_id = LISP_TID_CONS;
+  cell->data.obj = _lisp_gc_alloc_cons(vm,
+                                       vm->cons_lists[LISP_GC_GREY],
+                                       1u);
+
+  if(!cell->data.obj)
+  {
+    return LISP_BAD_ALLOC;
+  }
+  ret = lisp_init_child_cell(&((lisp_cons_t*)cell->data.obj)->car, car);
+  if(!ret)
+  {
+    return lisp_init_child_cell(&((lisp_cons_t*)cell->data.obj)->cdr, cdr);
+  }
+  else
+  {
+    return ret;
+  }
+
+}
+
 
 
 static int _cons_first_child(lisp_cell_iterator_t * itr)

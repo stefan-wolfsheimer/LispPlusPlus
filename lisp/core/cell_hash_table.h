@@ -35,12 +35,25 @@ struct hash_table_t;
 struct lisp_cell_t;
 
 int lisp_init_cell_hash_table(struct hash_table_t * ht);
+
+/**
+ * Construct a hash map.
+ * Maps conses to structures of size extra_size
+ */
+int lisp_init_cell_hash_map(struct hash_table_t * ht,
+                            size_t extra_size);
+
 void lisp_free_cell_hash_table(struct hash_table_t * ht);
 
 struct lisp_cell_t *
 lisp_cell_hash_table_find_or_insert(struct hash_table_t * ht,
                                     const struct lisp_cell_t * cell,
                                     int * inserted);
+
+struct lisp_cell_t * lisp_cell_hash_table_find(struct hash_table_t * ht,
+                                               const struct lisp_cell_t * cell);
+
+
 struct lisp_cell_t *
 lisp_cell_hash_table_set(struct hash_table_t * ht,
                          const struct lisp_cell_t * cell);

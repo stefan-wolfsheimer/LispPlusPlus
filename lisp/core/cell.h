@@ -47,6 +47,8 @@ typedef struct lisp_cell_t
 
 extern lisp_cell_t lisp_nil;
 
+int lisp_make_nil(lisp_cell_t * cell);
+
 /**
  * Check for storage class of cell.
  *
@@ -96,10 +98,10 @@ int lisp_is_complex(const lisp_cell_t * cell);
 
 
 struct lisp_complex_object_t * lisp_as_complex_object(const lisp_cell_t * cell);
-struct lisp_cons_t * lisp_as_cons(lisp_cell_t * cell);
+struct lisp_cons_t * lisp_as_cons(const lisp_cell_t * cell);
 
 int lisp_is_array(const lisp_cell_t * cell);
-struct lisp_array_t * lisp_as_array(lisp_cell_t * cell);
+struct lisp_array_t * lisp_as_array(const lisp_cell_t * cell);
 
 /**
  * get reference count for objects,
@@ -135,6 +137,15 @@ int lisp_unset(lisp_cell_t * cell);
  * \return LISP_OK if successful
  */
 int lisp_init_child_cell(lisp_cell_t * target, const lisp_cell_t * source);
+
+/**
+ * Unset child cell and set new value
+ *
+ * \param target pointer to initialized cell
+ * \param source
+ * \return LISP_OK if successful
+ */
+int lisp_set_child_cell(lisp_cell_t * target, const lisp_cell_t * source);
 
 /**
  * Unset child cell of cons or complex object.

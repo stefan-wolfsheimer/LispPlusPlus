@@ -31,6 +31,7 @@ either expressed or implied, of the FreeBSD Project.
 #include "cell.h"
 #include "tid.h"
 #include "error.h"
+#include <lisp/util/xmalloc.h>
 #include <lisp/util/hash_table.h>
 #include <lisp/util/murmur_hash3.h>
 
@@ -162,8 +163,40 @@ int lisp_init_cell_hash_table(hash_table_t * ht)
   return ((res == HASH_TABLE_OK) ? LISP_OK : LISP_BAD_ALLOC);
 }
 
+int lisp_init_cell_hash_map(struct hash_table_t * ht,
+                            size_t extra_size)
+{
+  int res = hash_table_init(ht,
+                            _lisp_cell_eq,
+                            _lisp_cell_hash_function,
+                            _lisp_cell_hash_entry_constructor,
+                            NULL,
+                            0);
+  if( res == HASH_TABLE_OK )
+  {
+    ht->user_data = MALLOC(sizeof(size_t));
+    if(ht->user_data)
+    {
+      *((size_t*)ht->user_data) = extra_size;
+      return LISP_OK;
+    }
+    else
+    {
+      return LISP_BAD_ALLOC;
+    }
+  }
+  else
+  {
+    return LISP_BAD_ALLOC;
+  }
+}
+
 void lisp_free_cell_hash_table(hash_table_t * ht)
 {
+  if(ht->user_data != NULL)
+  {
+    FREE(ht->user_data);
+  }
   hash_table_finalize(ht);
 }
 
@@ -173,8 +206,16 @@ lisp_cell_t * lisp_cell_hash_table_find_or_insert(hash_table_t * ht,
 {
   return (lisp_cell_t*)hash_table_find_or_insert(ht,
                                                  cell,
-                                                 sizeof(lisp_cell_t),
+                                                 sizeof(lisp_cell_t) +
+                                                 (ht->user_data ?
+                                                  *((size_t*)ht->user_data) : 0),
                                                  inserted);
+}
+
+struct lisp_cell_t * lisp_cell_hash_table_find(struct hash_table_t * ht,
+                                               const struct lisp_cell_t * cell)
+{
+  return (lisp_cell_t*)hash_table_find(ht, cell);
 }
 
 lisp_cell_t * lisp_cell_hash_table_set(hash_table_t * ht,

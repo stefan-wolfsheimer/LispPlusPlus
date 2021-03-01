@@ -54,6 +54,20 @@ int lisp_make_cons(struct lisp_vm_t * vm,
                    const struct lisp_cell_t * car,
                    const struct lisp_cell_t * cdr);
 
+/**
+ * Create a non rooted cons
+ */
+int lisp_make_temp_cons(struct lisp_vm_t * vm,
+                        struct lisp_cell_t * cell,
+                        const struct lisp_cell_t * car,
+                        const struct lisp_cell_t * cdr);
+
+/******************************************************************************
+ * car / cdr getter
+ ******************************************************************************/
+const struct lisp_cell_t * lisp_cons_get_car(const lisp_cons_t * cons);
+const struct lisp_cell_t * lisp_cons_get_cdr(const lisp_cons_t * cons);
+
 /******************************************************************************
  * car / cdr modification
  ******************************************************************************/

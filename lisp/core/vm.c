@@ -180,26 +180,51 @@ size_t lisp_vm_gc_set_steps(lisp_vm_t * vm, size_t n)
 /****************************************************************************
  lisp_vm_t allocator garbage collector operation
  ****************************************************************************/
-void * lisp_vm_alloc_root_complex_object(lisp_vm_t * vm,
-                                         lisp_type_id_t tid,
-                                         size_t size)
+inline static
+void * _lisp_vm_alloc_complex_object(lisp_vm_t * vm,
+                                     lisp_gc_collectible_list_t * list,
+                                     lisp_type_id_t tid,
+                                     size_t size,
+                                     size_t ref_count)
 {
   lisp_dl_item_t * item;
   lisp_complex_object_t * obj;
-  lisp_gc_collectible_list_t * list;
   assert(LISP_STORAGE_ID(tid) == LISP_STORAGE_COMPLEX);
-  list = vm->object_lists[LISP_GC_WHITE_ROOT];
   item = (lisp_dl_item_t*) MALLOC(sizeof(lisp_dl_item_t) +
                                   sizeof(lisp_complex_object_t) +
                                   size);
   lisp_dl_list_append(&list->objects, item);
   obj = (lisp_complex_object_t *)(((char*)item) + sizeof(lisp_dl_item_t));
   obj->gc_list = list;
-  obj->ref_count = 1u;
+  obj->ref_count = ref_count;
   obj->type_id = tid;
   return (((char*) item) +
           sizeof(lisp_dl_item_t) +
           sizeof(lisp_complex_object_t));
+
+}
+
+
+void * lisp_vm_alloc_root_complex_object(lisp_vm_t * vm,
+                                         lisp_type_id_t tid,
+                                         size_t size)
+{
+  return _lisp_vm_alloc_complex_object(vm,
+                                       vm->object_lists[LISP_GC_WHITE_ROOT],
+                                       tid,
+                                       size,
+                                       1u);
+}
+
+void * lisp_vm_alloc_temp_complex_object(lisp_vm_t * vm,
+                                         lisp_type_id_t tid,
+                                         size_t size)
+{
+  return _lisp_vm_alloc_complex_object(vm,
+                                       vm->object_lists[LISP_GC_GREY],
+                                       tid,
+                                       size,
+                                       0u);
 }
 
 inline static void _move_cons_list(lisp_gc_collectible_list_t * target,
