@@ -33,8 +33,12 @@ either expressed or implied, of the FreeBSD Project.
 #include <stddef.h>
 #include <stdio.h>
 
-struct serialization_field_t;
-
+/**
+ * Field in a structure that can be serialized.
+ *
+ * The field can be constructed with the macro
+ * SERIAL_SIZE_FIELD
+ */
 typedef struct serialization_field_t
 {
   const char * name;
@@ -56,6 +60,14 @@ typedef struct serialization_field_t
 
 /**
  * Initialize object.
+ * Set default values of all serializable fields of an object (calls
+ * initializer callback function of each field).
+ *
+ * \param fields array of fields of the object to serialized
+ * \param n number of elements in array of fields
+ * \param obj pointer of object to be serialized
+ * \param context optional context that is passed to the
+ *                initializer callback function of each field.
  */
 void serialization_init(serialization_field_t * fields,
                         size_t n,
@@ -63,19 +75,50 @@ void serialization_init(serialization_field_t * fields,
                         void * context);
 
 /**
- * Return true if all fields of obj1 and obj2 are equal
+ * Compare all fields of a object. Calls the 
+ * eq callback function of each field.
+ *
+ * \param fields array of fields of the object
+ * \param n number of elements in the array of fields
+ * \param obj1 pointer to LHS object
+ * \param obj2 pointer to RHS object
+ * \return true if all fields of obj1 and obj2 are equal
  */
 int serialization_eq(serialization_field_t * fields,
                      size_t n,
                      void * obj1,
                      void * obj2);
 
+/**
+ * Print the serializable object.
+ * Call print callback function of each field.
+ *
+ * \param fp file descriptor
+ * \param fields array of fields of the object
+ * \param n number of elements in the array of fields
+ * \param obj1 pointer to object
+ * \param context optional context that is passed to the
+ *                print callback function of each field.
+ */
 void serialization_print(FILE * fp,
                          serialization_field_t * fields,
                          size_t n,
                          void * obj1,
                          void * context);
 
+/**
+ * Print two serializable objects.
+ * Call print callback function of each field.
+ *
+ * \param fp file descriptor
+ * \param fields array of fields of the object
+ * \param n number of elements in the array of fields
+ * \param obj1 pointer to LHS object
+ * \param obj2 pointer to RHS object
+ * \param color print color and highlight differences
+ * \param context optional context that is passed to the
+ *                print callback function of each field.
+ */
 void serialization_print2(FILE * fp,
                           serialization_field_t * fields,
                           size_t n,
@@ -86,7 +129,13 @@ void serialization_print2(FILE * fp,
 
 
 /**
- * Change the initialization of a given field
+ * Find the field in the array of field by name and change its
+ * initialization callback function.
+ *
+ * \param fields array of fields of the object
+ * \param n number of elements in the array of fields
+ * \param name name of the field to be changed
+ * \param initializer new initializer
  */
 void serialization_set_initializer(serialization_field_t * fields,
                                    size_t n,
