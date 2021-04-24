@@ -8,6 +8,7 @@ void test_assertion(unit_context_t * ctx);
 void test_dl_list(unit_context_t * ctx);
 void test_hash_table(unit_context_t * ctx);
 void test_serialization(unit_context_t * ctx);
+void test_argparse(unit_context_t * ctx);
 
 /* core */
 void test_cell(unit_context_t * ctx);
@@ -29,6 +30,7 @@ int main(int argc, const char ** argv)
   test_dl_list(ctx);
   test_hash_table(ctx);
   test_serialization(ctx);
+  test_argparse(ctx);
 
   test_cell(ctx);
   test_vm(ctx);

@@ -6,4 +6,5 @@ add_library( TestUtil
   dl_list.c
   hash_table.c
   serialization.c
+  argparse.c
   )

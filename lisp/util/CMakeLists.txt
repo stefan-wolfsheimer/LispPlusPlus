@@ -6,4 +6,5 @@ add_library( Util
   murmur_hash3.c
   hash_table.c
   serialization.c
+  argparse.c
 )
