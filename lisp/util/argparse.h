@@ -33,8 +33,10 @@ either expressed or implied, of the FreeBSD Project.
 #include <stddef.h>
 #include <stdio.h>
 
+/**
+ * return code
+ */
 #define ARG_PARSER_OK 0
-
 
 /**
  * invalid usage of argument parser
@@ -53,7 +55,7 @@ struct argument_t;
 
 typedef struct argument_t
 {
-  const char * short_name;
+  char short_name;
   const char * long_name;
   const char * help;
   char multiplier; /* '0': argument is a flag, no values
@@ -83,13 +85,51 @@ typedef struct arg_parser_t
   char * error_msg;
 } arg_parser_t;
 
+/**
+ * Initialize argument parser.
+ *
+ * \param uninitialized data structure
+ * \return ARG_PARSER_OK if successful
+ */
 int init_arg_parser(arg_parser_t * parser);
 
+/**
+ * Free argument parser.
+ *
+ * \param parser data structure
+ * \return ARG_PARSER_OK if successful
+ */
 int free_arg_parser(arg_parser_t * parser);
+
+/**
+ * Add an parameterized argument.
+ * \param ref reference to variable
+ * \param short_name
+ * \param long_name
+ * \param required
+ * \param parse call back function for parsing
+ * \param help help text
+ */
+argument_t * arg_parser_add_field(arg_parser_t * parser,
+                                  void * ref,
+                                  char short_name,
+                                  const char * long_name,
+                                  int required,
+                                  int (*parse)(struct arg_parser_t * parser,
+                                               struct argument_t * arg,
+                                               const char ** values,
+                                               size_t n_values),
+                                  const char * help);
+
+argument_t * arg_parser_add_flag(arg_parser_t * parser,
+                                 int * ref,
+                                 char short_name,
+                                 const char * long_name,
+                                 const char * help);
 
 argument_t * arg_parser_add_int(arg_parser_t * parser,
                                 int * ref,
-                                const char * short_name,
+                                char short_name,
                                 const char * long_name,
                                 int required,
                                 const char * help);

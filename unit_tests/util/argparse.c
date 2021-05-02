@@ -46,7 +46,7 @@ static void test_argparse_int(unit_test_t * tst)
   memcheck_begin();
   ASSERT_FALSE(tst, init_arg_parser(&parser));
   arg_parser_add_int(&parser, &int_val1,
-                     "-i", "--intval1", 1,
+                     'i', "--intval1", 1,
                      "integer value 1");
 
   /* parse argv1 */
@@ -71,8 +71,80 @@ static void test_argparse_int(unit_test_t * tst)
   memcheck_end();
 }
 
+static void test_argparse_flags(unit_test_t * tst)
+{
+  arg_parser_t parser;
+  int flag1;
+  int flag2;
+  int flag3;
+  const char * argv1[] = {};
+  const char * argv2[] = {"-f"};
+  const char * argv3[] = {"-f", "--glag"};
+  const char * argv4[] = {"-fx", "--glag"};
+
+  memcheck_begin();
+  ASSERT_FALSE(tst, init_arg_parser(&parser));
+  flag1 = -1;
+  flag2 = -1;
+  flag3 = -1;
+  arg_parser_add_flag(&parser, &flag1,
+                      'f', "--flag",
+                      "flag");
+  arg_parser_add_flag(&parser, &flag2,
+                      '\0', "--glag",
+                      "flag 2");
+  arg_parser_add_flag(&parser, &flag3,
+                      'x', NULL,
+                      "flag 3");
+
+  /* parse argv1 */
+  ASSERT_FALSE(tst, arg_parser_parse(&parser,
+                                     sizeof(argv1)/sizeof(char*),
+                                     argv1));
+  ASSERT_EQ_I(tst, flag1, 0);
+  ASSERT_EQ_I(tst, flag2, 0);
+  ASSERT_EQ_I(tst, flag3, 0);
+
+  flag1 = 0;
+  flag2 = 0;
+  flag3 = 0;
+  ASSERT_FALSE(tst, arg_parser_parse(&parser,
+                                     sizeof(argv2)/sizeof(char*),
+                                     argv2));
+  ASSERT_EQ_I(tst, flag1, 1);
+  ASSERT_EQ_I(tst, flag2, 0);
+  ASSERT_EQ_I(tst, flag3, 0);
+
+  flag1 = 0;
+  flag2 = 0;
+  flag3 = 0;
+  ASSERT_FALSE(tst, arg_parser_parse(&parser,
+                                     sizeof(argv3)/sizeof(char*),
+                                     argv3));
+  ASSERT_EQ_I(tst, flag1, 1);
+  ASSERT_EQ_I(tst, flag2, 0);
+  ASSERT_EQ_I(tst, flag3, 0);
+
+
+  flag1 = -1;
+  flag2 = -1;
+  flag3 = -1;
+  ASSERT_FALSE(tst, arg_parser_parse(&parser,
+                                     sizeof(argv4)/sizeof(char*),
+                                     argv4));
+  ASSERT_EQ_I(tst, flag1, 1);
+  ASSERT_EQ_I(tst, flag2, 1);
+  ASSERT_EQ_I(tst, flag3, 1);
+
+  /*@todo test multiple flags! */
+  ASSERT_FALSE(tst, free_arg_parser(&parser));
+  ASSERT_MEMCHECK(tst);
+  memcheck_end();
+}
+
 void test_argparse(unit_context_t * ctx)
 {
   unit_suite_t * suite = unit_create_suite(ctx, "argparse");
   TEST(suite, test_argparse_int);
+  TEST(suite, test_argparse_flags);
 }
