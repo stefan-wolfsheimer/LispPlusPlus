@@ -134,7 +134,25 @@ argument_t * arg_parser_add_int(arg_parser_t * parser,
                                 int required,
                                 const char * help);
 
+argument_t * arg_parser_add_size(arg_parser_t * parser,
+                                 size_t * ref,
+                                 char short_name,
+                                 const char * long_name,
+                                 int required,
+                                 const char * help);
+
+argument_t * arg_parser_add_double(arg_parser_t * parser,
+                                   double * ref,
+                                   char short_name,
+                                   const char * long_name,
+                                   int required,
+                                   const char * help);
+
 int arg_parser_parse(arg_parser_t * parser,
                      int argc,
                      const char ** argv);
+
+void arg_parser_print_help(FILE * fp,
+                           const char * progr,
+                           arg_parser_t * parser);
 #endif
