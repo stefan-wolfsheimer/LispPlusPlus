@@ -93,6 +93,6 @@ IF(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES Release)
 # add_library(Simul)
 target_include_directories(Catch INTERFACE test)
 
-add_executable(gc_sim gc_sim.cpp)
-target_link_libraries(gc_sim Simul Scheme Core)
+add_executable(gc_sim gc_sim.c)
+target_link_libraries(gc_sim LispSimul LispCore Util)
 ENDIF(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES Release)

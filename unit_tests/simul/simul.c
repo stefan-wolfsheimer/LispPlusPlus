@@ -35,10 +35,6 @@ either expressed or implied, of the FreeBSD Project.
 #include <lisp/core/array.h>
 #include <unit_tests/common.h>
 
-//@todo remove this includes
-#include <lisp/util/hash_table.h>
-#include <lisp/core/cell_hash_table.h>
-
 static int check_gc_sim_nodes(lisp_gc_sim_t * sim)
 {
   size_t i;

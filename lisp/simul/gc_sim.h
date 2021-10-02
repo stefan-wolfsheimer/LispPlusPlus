@@ -56,6 +56,14 @@ int lisp_free_gc_sim(lisp_gc_sim_t * sim);
 lisp_gc_sim_node_t * lisp_sim_find_node(lisp_gc_sim_t * sim,
                                         const lisp_cell_t * cell);
 
+/**
+ * Create a new root cell with n_children increment append
+ * the array sim->root and increate sim->num_root by 1.
+ * If n_children = 2, a cons is created otherwise an array.
+ *
+ * Refresh the graph after the new element has been added.
+ *
+ */
 lisp_cell_t * lisp_sim_add_root(lisp_gc_sim_t * sim,
                                 size_t n_children);
 
